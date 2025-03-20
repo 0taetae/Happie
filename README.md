@@ -118,3 +118,9 @@
 - LLM 학습
 - LangChain 및 LangGraph란?
 - GPU 서버 학습
+
+### 03.20.(목)
+
+- LLM 실습 : ollama 테스트 및 LangChain 연결
+- Vector Store 더미 데이터 설계 및 제작
+- 인프라 : EC2, Docker
