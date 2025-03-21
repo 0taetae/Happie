@@ -124,3 +124,8 @@
 - LLM 실습 : ollama 테스트 및 LangChain 연결
 - Vector Store 더미 데이터 설계 및 제작
 - 인프라 : EC2, Docker
+
+### 03.21.(금)
+
+- 중간발표회
+- 인프라 : CI/CD, Docker
