@@ -12,9 +12,6 @@ RUN npm run build
 # 2️⃣ Nginx 서버 단계
 FROM nginx:latest
 
-# 정적 파일을 Nginx의 루트 디렉토리로 복사
-COPY --from=build /app/out /usr/share/nginx/html
-
 # Nginx 설정 파일 복사
 COPY ./nginx.conf /etc/nginx/conf.d/default.conf
 
