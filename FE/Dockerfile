@@ -8,7 +8,6 @@ RUN npm install
 
 COPY . .
 RUN npm run build
-RUN npm run export
 
 # 2️⃣ Nginx 서버 단계
 FROM nginx:latest
