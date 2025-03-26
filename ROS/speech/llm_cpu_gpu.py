@@ -1,7 +1,9 @@
+import re
 from llama_cpp import Llama
 import os
+import torch
 
-# .gguf 모델 파일 경로 설정 (이 경로에 모델이 존재한다고 가정)
+# .gguf 모델 파일 경로 설정
 model_path = r"C:\Users\SSAFY\Desktop\LLM\llama-3-Korean-Bllossom-8B-Q4_K_M.gguf"
 
 # 경로가 존재하는지 확인
@@ -10,6 +12,12 @@ if not os.path.exists(model_path):
 
 # CUDA 환경 변수 설정 (GPU 사용)
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # GPU 0 사용하도록 설정
+
+# GPU 상태 확인
+if torch.cuda.is_available():
+    print(f"Using GPU: {torch.cuda.get_device_name(0)}")
+else:
+    print("CUDA is not available. Switching to CPU...")
 
 # 디바이스 설정: GPU를 우선 사용하고, 실패하면 CPU로 자동 전환
 device = "cuda"  # 기본적으로 GPU 사용
@@ -21,18 +29,29 @@ except ValueError as e:
     # print(f"Error loading model with GPU: {e}")
     # print("Switching to CPU...")
     llama = Llama(model_path=model_path, device="cpu")  # GPU 에러 발생 시 CPU로 모델 로드
-
+ 
 # 입력 텍스트 설정
-input_text = "삼성 병원에 대해 알려줘."
+input_text = "삼성병원에 대해 알려줘."
 
 # 모델로 텍스트 생성 (max_tokens를 늘려줌)
 output = llama(input_text, max_tokens=100)
 
-# 출력 형식에 따라 'text' 필드를 추출
+# 출력 텍스트 처리: 문장 끝을 기준으로 분리
 if isinstance(output, dict):
     output_text = output.get('choices', [{}])[0].get('text', 'No text generated')
 else:
     output_text = output
 
-# 출력 텍스트 출력
-print("출력값 : ", output_text)
+# 문장 끝을 기준으로 끊기
+# 한국어에서는 마침표, 물음표, 느낌표 등을 기준으로 문장을 나눌 수 있습니다.
+sentences = re.split(r'([.!?])', output_text)  # 마침표, 느낌표, 물음표 등을 기준으로 분리
+
+# 문장 단위로 출력
+print("출력값:")
+for i in range(0, len(sentences), 2):
+    # 문장이 완전한 경우만 출력
+    if i + 1 < len(sentences):  # 문장이 끝나는 구분자가 있을 때만
+        sentence = sentences[i] + sentences[i + 1]
+        # 미완성 문장이 아니면 출력
+        if sentence.strip()[-1] in ['.', '!', '?']:
+            print(sentence.strip())
