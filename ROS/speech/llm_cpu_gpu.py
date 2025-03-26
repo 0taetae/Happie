@@ -1,3 +1,4 @@
+#################### GPU 사용 안함 문제 해결 해야 해 ##################
 import re
 from llama_cpp import Llama
 import os
