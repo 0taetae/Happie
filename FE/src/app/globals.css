@@ -65,3 +65,15 @@ body {
     animation: fadeInModal 0.3s ease-out forwards;
   }
 }
+
+@layer base {
+  html, body {
+    cursor: url("/images/cursor-default.png"), auto;
+  }
+
+  a,
+  button,
+  .cursor-pointer-custom {
+    cursor: url("/images/cursor-pointer.png"), pointer;
+  }
+}
