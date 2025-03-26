@@ -20,7 +20,7 @@ services:
       dockerfile: Dockerfile
     container_name: happie-backend-v1
     ports:
-      - "8085:8085"
+      - "8085:8080"
     volumes:
       - /etc/localtime:/etc/localtime:ro
     networks:
