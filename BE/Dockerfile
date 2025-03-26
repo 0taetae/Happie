@@ -5,7 +5,7 @@ FROM openjdk:17-jdk
 WORKDIR /spring-boot
 
 # 호스트 시스템의 target 디렉토리에 있는 JAR 파일을 컨테이너의 /spring-boot/ 디렉토리로 복사
-COPY target/foodthink-0.0.1-SNAPSHOT.jar /spring-boot/app.jar
+COPY target/happie-0.0.1-SNAPSHOT.jar /spring-boot/app.jar
 
 COPY src/main/resources/application.properties /spring-boot/application.properties
 
