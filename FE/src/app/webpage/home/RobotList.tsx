@@ -1,8 +1,22 @@
 "use client";
 import { useState } from "react";
 
+// 로봇 하나의 데이터 타입 정의
+interface Task {
+  id: number;
+  task: string;
+  color: string;
+}
+
+interface RobotInfo {
+  status: string;
+  progress: number;
+  progressColor: string;
+  tasks: Task[];
+}
+
 // 더미 데이터 (각 로봇의 상태 및 대기 임무)
-const robotData = {
+const robotData: Record<number, RobotInfo> = {
   1: {
     status: "링거 폴대를 가지고 병실1로 이동 중...",
     progress: 80,
@@ -26,7 +40,7 @@ const robotData = {
     status: "충전 중...",
     progress: 27,
     progressColor: "bg-red-500",
-    tasks: [], // 대기 임무 없음
+    tasks: [],
   },
 };
 
@@ -44,20 +58,21 @@ export default function RobotList() {
           <p className="text-sm text-gray-500">{robotData[num].status}</p>
 
           {/* "대기 임무 ?개" 버튼 */}
-          <button
-            className="mt-2 px-3 py-1 text-sm bg-gray-200 rounded-md shadow-sm hover:bg-gray-300 transition"
-            onClick={() => setOpenRobot(openRobot === num ? null : num)}
-          >
-            {openRobot === num
-              ? "닫기"
-              : robotData[num].tasks.length > 0
-              ? `대기 임무 ${robotData[num].tasks.length}개`
-              : "대기 임무 없음"}
+          <button className="mt-2 px-3 py-1 text-sm bg-gray-200 rounded-md shadow-sm hover:bg-gray-300 transition" onClick={() => setOpenRobot(openRobot === num ? null : num)}>
+            {openRobot === num ? "닫기" : robotData[num].tasks.length > 0 ? `대기 임무 ${robotData[num].tasks.length}개` : "대기 임무 없음"}
           </button>
 
           {/* 대기 임무 (토글) */}
-          {openRobot === num && (
-            <div className="bg-white p-2 shadow-md rounded-lg mt-2 text-sm">
+          {/* 슬라이드 애니메이션 박스 */}
+          <div
+            className={`
+              transition-all duration-300 ease-in-out overflow-hidden mt-2 
+              bg-white shadow-md rounded-lg text-sm 
+              ${openRobot === num ? "max-h-[300px] p-2" : "max-h-0 p-0"}
+            `}
+          >
+            {/* 안의 내용은 항상 렌더링되지만 숨기기 위해 max-height 활용 */}
+            <div className="overflow-y-auto max-h-[250px] pr-1">
               {robotData[num].tasks.length > 0 ? (
                 <>
                   <p className="mb-1 font-bold">📌 대기 임무</p>
@@ -73,13 +88,11 @@ export default function RobotList() {
                 <p className="text-gray-500 font-semibold">📢 임무를 내려주세요!</p>
               )}
             </div>
-          )}
+          </div>
 
           {/* 프로그레스 바 */}
           <div className="mt-3 h-2 bg-gray-200 rounded">
-            <div
-              className={`h-full rounded ${robotData[num].progressColor} w-[${robotData[num].progress}%]`}
-            ></div>
+            <div className={`h-full rounded ${robotData[num].progressColor}`} style={{ width: `${robotData[num].progress}%` }}></div>
           </div>
           <p className="text-sm mt-1 text-right font-semibold">{robotData[num].progress}%</p>
         </div>

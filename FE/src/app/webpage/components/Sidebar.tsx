@@ -9,7 +9,7 @@ export default function Sidebar() {
   const pathname = usePathname(); // 현재 URL 경로 확인
 
   return (
-    <div className="w-72 bg-white h-[90vh] p-4 rounded-xl shadow-lg flex flex-col">
+    <div className="w-96 bg-white h-[90vh] p-4 rounded-xl shadow-lg flex flex-col">
       {/* 네비게이션 바 */}
       <div className="flex w-full mb-4">
         {["home", "bot1", "bot2", "bot3"].map((tab, index) => (
@@ -32,7 +32,7 @@ export default function Sidebar() {
       {["bot1", "bot2", "bot3"].includes(pathname.split("/").pop() || "") && (
         <div className="flex flex-col flex-grow">
           {/* ✅ BotCamera는 고정된 위치로 설정 */}
-          <div className="h-36 flex-shrink-0 mb-2">
+          <div className="h-56 flex-shrink-0 mb-2">
             <BotCamera botId={parseInt(pathname.split("/").pop()?.replace("bot", "") || "1")} />
           </div>
 
@@ -44,7 +44,7 @@ export default function Sidebar() {
           </div>
 
           {/* ✅ 활동 내역 리스트만 스크롤 가능 */}
-          <div className="flex-grow overflow-y-auto">
+          <div className="flex-grow overflow-y-auto max-h-[265px]">
             <BotHistory botId={parseInt(pathname.split("/").pop()?.replace("bot", "") || "1")} />
           </div>
         </div>
