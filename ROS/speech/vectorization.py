@@ -1,6 +1,6 @@
 ### 데이터 벡터화 ###
 
-from langchain.embeddings import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from excel_load import load_excel  # excel_load.py의 load_excel 함수
 import pandas as pd
 from transformers import AutoTokenizer, AutoModel
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     facility_embeddings, location_embeddings, service_embeddings, floor_embeddings = vectorize_data(df)
     
     # 결과 출력
-    print("시설명 벡터화 결과:", facility_embeddings)
-    print("위치설명 벡터화 결과:", location_embeddings)
-    print("서비스설명 벡터화 결과:", service_embeddings)
-    print("층정보 벡터화 결과:", floor_embeddings)
+    # print("시설명 벡터화 결과:", facility_embeddings)
+    # print("위치설명 벡터화 결과:", location_embeddings)
+    # print("서비스설명 벡터화 결과:", service_embeddings)
+    # print("층정보 벡터화 결과:", floor_embeddings)
