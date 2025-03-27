@@ -1,36 +1,54 @@
 "use client";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import RobotList from "../home/RobotList";
+import BotCamera from "./BotCamera";
+import BotHistory from "./BotHistory";
 
 export default function Sidebar() {
-  const pathname = usePathname();
+  const router = useRouter();
+  const pathname = usePathname(); // 현재 URL 경로 확인
 
   return (
-    <div className="w-64 bg-gray-100 h-full p-4 shadow-lg">
-      {/* 네비게이션 버튼 */}
-      <div className="flex space-x-2">
-        {["home", "bot1", "bot2", "bot3"].map((page, index) => (
-          <Link key={index} href={`/webpage/${page}`} className={`px-3 py-1 text-sm rounded-lg ${pathname.includes(page) ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700"}`}>
-            {page.toUpperCase()}
-          </Link>
+    <div className="w-96 bg-white h-[90vh] p-4 rounded-xl shadow-lg flex flex-col">
+      {/* 네비게이션 바 */}
+      <div className="flex w-full mb-4">
+        {["home", "bot1", "bot2", "bot3"].map((tab, index) => (
+          <button
+            key={index}
+            onClick={() => router.push(`/webpage/${tab}`)} // 🔹 클릭하면 해당 페이지로 이동
+            className={`flex-1 text-center px-2 py-2 border border-gray-300 text-sm font-semibold rounded-md ${
+              pathname.includes(tab) ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            {tab.toUpperCase()}
+          </button>
         ))}
       </div>
 
-      {/* 로봇 상태 정보 */}
-      <div className="mt-6">
-        <h2 className="bg-yellow-400 text-white text-center py-2 rounded-lg">의약품 적재 상태</h2>
-        
-        {[1, 2, 3].map((num) => (
-          <div key={num} className="bg-white p-3 my-3 rounded-lg shadow-md">
-            <p className="font-bold">🤖 ROBOT_{num}</p>
-            <p className="text-sm text-gray-500">{num === 1 ? "환자 물품 배달 중" : num === 2 ? "운행 중" : "충전 중"}</p>
-            <div className="mt-2 h-2 bg-gray-200 rounded">
-              <div className={`h-full ${num === 1 ? "bg-green-500 w-[80%]" : num === 2 ? "bg-orange-400 w-[53%]" : "bg-red-500 w-[27%]"}`}></div>
-            </div>
-            <p className="text-sm mt-1">{num === 1 ? "80%" : num === 2 ? "53%" : "27%"}</p>
+      {/* 홈 화면: 로봇 리스트 */}
+      {pathname === "/webpage/home" && <RobotList />}
+
+      {/* 개별 로봇 페이지 */}
+      {["bot1", "bot2", "bot3"].includes(pathname.split("/").pop() || "") && (
+        <div className="flex flex-col flex-grow">
+          {/* ✅ BotCamera는 고정된 위치로 설정 */}
+          <div className="h-56 flex-shrink-0 mb-2">
+            <BotCamera botId={parseInt(pathname.split("/").pop()?.replace("bot", "") || "1")} />
           </div>
-        ))}
-      </div>
+
+          {/* ✅ 활동 내역 헤더도 고정 */}
+          <div className="flex-shrink-0">
+            <h3 className="text-md font-semibold text-blue-600 py-2">
+              📜 로봇 {pathname.split("/").pop()?.replace("bot", "")} 활동 내역
+            </h3>
+          </div>
+
+          {/* ✅ 활동 내역 리스트만 스크롤 가능 */}
+          <div className="flex-grow overflow-y-auto max-h-[265px]">
+            <BotHistory botId={parseInt(pathname.split("/").pop()?.replace("bot", "") || "1")} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
