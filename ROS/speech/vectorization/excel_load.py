@@ -12,7 +12,7 @@ def load_excel():
     # print("엑셀 데이터 정보:")
     # print(df.info())
     
-    # # '위치설명' 컬럼 전처리: 쉼표로 구분된 텍스트 항목을 리스트로 분리
+    # '위치설명' 컬럼 전처리: 쉼표로 구분된 텍스트 항목을 리스트로 분리
     # if '위치설명' in df.columns:
     #     # 위치설명을 쉼표로 나누되, 각 문장이 제대로 구분되도록 처리
     #     df['위치설명'] = df['위치설명'].apply(lambda x: [i.strip() for i in str(x).split(', ')] if pd.notnull(x) else [])
