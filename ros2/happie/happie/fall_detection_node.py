@@ -21,8 +21,8 @@ class FallDetectionNode(Node):
         )
 
         # YOLO 모델 로드
-        model_path = r'C:\Users\SSAFY\Desktop\project\mobility-smarthome-skeleton\yolov5\runs\train\new_train2\weights\best.pt'
-        yolov5_dir = r'C:\Users\SSAFY\Desktop\project\mobility-smarthome-skeleton\yolov5'
+        model_path = r'C:\Users\SSAFY\Desktop\project\S12P21E103\yolov5\runs\train\exp8\weights\best.pt'
+        yolov5_dir = r'C:\Users\SSAFY\Desktop\project\S12P21E103\yolov5'
 
         self.model = torch.hub.load(
             yolov5_dir,
