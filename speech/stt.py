@@ -26,7 +26,7 @@ def transcribe_stt(audio_file_path):
 
 if __name__ == "__main__":
     # 예시로 사용할 음성 파일과 출력 텍스트 파일 경로 설정
-    audio_file = "다운로드\\샘플_2.wav"  # 여기서 'your_audio_file.wav'는 변환할 음성 파일입니다.
+    audio_file = "C:\\Users\\SSAFY\\Desktop\\LLM\\샘플_2.wav"  # 여기서 'your_audio_file.wav'는 변환할 음성 파일입니다.
 
     # 음성 파일을 텍스트로 변환하고 그 결과를 변수로 받기
     # 나중에 이 텍스트를 프롬프트로 사용할 수 있음
