@@ -1,5 +1,5 @@
 import { useRef } from "react";
-
+//녹음만 담당하는 훅
 export function useAudioRecorder(onRecordingComplete: (blob: Blob) => void) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
