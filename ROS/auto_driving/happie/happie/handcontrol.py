@@ -38,7 +38,6 @@ class HandControlNode(Node):
     
     ## 로봇의 상태 출력 : 로봇의 배터리 잔량, 전원 공급 상태, 손 사용 가능 여부, 물건 놓기 가능 여부, 물건 들어올리기 가능 여부 표시 
     def hand_control_status(self):
-        """Hand Control Status 출력"""
         if self.is_turtlebot_status:
             print(f'Turtlebot Battery: {self.turtlebot_status_msg.battery_percentage}%')
             print(f'Power Supply Status: {self.turtlebot_status_msg.power_supply_status}')
@@ -50,7 +49,6 @@ class HandControlNode(Node):
     
     ## 손 제어 미리보기 모드 
     def hand_control_preview(self):
-        """Hand Control - Preview"""
         if not self.turtlebot_status_msg.can_use_hand:
             print('Hand control is not available!')
             return
@@ -61,7 +59,6 @@ class HandControlNode(Node):
     
     ## 로봇이 물건을 들어올리도록 명령 
     def hand_control_pick_up(self):
-        """Hand Control - Pick up"""
         if not self.turtlebot_status_msg.can_lift:
             print('Cannot pick up! Robot is not in the right state.')
             return
@@ -72,7 +69,6 @@ class HandControlNode(Node):
     
     ## 로봇이 물건을 놓도록 명령 
     def hand_control_put_down(self):        
-        """Hand Control - Put down"""
         if not self.turtlebot_status_msg.can_put:
             print('Cannot put down! Robot is not in the right state.')
             return
@@ -85,7 +81,6 @@ class HandControlNode(Node):
     
     ## 로봇 상태 메시지를 수신할 때마다 호출 
     def turtlebot_status_cb(self, msg):
-        """Turtlebot 상태 수신 콜백 함수"""
         self.is_turtlebot_status = True
         self.turtlebot_status_msg = msg
 

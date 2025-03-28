@@ -15,6 +15,8 @@ import numpy as np
 import cv2
 import time
 
+from config import params_map, PKG_PATH
+
 # mapping node의 전체 로직 순서
 # 1. publisher, subscriber, msg 생성
 # 2. mapping 클래스 생성
@@ -28,16 +30,6 @@ import time
 # 10. laser scan 공간을 맵에 표시
 # 11. 업데이트 중인 map publish
 # 12. 맵 저장
-
-params_map = {
-    "MAP_RESOLUTION": 0.04,
-    "OCCUPANCY_UP": 0.02,
-    "OCCUPANCY_DOWN": 0.01,
-    "MAP_CENTER": (-50, -50),
-    "MAP_SIZE": (30, 30),
-    "MAP_FILENAME": 'test.png',
-    "MAPVIS_RESIZE_SCALE": 1.0
-}
 
 ## Bresenham's Algorithm
 def createLineIterator(P1, P2, img):
@@ -212,8 +204,8 @@ class Mapper(Node):
         m.height = int(params_map["MAP_SIZE"][1]/params_map["MAP_RESOLUTION"])
         quat = np.array([0, 0, 0, 1])
         m.origin = Pose()
-        m.origin.position.x = params_map["MAP_CENTER"][0]-8.75
-        m.origin.position.y = params_map["MAP_CENTER"][1]-8.75
+        m.origin.position.x = params_map["MAP_CENTER"][0]-params_map["MAP_SIZE"][0]/2
+        m.origin.position.y = params_map["MAP_CENTER"][1]-params_map["MAP_SIZE"][0]/2
         self.map_meta_data = m
 
         self.map_msg.info=self.map_meta_data
@@ -264,7 +256,7 @@ class Mapper(Node):
 def save_map(node,file_path):
     print("save map start!!!")
     # 로직 12 : 맵 저장
-    pkg_path =r"C:\Users\SSAFY\Desktop\catkin_ws\src\happie\data"
+    pkg_path = PKG_PATH
     back_folder='..'
     folder_name='data'
     file_name=file_path

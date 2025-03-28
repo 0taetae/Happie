@@ -8,15 +8,7 @@ from squaternion import Quaternion
 from nav_msgs.msg import Odometry, OccupancyGrid, MapMetaData
 from math import pi
 
-params_map = {
-    "MAP_RESOLUTION": 0.04,
-    "OCCUPANCY_UP": 0.02,
-    "OCCUPANCY_DOWN": 0.01,
-    "MAP_CENTER": (-50, -50),
-    "MAP_SIZE": (30, 30),
-    "MAP_FILENAME": 'test.png',
-    "MAPVIS_RESIZE_SCALE": 1.0
-}
+from config import params_map, PKG_PATH
 
 class loadMap(Node):
 
@@ -57,11 +49,10 @@ class loadMap(Node):
         self.map_msg.info = self.map_meta_data
 
         # 로직 2. 맵 데이터 읽고, 2차원 행렬로 변환
-        pkg_path = r"C:\Users\SSAFY\Desktop\catkin_ws\src\happie\data"  # 패키지 경로
         back_folder = '..'  # 상위 폴더를 지정하려는 경우
         folder_name = 'data'  # 맵을 저장할 폴더 이름
         file_name = 'map.txt'
-        full_path = os.path.join(pkg_path, back_folder, folder_name, file_name)
+        full_path = os.path.join(PKG_PATH, back_folder, folder_name, file_name)
 
         with open(full_path, 'r') as f:
             line = f.readlines()

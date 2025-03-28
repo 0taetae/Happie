@@ -16,16 +16,23 @@ import cv2
 import time
 import happie.utils as utils
 
+from config import params_map, PKG_PATH
 
-params_map = {
-    "MAP_RESOLUTION": 0.04,
-    "OCCUPANCY_UP": 0.02,
-    "OCCUPANCY_DOWN": 0.01,
-    "MAP_CENTER": (-50, -50),
-    "MAP_SIZE": (30, 30),
-    "MAP_FILENAME": 'test.png',
-    "MAPVIS_RESIZE_SCALE": 1.0
-}
+# localization node의 전체 로직 순서
+# 1 : 노드에 필요한 publisher, subscriber, transform broadcaster 생성
+# 2 : localization 클래스 생성
+# 3 : parameter 입력 받고 클래스 정의
+# 4 : 저장된 맵 load
+# 5 : 초기 위치 수신
+# 6 : odometry 수신 및 업데이트
+# 7 : lidar scan 결과 수신
+# 8 : localization 클래스 실행
+# 9 : particles 초기화
+# 10 : prediction
+# 11 : weighting
+# 12 : resampling
+# 13 : particle 시각화하기
+# 14 : 위치 추정 결과를 publish
 
 
 params_mcl = {
@@ -38,16 +45,19 @@ params_mcl = {
 }
 
 
-
+# 로봇의 상대 좌표에 대한 pose를 내놓는 역할
 def compute_relative_pose(pose_i, pose_j):
+
+    ## 로직 1 : 두 pose를 기준으로 하는 좌표변환 행렬 정의
     T_i = utils.xyh2mat2D(pose_i)
     T_j = utils.xyh2mat2D(pose_j)
+    ## 로직 2 : Rot 행렬, trans 백터 추출
     R_i = np.transpose(T_i[:2, :2])
     t_i = -R_i.dot(T_i[:2, 2])
-
+    ## 로직 3 : pose i 기준 pose j에 대한 Rot 행렬, trans 백터 계산
     R_ij = np.matmul(R_i, T_j[:2, :2])
     t_ij = R_i.dot(T_j[:2, 2]) + t_i
-
+    ## 로직 4 : 위의 Rot 행렬, trans 백터로 pose_ij를 계산
     pose_ij = np.array([0.0, 0.0, 0.0])
     pose_ij[:2] = t_ij[:]
     pose_ij[2] = np.arctan2(R_ij[1,0], R_ij[0,0])*180.0/np.pi
@@ -57,6 +67,8 @@ def compute_relative_pose(pose_i, pose_j):
 
 class Localization:
     def __init__(self, params_map, params_mcl):
+
+        # 로직 3. parameter 입력 받고 클래스 정의
         self.map_resolution = params_map["MAP_RESOLUTION"]
         self.map_size = np.array(params_map["MAP_SIZE"]) / self.map_resolution
         self.map_center = params_map["MAP_CENTER"]
@@ -88,8 +100,8 @@ class Localization:
         self.stable_score=0.0
 
     def load_map(self):
-
-        pkg_path =r"C:\Users\SSAFY\Desktop\catkin_ws\src\happie\data"
+        # 로직 4. 저장된 맵을 불러옵니다.
+        pkg_path = PKG_PATH
         back_folder='..'
         folder_name='data'
         file_name='map.txt'
@@ -116,6 +128,7 @@ class Localization:
         self.map = self.map*1.0/256
 
     def show_particle(self, particles, laser=None, gt_pose=None):
+        # # 로직 13. 시각화하기
         rows, cols = self.map.shape
         tmp_map = self.map*256
         tmp_map = tmp_map.astype(np.uint8)
@@ -195,6 +208,9 @@ class Localization:
         cv2.waitKey(1)
 
     def initialize_particles(self, pose=None, factor=None):
+
+        ## 로직 9. particles 초기화
+        # 파티클을 x, y, theta, score로 이루어진 array로 랜덤하게 생성시켜 초기화 시키는 단계
         rows, cols = self.map.shape
         self.max_prob_particle = np.zeros((4, 1))
         self.particles = np.zeros((4, self.num_particle))
@@ -230,6 +246,7 @@ class Localization:
         (rand_x, rand_y, rand_h) = self.particles[:3, i]
 
     def _prediction(self, diff_pose):
+        ## 로직 10. 파티클 필터의 예측
         delta_dist = np.sqrt(np.square(diff_pose[:2]).sum())
 
         delta_angle1 = np.arctan2(diff_pose[1], diff_pose[0])
@@ -268,6 +285,10 @@ class Localization:
         self.particles[3, :] = self.particles[3, :] / score_sum
 
     def _points_in_map(self, x_list, y_list):
+        # x,y좌표를 grid map에 표시하기 위해 행렬 인덱스로 바꿔주는 역할
+        # 라이다에서 측정된 거리들은 벽과의 거리인데, 이 라이다 포인트의 좌표들을
+        # 로봇의 pose와 합쳐서 맵에 매칭시키고, 실제 벽의 좌표와 맞는 포인트 개수가 많을수록 가중치를 높게 
+
         points_global_x = (x_list - self.map_center[0] + (
                     self.map_size[0] * self.map_resolution) / 2) / self.map_resolution
         points_global_y = (y_list - self.map_center[1] + (
@@ -276,6 +297,7 @@ class Localization:
         return points_global_x, points_global_y
 
     def _weighting(self, points):
+        # 파티클에 대해서 가중치를 줌
         max_score = 0.0
         score_sum = 0.0
 
@@ -292,25 +314,29 @@ class Localization:
             particle_pose = self.particles[:3, i]
             particle_pose_x, particle_pose_y = self._points_in_map(particle_pose[0], particle_pose[1])
 
+            # 파티클이 맵 안에 있는 경우
             is_pose_valid = (particle_pose_x>0) * (particle_pose_y>0) * (particle_pose_x<cols) * (particle_pose_y<rows)
             if not is_pose_valid:
                 self.particles[3, i] = 0
                 continue
-
+            # 파티클이 occupied region (벽) 에 걸친 경우
             occupancy = self.map[particle_pose_y.astype(np.int), particle_pose_x.astype(np.int)]
             if occupancy < 0.75:
                 self.particles[3, i] = 0
                 continue
-
+            # 좌표변환 후 글로벌좌표계 맵 기준으로 픽셀좌표 구하기 
             transformed_points = np.matmul(T_h_bar, point_mat)
             points_global_x, points_global_y = self._points_in_map(transformed_points[0, :], transformed_points[1, :])
-
+            
+            ## 로직 11. weighting
+            # 맵안에 존재하는 유효한 파티클들의 픽셀좌표만 남기고 그 픽셀 좌표 상에서의 map의 값만 고르기
             valid_idx = (points_global_x>0) * (points_global_y>0) * (points_global_x<cols) * (points_global_y<rows)
             valid_x = points_global_x[valid_idx]
             valid_y = points_global_y[valid_idx]
             vals = self.map[valid_y.astype(np.int), valid_x.astype(np.int)]
             walls = vals < 0.25
             empty = (vals > 0.25)
+
             weight = np.sum(walls)
             penalty = np.sum(empty)*0.0
             weight = weight - penalty
@@ -322,6 +348,7 @@ class Localization:
             if max_score < self.particles[3, i]:
                 self.max_prob_particle = self.particles[:,i]
                 max_score = self.particles[3, i]
+        # 가장 높게 나타나는 score를 stable score로 save 
         self.stable_score= np.max(weights)
         print('max matching points', np.max(weights))
 
@@ -330,6 +357,11 @@ class Localization:
 
 
     def _resampling(self):
+
+        # 모든 가중치의 cumulative sum list를 구하고 uniform distribution으로 상수를 
+        # 파티클 갯수만큼 샘플링하면서, cumulative sum 값에 해당되는 인덱스인 파티클만 
+        # 골라내는 작업
+
         n_particles = self.num_particle
         score_basline = 0.0
         particle_scores = np.zeros([n_particles])
@@ -352,7 +384,7 @@ class Localization:
         self.particles = selected_particles.copy()
 
     def update(self, pose, laser):
-
+        ## 로직 9. particle 초기화하기
         if self.is_init != True:
             self.odom_before = pose
             self.initialize_particles(pose, 10.0)
@@ -393,6 +425,7 @@ class Localization:
 class Localizer(Node):
 
     def __init__(self):
+        ## 로직 3. 노드에 필요한 publisher, subscriber, transform broadcaster 생성
         super().__init__('Localizer')
         self.subscription = self.create_subscription(LaserScan,
         '/scan',self.scan_callback,1)
@@ -433,7 +466,7 @@ class Localizer(Node):
         self.laser_transform.transform.translation.y = 0.0
         self.laser_transform.transform.translation.z = 0.6
         self.laser_transform.transform.rotation.w = 1.0
-
+        ## 로직 2. localization 클래스 생성
         self.localization = Localization(params_map, params_mcl)
 
 
@@ -450,6 +483,7 @@ class Localizer(Node):
 
 
     def init_pose_callback(self,msg):
+        ## 로직 5. 초기 위치 수신
         if msg.header.frame_id=='map' :
        
             q=Quaternion(msg.pose.pose.orientation.w,
@@ -462,22 +496,28 @@ class Localizer(Node):
             self.is_init_pose=True
 
     def turtlebot_status_callback(self, msg):
+        ## 로직 6. odometry 수신 및 업데이트
 
+        #turtlebot_status로 odometry를 받는 과정
         if self.is_init_pose ==True and self.is_imu==True:
             if self.is_status == False :
-                
+                # 첫번째 스텝에서 is_status는 False로 시작하며 들어가고 prev_time만 save 하는 과정
                 self.prev_time=rclpy.clock.Clock().now()
-
+                # prev_time가 기록되면 이 다음에 status msg에서 odometry를 받기 시작한다.
                 self.is_status=True
             else :
+
+                # 두번째 스텝부터 odom 정보 파싱
+                # 이전 스텝과 현재 스텝간의 시간 차이 계산
+
                 self.current_time=rclpy.clock.Clock().now()
                 self.period=(self.current_time-self.prev_time).nanoseconds/(1e+9)
 
+                # turtlebot_status의 정보들로 선속도를 얻고
+                # imu callback에서 처리한 odom_theta로 로봇의 헤딩을 얻어서
+                # odom_theta, odom_x, odom_y 업데이트
 
                 linear_x=msg.twist.linear.x
-    
-    
-
                 self.odom_x+=linear_x*cos(self.odom_theta) * self.period
                 self.odom_y+=linear_x*sin(self.odom_theta) * self.period
                 self.prev_time=self.current_time
@@ -485,8 +525,6 @@ class Localizer(Node):
 
 
     def scan_callback(self,msg):
-
-
 
         if self.is_status==True :
 
@@ -500,19 +538,21 @@ class Localizer(Node):
 
             pose = np.array([[pose_x],[pose_y],[heading]])
 
-
+            ## 로직 7. lidar scan 결과 수신
+            # 라이다 포인트에 대한 LaserScan 메시지 안에 range(거리)를 받습니다.
             Distance=np.array(msg.ranges)
             x = Distance * np.cos(np.linspace(0, 2 * np.pi, 360))
             y = Distance * np.sin(np.linspace(0, 2 * np.pi, 360))
             laser = np.vstack((x.reshape((1, -1)), y.reshape((1, -1))))
 
-            # odometry 정보와 라이다 정보로 파티클 업데이트 
+            ## 로직 8 odometry 정보와 라이다 정보로 파티클 업데이트 
             amcl_pose=self.localization.update(pose, laser)
             if amcl_pose is None :
                 amcl_pose=self.prev_amcl_pose
 
 
             # 라이다를 global 좌표로 변환해서 sending
+            ## 로직 14. 위치 추정 결과를 publish
             self.laser_transform.header.stamp =rclpy.clock.Clock().now().to_msg()
             self.broadcaster.sendTransform(self.laser_transform)
         
