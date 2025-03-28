@@ -1,0 +1,10 @@
+# 빌드 관련 폴더 제외
+.idea
+build/
+install/
+log/
+
+# src 내부의 빌드 관련 폴더도 제외
+src/build/
+src/install/
+src/log/
