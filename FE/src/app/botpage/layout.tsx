@@ -1,27 +1,44 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import HelpModal from "./components/HelpModal";
+import BotRecorder from "./components/BotRecorder";
+import BotChatBox from "./components/BotChatBox";
 import { useAudioRecorder } from "./hooks/useAudioRecorder";
+import { mqttClient } from "@/lib/mqttClient";
 
 export default function BotLayout({ children }: { children: React.ReactNode }) {
   const [isListening, setIsListening] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [fadeOut, setFadeOut] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [userText, setUserText] = useState("");       // 🙋 사용자 질문 텍스트
+  const [responseText, setResponseText] = useState(""); // 🤖 응답 텍스트
 
-  // 녹음 완료 시 처리
   const handleAudioComplete = (blob: Blob) => {
     console.log("녹음 완료! Blob:", blob);
     setIsListening(false);
-    // MQTT 전송 처리 위치
+    setLoading(true);
+
+    // 사용자의 질문 내용은 아직 없지만 표시용 텍스트 추가 가능
+    setUserText("음성 메시지를 보냈어요 🎤");
+
+    // MQTT로 오디오 전송
+    blob.arrayBuffer().then((buffer) => {
+      const base64Data = Buffer.from(buffer).toString("base64");
+      mqttClient.publish("user/chatbot/request", base64Data);
+      console.log("📤 MQTT 발신: user/chatbot/request");
+    });
   };
 
   const { startRecording } = useAudioRecorder(handleAudioComplete);
 
   const handleAskClick = () => {
-    setIsListening(true); //버튼눌러서 녹음되는거 이미지로 보이기
-    startRecording(); //5초녹음됨
+    setIsListening(true);
+    setUserText("");       // 이전 내용 초기화
+    setResponseText("");
+    startRecording();
   };
 
   const handleClose = () => {
@@ -30,6 +47,24 @@ export default function BotLayout({ children }: { children: React.ReactNode }) {
       setIsHelpOpen(false);
       setFadeOut(false);
     }, 300);
+  };
+
+  useEffect(() => {
+    mqttClient.on("message", (topic, message) => {
+      if (topic === "chatbot/response") {
+        const text = message.toString();
+        console.log("📩 서버 응답 수신:", text);
+        setResponseText(text);
+        setLoading(false);
+        speakText(text);
+      }
+    });
+  }, []);
+
+  const speakText = (text: string) => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "ko-KR";
+    window.speechSynthesis.speak(utterance);
   };
 
   return (
@@ -45,26 +80,15 @@ export default function BotLayout({ children }: { children: React.ReactNode }) {
         />
       </div>
 
-      {/* 🎤 음성 녹음 버튼 또는 wave */}
-      {!isListening ? (
-        <div
-          onClick={handleAskClick}
-          role="button"
-          className="mt-8 bg-blue-500 rounded-full shadow-lg px-8 py-4 cursor-pointer hover:bg-blue-600 transition flex items-center justify-center"
-        >
-          <span className="text-white text-lg font-semibold">하피에게 물어봐요!</span>
-        </div>
-      ) : (
-        <div className="mt-8 w-[220px] h-[80px] bg-black rounded-[40px] shadow-lg flex items-center justify-center">
-          <Image
-            src="/images/voice-wave.gif"
-            alt="Listening..."
-            width={100}
-            height={80}
-            className="object-contain"
-          />
-        </div>
-      )}
+      {/* 🎤 음성 입력 버튼 or wave or 로딩 */}
+      <BotRecorder
+        isListening={isListening}
+        loading={loading}
+        onClick={handleAskClick}
+      />
+
+      {/* 💬 채팅 상자 */}
+      <BotChatBox user={userText} bot={responseText} />
 
       {/* 📄 children 영역 */}
       <div className="mt-8 w-full max-w-4xl">{children}</div>
@@ -78,7 +102,6 @@ export default function BotLayout({ children }: { children: React.ReactNode }) {
         ?
       </button>
 
-      {/* 🧾 모달 */}
       {isHelpOpen && (
         <HelpModal isOpen={isHelpOpen} fadeOut={fadeOut} onClose={handleClose} />
       )}

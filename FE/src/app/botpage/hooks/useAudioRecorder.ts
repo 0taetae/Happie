@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { mqttClient } from "../../../lib/mqttClient";
+import { mqttClient } from "@/lib/mqttClient";
 //녹음만 담당하는 훅
 export function useAudioRecorder(onRecordingComplete: (blob: Blob) => void) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -23,7 +23,7 @@ export function useAudioRecorder(onRecordingComplete: (blob: Blob) => void) {
         // MQTT 전송
         audioBlob.arrayBuffer().then((buffer) => {
           const base64Data = Buffer.from(buffer).toString("base64");
-          mqttClient.publish("my/topic", base64Data);
+          mqttClient.publish("user/chatbot/request", base64Data);
           console.log("📤 음성 데이터 MQTT 전송 완료!");
         });
       
