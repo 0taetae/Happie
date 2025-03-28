@@ -15,7 +15,7 @@ def transcribe_stt(audio_file_path):
 
     # 음성 파일을 텍스트로 변환
     print(f"음성 파일 '{audio_file_path}'을(를) 처리 중...")
-    result = model.transcribe(audio_file_path)
+    result = model.transcribe(audio_file_path, language="ko")
     
     # 변환된 텍스트 출력
     print("변환된 텍스트:")
@@ -29,5 +29,5 @@ if __name__ == "__main__":
     audio_file = "C:\\Users\\SSAFY\\Desktop\\LLM\\샘플_2.wav"
 
     # 음성 파일을 텍스트로 변환하고 그 결과를 변수로 받기
-    # 나중에 이 텍스트를 프롬프트로 사용할 수 있음
+    # 나중에 이 텍스트를 프롬프트로 사용
     transcribed_text = transcribe_stt(audio_file)
