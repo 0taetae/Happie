@@ -1,11 +1,23 @@
+# # custom map parameters
+# params_map = {
+#     "MAP_RESOLUTION": 0.04,
+#     "OCCUPANCY_UP": 0.02,
+#     "OCCUPANCY_DOWN": 0.01,
+#     "MAP_CENTER": (-50, -50),
+#     "MAP_SIZE": (30, 30),
+#     "MAP_FILENAME": 'test.png',
+#     "MAPVIS_RESIZE_SCALE": 1.0
+# }
+
+# smart home 1 map parameters
 params_map = {
-    "MAP_RESOLUTION": 0.04,
+    "MAP_RESOLUTION": 0.05,
     "OCCUPANCY_UP": 0.02,
     "OCCUPANCY_DOWN": 0.01,
-    "MAP_CENTER": (-50, -50),
-    "MAP_SIZE": (30, 30),
+    "MAP_CENTER": (0, 0),
+    "MAP_SIZE": (17.5, 17.5),
     "MAP_FILENAME": 'test.png',
-    "MAPVIS_RESIZE_SCALE": 1.0
+    "MAPVIS_RESIZE_SCALE": 2.0
 }
 
 # 맵 데이터 저장 경로 
