@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-// import Image from "next/image";
+import Image from "next/image";
 
 export default function Warning() {
   const [show, setShow] = useState(false);
@@ -40,10 +40,15 @@ export default function Warning() {
             {/* 이미지 영역 */}
             <div className="grid grid-cols-2 gap-4 mt-2">
               <div className="border-4 border-yellow-400 rounded p-1 flex items-center justify-center">
-                <img src="/images/fall.png" width={220} height={220} alt="넘어진 노인" />
+                <Image
+                  src="/images/fall.png"
+                  alt="넘어진 노인"
+                  width={220}
+                  height={220}
+                />
               </div>
               <div className="border-4 border-yellow-400 rounded p-1 flex items-center justify-center">
-                <img
+                <Image
                   src="/images/map.png"
                   alt="사고 위치"
                   width={220}
