@@ -1,22 +1,28 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect } from "react";
-import HelpModal from "./components/HelpModal"; // 필요 시 분리된 모달 컴포넌트
+import { useState } from "react";
+import HelpModal from "./components/HelpModal";
+import { useAudioRecorder } from "./hooks/useAudioRecorder";
 
 export default function BotLayout({ children }: { children: React.ReactNode }) {
   const [isListening, setIsListening] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [fadeOut, setFadeOut] = useState(false);
 
-  // 5초 후 음성 인식 종료
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (isListening) {
-      timer = setTimeout(() => setIsListening(false), 5000);
-    }
-    return () => clearTimeout(timer);
-  }, [isListening]);
+  // 녹음 완료 시 처리
+  const handleAudioComplete = (blob: Blob) => {
+    console.log("녹음 완료! Blob:", blob);
+    setIsListening(false);
+    // MQTT 전송 처리 위치
+  };
+
+  const { startRecording } = useAudioRecorder(handleAudioComplete);
+
+  const handleAskClick = () => {
+    setIsListening(true); //버튼눌러서 녹음되는거 이미지로 보이기
+    startRecording(); //5초녹음됨
+  };
 
   const handleClose = () => {
     setFadeOut(true);
@@ -39,10 +45,10 @@ export default function BotLayout({ children }: { children: React.ReactNode }) {
         />
       </div>
 
-      {/* 🎤 말풍선 or 음성 파형 */}
+      {/* 🎤 음성 녹음 버튼 또는 wave */}
       {!isListening ? (
         <div
-          onClick={() => setIsListening(true)}
+          onClick={handleAskClick}
           role="button"
           className="mt-8 bg-blue-500 rounded-full shadow-lg px-8 py-4 cursor-pointer hover:bg-blue-600 transition flex items-center justify-center"
         >
