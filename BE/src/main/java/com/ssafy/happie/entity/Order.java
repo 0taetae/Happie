@@ -1,9 +1,13 @@
 package com.ssafy.happie.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity(name = "orders")
+@Getter
+@Setter
 @NoArgsConstructor
 public class Order {
     @Id
@@ -21,4 +25,10 @@ public class Order {
 
     @Column
     private String state = "대기";
+
+    public Order(String robot, String place, String todo) {
+        this.robot = robot;
+        this.place = place;
+        this.todo = todo;
+    }
 }
