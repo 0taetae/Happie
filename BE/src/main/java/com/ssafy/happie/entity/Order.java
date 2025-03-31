@@ -1,12 +1,14 @@
 package com.ssafy.happie.entity;
 
 import jakarta.persistence.*;
+import lombok.NoArgsConstructor;
 
 @Entity(name = "orders")
+@NoArgsConstructor
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @Column
     private String robot;
@@ -18,5 +20,5 @@ public class Order {
     private String todo;
 
     @Column
-    private String state;
+    private String state = "대기";
 }
