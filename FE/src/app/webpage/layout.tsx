@@ -66,19 +66,23 @@ export default function WebPageLayout({ children }: { children: React.ReactNode 
         <div className="text-white">한살차이</div>
       </header>
 
+      {/* ⚙️ 콘텐츠 */}
       <div className="flex flex-grow">
         <Sidebar />
-        <main className="flex flex-col flex-grow p-4">
-          <div>{children}</div>
-          <div className="mt-4 flex flex-col items-center space-y-4">
-            <Map />
-            <div className="self-end">
-              <div className="flex flex-row gap-3">
-                <OrderButton />
-              </div>
-            </div>
+
+        {/* 콘텐츠 전체 영역 */}
+        <div className="flex flex-col flex-grow bg-white relative">
+          {/* 📍 지도 */}
+          <Map />
+
+          {/* 📄 기타 콘텐츠 */}
+          <div className="mt-6">{children}</div>
+
+          {/* 🟦 우측 하단 고정된 주문 버튼 */}
+          <div className="absolute bottom-6 right-6 z-10">
+            <OrderButton />
           </div>
-        </main>
+        </div>
       </div>
 
       {/* 낙상 경고 모달 */}

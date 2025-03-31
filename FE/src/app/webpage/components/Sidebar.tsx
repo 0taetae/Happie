@@ -14,9 +14,9 @@ export default function Sidebar() {
   const currentTab = pathname.split("/").pop() || "home";
 
   return (
-    <div className="w-96 bg-white h-[90vh] p-4 rounded-xl shadow-lg flex flex-col">
+    <div className="w-96 bg-white h-[93vh] p-4 flex flex-col">
       {/* 네비게이션 바 */}
-      <div className="relative flex w-full mb-4 bg-gray-100 rounded-md overflow-hidden">
+      <div className="relative flex w-full mb-6 bg-gray-100 rounded-md overflow-hidden">
         {/* 슬라이딩 배경 */}
         <motion.div
   className={`absolute top-0 bottom-0 rounded-md z-0 ${

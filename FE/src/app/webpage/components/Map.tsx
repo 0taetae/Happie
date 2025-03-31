@@ -23,17 +23,11 @@ export default function Map() {
   ];
 
   return (
-    <div className="w-full max-w-5xl p-4 md:p-6 bg-white rounded-lg shadow-md flex-grow">
+    <div className="w-full max-w-5xl p-4 md:p-6  bg-white flex-grow">
       <h2 className="text-xl font-semibold text-blue-600 mb-4">🤖 {title}</h2>
 
-      <div className="relative h-[430px] w-full rounded-lg border border-gray-300 bg-gray-100 overflow-hidden">
-        <Image
-          src="/images/map.png"
-          alt="Map"
-          layout="fill"
-          objectFit="cover"
-          className="rounded-lg"
-        />
+      <div className="relative h-[500px] w-[500px] mx-auto rounded-lg border border-gray-300 bg-gray-100 overflow-hidden">
+        <Image src="/images/map.png" alt="Map" width={430} height={430} className="w-full h-full object-contain" />
 
         {dummyPositions.map((pos) => (
           <div
