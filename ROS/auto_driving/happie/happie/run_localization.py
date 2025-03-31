@@ -16,7 +16,7 @@ import cv2
 import time
 import happie.utils as utils
 
-from config import params_map, PKG_PATH
+from .config import params_map, PKG_PATH
 
 # localization node의 전체 로직 순서
 # 1 : 노드에 필요한 publisher, subscriber, transform broadcaster 생성
