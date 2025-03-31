@@ -37,6 +37,25 @@ services:
     networks:
       - frontend_network
 
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-container
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_USER_PASSWORD}
+      MYSQL_DATABASE: mydb
+      MYSQL_USER: mysql_happie_user
+      MYSQL_PASSWORD: ${MYSQL_USER_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - frontend_network
+
+volumes:
+  mysql-data:
+    driver: local
+
 networks:
   frontend_network:
     driver: bridge
