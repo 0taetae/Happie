@@ -21,7 +21,7 @@ services:
       - "1883:1883"  # MQTT 기본 포트
       - "8083:8083"  # WebSocket 포트
     volumes:
-      - ./mosquitto/config:/mosquitto/config  # 호스트의 mosquitto.conf를 컨테이너에 마운트
+      - /home/ubuntu/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf  # 호스트의 mosquitto.conf를 컨테이너에 마운트
     networks:
       - frontend_network
 
