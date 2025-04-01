@@ -36,10 +36,10 @@ services:
       - /etc/localtime:/etc/localtime:ro
     networks:
       - frontend_network
-#    environment:
-#      - MYSQL_URL=${MYSQL_URL}
-#      - MYSQL_USER=${MYSQL_USER}
-#      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    environment:
+      - MYSQL_URL=${MYSQL_URL}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
 
 #  mysql:
 #    image: mysql:8.0
