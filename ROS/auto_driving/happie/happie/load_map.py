@@ -8,7 +8,7 @@ from squaternion import Quaternion
 from nav_msgs.msg import Odometry, OccupancyGrid, MapMetaData
 from math import pi
 
-from config import params_map, PKG_PATH
+from .config import params_map, PKG_PATH
 
 class loadMap(Node):
 

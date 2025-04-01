@@ -15,7 +15,7 @@ import numpy as np
 import cv2
 import time
 
-from config import params_map, PKG_PATH
+from .config import params_map, PKG_PATH
 
 # mapping node의 전체 로직 순서
 # 1. publisher, subscriber, msg 생성
@@ -125,7 +125,7 @@ class Mapping:
             p2 = np.array([laser_global_x[i], laser_global_y[i]]).astype(np.int32)
 
             line_iter = createLineIterator(p1, p2, self.map)
-            print(line_iter)
+            # print(line_iter)
 
             if line_iter.shape[0] == 0:
                 continue
@@ -176,7 +176,7 @@ class Mapping:
         cv2.circle(map_bgr, center, 2, (0,0,255), -1)
 
         map_bgr = cv2.resize(map_bgr, dsize=(0, 0), fx=self.map_vis_resize_scale, fy=self.map_vis_resize_scale)
-        print("Map shape:", map_bgr.shape)
+        # print("Map shape:", map_bgr.shape)
         cv2.imshow('Sample Map', map_bgr)
         cv2.waitKey(1)
 
@@ -204,8 +204,11 @@ class Mapper(Node):
         m.height = int(params_map["MAP_SIZE"][1]/params_map["MAP_RESOLUTION"])
         quat = np.array([0, 0, 0, 1])
         m.origin = Pose()
-        m.origin.position.x = params_map["MAP_CENTER"][0]-params_map["MAP_SIZE"][0]/2
-        m.origin.position.y = params_map["MAP_CENTER"][1]-params_map["MAP_SIZE"][0]/2
+        m.origin.position.x = 375.0
+        m.origin.position.y = 375.0
+        
+        print(m.origin.position.x, '=====')
+        print(m.origin.position.y, '=====')
         self.map_meta_data = m
 
         self.map_msg.info=self.map_meta_data
@@ -253,23 +256,35 @@ class Mapper(Node):
             self.last_save_time = current_time
 
 
-def save_map(node,file_path):
+
+def save_map(node, file_path):
     print("save map start!!!")
+    
     # 로직 12 : 맵 저장
     pkg_path = PKG_PATH
-    back_folder='..'
-    folder_name='data'
-    file_name=file_path
-    full_path=os.path.join(pkg_path,back_folder,folder_name,file_name)
+    back_folder = '..'
+    folder_name = 'data'
+    file_name = file_path
+    full_path = os.path.join(pkg_path, back_folder, folder_name, file_name)
     print(full_path)
-    f=open(full_path,'w')
-    data=''
-    for pixel in node.map_msg.data :
+    
+    # node.map_msg.data가 1D 배열이므로 2D 배열로 변환 (예: 맵 크기 지정)
+    map_width = params_map['MAP_SIZE'][0]/params_map['MAP_RESOLUTION']
+    map_height = params_map['MAP_SIZE'][1]/params_map['MAP_RESOLUTION']
+    
+    # 1D 데이터를 2D 배열로 변환
+    map_data = np.array(node.map_msg.data).reshape(map_height, map_width)
 
-        data+='{0} '.format(pixel)
-    print("map 데이터 저장 완료")
-    f.write(data) 
-    f.close()
+    # 회전된 맵을 1D 배열로 다시 변환
+    map_data_flat = map_data.flatten()
+
+    # 파일에 저장
+    with open(full_path, 'w') as f:
+        data = ''
+        for pixel in map_data_flat:
+            data += '{0} '.format(pixel)
+        print("map 데이터 저장 완료")
+        f.write(data)
 
 
 def main(args=None):    
@@ -291,4 +306,3 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
-
