@@ -4,19 +4,18 @@ import { useState } from "react";
 import Swal from "sweetalert2";
 import "sweetalert2/dist/sweetalert2.min.css";
 
-export default function OrderButton() {
+export default function OrderButton({ onOrderSuccess }: { onOrderSuccess?: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedRobot, setSelectedRobot] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("");
   const [selectedTask, setSelectedTask] = useState("");
 
-  // 장소별 할 일 옵션 정의
   const taskOptionsByLocation: Record<string, string[]> = {
     "병실 1": ["링거 전달하기", "휠체어 전달하기", "방문하기"],
     "병실 2": ["링거 전달하기", "휠체어 전달하기", "방문하기"],
     "병실 3": ["링거 전달하기", "휠체어 전달하기", "방문하기"],
-    "데스크": ["호출하기"],
-    "전체": ["청소하기"],
+    "데스크": ["출동하기"],
+    "전체": ["운행하기", "청소하기"],
   };
 
   const resetSelections = () => {
@@ -25,7 +24,7 @@ export default function OrderButton() {
     setSelectedTask("");
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!selectedRobot || !selectedLocation || !selectedTask) {
       Swal.fire({
         icon: "warning",
@@ -35,17 +34,51 @@ export default function OrderButton() {
       });
       return;
     }
-
-    Swal.fire({
-      icon: "success",
-      title: "명령 전송 완료",
-      text: `${selectedRobot}에게 "${selectedTask}" 명령 요청 완료!`,
-      confirmButtonColor: "#3085d6",
-    });
-
-    setIsOpen(false);
-    resetSelections();
+  
+    const trimmedTask = selectedTask.endsWith("하기")
+      ? selectedTask.slice(0, -2) // '하기' 제거
+      : selectedTask;
+  
+    try {
+      const response = await fetch(
+        "https://j12e103.p.ssafy.io/api/equipment/create-order",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            robot: selectedRobot,
+            place: selectedLocation,
+            todo: trimmedTask, // ✅ 가공된 값 사용
+          }),
+        }
+      );
+  
+      if (!response.ok) throw new Error("서버 응답 실패");
+      await response.json();
+  
+      if (onOrderSuccess) onOrderSuccess();
+  
+      Swal.fire({
+        icon: "success",
+        title: "명령 입력 완료",
+        confirmButtonColor: "#3085d6",
+      });
+  
+      setIsOpen(false);
+      resetSelections();
+    } catch (error) {
+      console.error("명령 전송 실패:", error);
+      Swal.fire({
+        icon: "error",
+        title: "전송 실패",
+        text: "서버와의 연결에 실패했습니다. 다시 시도해주세요.",
+        confirmButtonColor: "#d33",
+      });
+    }
   };
+  
 
   return (
     <div>
@@ -73,7 +106,7 @@ export default function OrderButton() {
           >
             <h2 className="text-lg font-bold mb-4">로봇 및 명령 선택</h2>
 
-            {/* 🔹 로봇 선택 */}
+            {/* 로봇 선택 */}
             <label className="block mb-2 font-semibold">로봇 선택</label>
             <select
               className="w-full p-2 border rounded mb-4"
@@ -81,12 +114,12 @@ export default function OrderButton() {
               onChange={(e) => setSelectedRobot(e.target.value)}
             >
               <option value="">로봇을 선택하세요</option>
-              <option value="ROBOT_1">ROBOT_1</option>
-              <option value="ROBOT_2">ROBOT_2</option>
-              <option value="ROBOT_3">ROBOT_3</option>
+              <option value="robot1">로봇1</option>
+              <option value="robot2">로봇2</option>
+              <option value="robot3">로봇3</option>
             </select>
 
-            {/* 🔹 장소 선택 */}
+            {/* 장소 선택 */}
             <label className="block mb-2 font-semibold">장소 선택</label>
             <select
               className="w-full p-2 border rounded mb-4"
@@ -94,14 +127,9 @@ export default function OrderButton() {
               onChange={(e) => {
                 const selected = e.target.value;
                 setSelectedLocation(selected);
-
                 const tasks = taskOptionsByLocation[selected];
-                // 자동 선택 조건: 해당 장소의 할 일이 하나뿐이면 바로 세팅
-                if (tasks && tasks.length === 1) {
-                  setSelectedTask(tasks[0]);
-                } else {
-                  setSelectedTask(""); // 그 외엔 초기화
-                }
+                if (tasks?.length === 1) setSelectedTask(tasks[0]);
+                else setSelectedTask("");
               }}
             >
               <option value="">장소를 선택하세요</option>
@@ -112,7 +140,7 @@ export default function OrderButton() {
               ))}
             </select>
 
-            {/* 🔹 할 일 선택 */}
+            {/* 할 일 선택 */}
             <label className="block mb-2 font-semibold">할 일 선택</label>
             <select
               className="w-full p-2 border rounded mb-4"

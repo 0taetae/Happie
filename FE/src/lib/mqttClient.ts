@@ -1,6 +1,6 @@
 import mqtt from "mqtt";
 
-const brokerUrl = "wss://j12e103.p.ssafy.io/ws";
+const brokerUrl = "wss://j12e103.p.ssafy.io/ws/";
 
 const options = {
   // username: "happie_mqtt_user",
