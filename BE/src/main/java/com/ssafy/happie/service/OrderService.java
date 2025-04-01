@@ -72,7 +72,7 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public OrderResponseDto inProgressOrder(String robot) {
-        Order order = orderRepository.findTop1ByRobotAndStateOrderByIdDesc(robot, "진행중");
+        Order order = orderRepository.findTop1ByRobotAndStateOrderByIdDesc(robot, "진행 중");
 
         return OrderResponseDto.builder()
                 .Id(order.getId())
