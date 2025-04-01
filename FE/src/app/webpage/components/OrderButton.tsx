@@ -93,22 +93,22 @@ export default function OrderButton({ onOrderSuccess }: { onOrderSuccess?: () =>
 
       {isOpen && (
         <div
-          className="fixed inset-0 flex items-center justify-center bg-black/50 z-50"
+          className="cursor-default-custom fixed inset-0 flex items-center justify-center bg-black/50 z-50"
           onClick={() => {
             setIsOpen(false);
             resetSelections();
           }}
         >
           <div
-            className="bg-white p-6 rounded-lg shadow-lg w-[400px] relative transition-all duration-300 ease-out transform scale-100 opacity-100 animate-fadeInModal"
+            className="cursor-default-custom bg-white p-6 rounded-lg shadow-lg w-[400px] relative transition-all duration-300 ease-out transform scale-100 opacity-100 animate-fadeInModal"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-bold mb-4">로봇 및 명령 선택</h2>
 
             {/* 로봇 선택 */}
-            <label className="block mb-2 font-semibold">로봇 선택</label>
+            <label className="cursor-default-custom block mb-2 font-semibold">로봇 선택</label>
             <select
-              className="w-full p-2 border rounded mb-4"
+              className="cursor-default-custom w-full p-2 border rounded mb-4"
               value={selectedRobot}
               onChange={(e) => setSelectedRobot(e.target.value)}
             >
@@ -119,9 +119,9 @@ export default function OrderButton({ onOrderSuccess }: { onOrderSuccess?: () =>
             </select>
 
             {/* 장소 선택 */}
-            <label className="block mb-2 font-semibold">장소 선택</label>
+            <label className="cursor-default-custom block mb-2 font-semibold">장소 선택</label>
             <select
-              className="w-full p-2 border rounded mb-4"
+              className="cursor-default-custom w-full p-2 border rounded mb-4"
               value={selectedLocation}
               onChange={(e) => {
                 const selected = e.target.value;
@@ -140,9 +140,9 @@ export default function OrderButton({ onOrderSuccess }: { onOrderSuccess?: () =>
             </select>
 
             {/* 할 일 선택 */}
-            <label className="block mb-2 font-semibold">할 일 선택</label>
+            <label className="cursor-default-custom block mb-2 font-semibold">할 일 선택</label>
             <select
-              className="w-full p-2 border rounded mb-4"
+              className="cursor-default-custom w-full p-2 border rounded mb-4"
               value={selectedTask}
               onChange={(e) => setSelectedTask(e.target.value)}
               disabled={!selectedLocation}
