@@ -32,7 +32,7 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public List<OrderResponseDto> commamdList(String robot) {
-        List<Order> orderlist = orderRepository.findByRobot(robot);
+        List<Order> orderlist = orderRepository.findByRobotAndState(robot, "대기");
 
         return orderlist.stream()
                 .map(order -> OrderResponseDto.builder()

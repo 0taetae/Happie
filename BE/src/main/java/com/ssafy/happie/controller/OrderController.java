@@ -26,7 +26,7 @@ public class OrderController {
     }
 
     @GetMapping("/orders/{robot}")
-    @Operation(summary = "명령 조회 API", description = "로봇1, 로봇2, 로봇3")
+    @Operation(summary = "명령 조회 API", description = "로봇1, 로봇2, 로봇3의 대기중인 명령만 조회")
     public List<OrderResponseDto> commamdList(@PathVariable String robot) {
         return orderService.commamdList(robot);
     }
