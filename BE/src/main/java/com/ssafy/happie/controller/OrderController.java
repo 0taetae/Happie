@@ -26,7 +26,7 @@ public class OrderController {
     }
 
     @GetMapping("/orders/{robot}")
-    @Operation(summary = "명령 조회 API", description = "로봇1, 로봇2, 로봇3")
+    @Operation(summary = "명령 조회 API", description = "로봇1, 로봇2, 로봇3의 대기중인 명령만 조회")
     public List<OrderResponseDto> commamdList(@PathVariable String robot) {
         return orderService.commamdList(robot);
     }
@@ -37,5 +37,15 @@ public class OrderController {
         return orderService.deleteOrder(orderId);
     }
 
-//    @GetMapping
+    @GetMapping("/orders-reverse/{robot}")
+    @Operation(summary = "명령 완료 역순 조회 API", description = "로봇이 완료한 명령을 역순으로 조회")
+    public List<OrderResponseDto> completeList(@PathVariable String robot) {
+        return orderService.completeList(robot);
+    }
+
+    @GetMapping("/order-inprogress/{robot}")
+    @Operation(summary = "진행 중인 명령 조회 API", description = "로봇이 현재 진행 중인 명령 조회")
+    public OrderResponseDto inProgressOrder(@PathVariable String robot) {
+        return orderService.inProgressOrder(robot);
+    }
 }

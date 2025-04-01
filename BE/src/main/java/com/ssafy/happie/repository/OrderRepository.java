@@ -6,5 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface OrderRepository extends JpaRepository<Order, Integer> {
-    List<Order> findByRobot(String robot);
+    List<Order> findByRobotAndState(String robot, String state);
+
+    List<Order> findByRobotAndStateOrderByIdDesc(String robot, String state);
+
+    Order findTop1ByRobotAndStateOrderByIdDesc(String robot, String state);
 }

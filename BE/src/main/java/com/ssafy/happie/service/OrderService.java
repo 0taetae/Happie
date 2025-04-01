@@ -32,7 +32,7 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public List<OrderResponseDto> commamdList(String robot) {
-        List<Order> orderlist = orderRepository.findByRobot(robot);
+        List<Order> orderlist = orderRepository.findByRobotAndState(robot, "대기");
 
         return orderlist.stream()
                 .map(order -> OrderResponseDto.builder()
@@ -53,5 +53,33 @@ public class OrderService {
         orderRepository.deleteById(orderId);
 
         return "명령 삭제 완료";
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderResponseDto> completeList(String robot) {
+        List<Order> completelist = orderRepository.findByRobotAndStateOrderByIdDesc(robot, "완료");
+
+        return completelist.stream()
+                .map(order -> OrderResponseDto.builder()
+                        .Id(order.getId())
+                        .robot(order.getRobot())
+                        .place(order.getPlace())
+                        .todo(order.getTodo())
+                        .state(order.getState())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public OrderResponseDto inProgressOrder(String robot) {
+        Order order = orderRepository.findTop1ByRobotAndStateOrderByIdDesc(robot, "진행중");
+
+        return OrderResponseDto.builder()
+                .Id(order.getId())
+                .robot(order.getRobot())
+                .place(order.getPlace())
+                .todo(order.getTodo())
+                .state(order.getState())
+                .build();
     }
 }
