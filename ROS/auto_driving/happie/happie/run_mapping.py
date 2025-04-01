@@ -87,6 +87,7 @@ class Mapping:
         # 로직 3. 맵의 resolution, 중심좌표, occupancy에 대한 threshold 등의 설정들을 받습니다
         self.map_resolution = params_map["MAP_RESOLUTION"]
         self.map_size = np.array(params_map["MAP_SIZE"]) / self.map_resolution
+        self.map_size = self.map_size.astype(int)
         self.map_center = params_map["MAP_CENTER"]
         self.map = np.ones((self.map_size[0].astype(np.int), self.map_size[1].astype(np.int)))*0.5
         self.occu_up = params_map["OCCUPANCY_UP"]
@@ -96,6 +97,25 @@ class Mapping:
         self.map_vis_resize_scale = params_map["MAPVIS_RESIZE_SCALE"]
 
         self.T_r_l = np.array([[0,-1,0],[1,0,0],[0,0,1]])
+        # 🔥 기존 맵 파일이 있으면 로드
+        map_path = os.path.join(PKG_PATH, '..', 'data', 'map.txt')
+        if os.path.exists(map_path):
+            print(f"기존 맵 {map_path} 불러오기...")
+            
+            print(self.map_size[0])
+            print(self.map_size[1])
+            with open(map_path, 'r') as f:
+                existing_data = list(map(float, f.read().split()))
+                print(len(existing_data))
+
+            if len(existing_data) == self.map_size[0] * self.map_size[1]:
+                self.map = np.array(existing_data).reshape(self.map_size[0], self.map_size[1])
+            else:
+                print("⚠ 기존 맵 크기가 현재 설정과 다름 → 새 맵 생성")
+                self.map = np.ones((self.map_size[0].astype(int), self.map_size[1].astype(int))) * 0.5
+        else:
+            print("📂 기존 맵 없음 → 새 맵 생성")
+            self.map = np.ones((self.map_size[0].astype(int), self.map_size[1].astype(int))) * 0.5
 
 
     def update(self, pose, laser):
@@ -125,7 +145,11 @@ class Mapping:
             p2 = np.array([laser_global_x[i], laser_global_y[i]]).astype(np.int32)
 
             line_iter = createLineIterator(p1, p2, self.map)
+<<<<<<< HEAD
             # print(line_iter)
+=======
+            #print(line_iter)
+>>>>>>> 4fee1762f0d26b2234d93023e823aa0847a44e9c
 
             if line_iter.shape[0] == 0:
                 continue
@@ -142,6 +166,7 @@ class Mapping:
             self.map[avail_y[-1], avail_x[-1]] = np.clip(self.map[avail_y[-1], avail_x[-1]], 0, 1)
                 
         self.show_pose_and_points(pose, laser_global) 
+        cv2.waitKey(1)
 
     def __del__(self):
         # 로직 12. 종료 시 map 저장
@@ -256,7 +281,10 @@ class Mapper(Node):
             self.last_save_time = current_time
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 4fee1762f0d26b2234d93023e823aa0847a44e9c
 def save_map(node, file_path):
     print("save map start!!!")
     
@@ -269,8 +297,13 @@ def save_map(node, file_path):
     print(full_path)
     
     # node.map_msg.data가 1D 배열이므로 2D 배열로 변환 (예: 맵 크기 지정)
+<<<<<<< HEAD
     map_width = params_map['MAP_SIZE'][0]/params_map['MAP_RESOLUTION']
     map_height = params_map['MAP_SIZE'][1]/params_map['MAP_RESOLUTION']
+=======
+    map_width = int(params_map['MAP_SIZE'][0]/params_map['MAP_RESOLUTION'])
+    map_height = int(params_map['MAP_SIZE'][1]/params_map['MAP_RESOLUTION'])
+>>>>>>> 4fee1762f0d26b2234d93023e823aa0847a44e9c
     
     # 1D 데이터를 2D 배열로 변환
     map_data = np.array(node.map_msg.data).reshape(map_height, map_width)

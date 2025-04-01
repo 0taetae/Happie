@@ -7,7 +7,7 @@ from nav_msgs.msg import Odometry,Path
 import os
 from math import sqrt
 
-from config import params_map, PKG_PATH
+from .config import params_map, PKG_PATH
 
 class makePath(Node):
     def __init__(self):

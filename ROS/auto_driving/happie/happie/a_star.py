@@ -12,7 +12,7 @@ from std_msgs.msg import String
 
 from .config import params_map, PKG_PATH
 
-# 
+# a_star 알고리즘 테스트 용
 from .a_star_test import AStar
 
 # a_star 노드는  OccupancyGrid map을 받아 grid map 기반 최단경로 탐색 알고리즘을 통해 로봇이 목적지까지 가는 경로를 생성하는 노드입니다.

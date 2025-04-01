@@ -8,7 +8,7 @@ from math import pi,cos,sin,sqrt
 import tf2_ros
 import os
 
-from config import params_map, PKG_PATH
+from .config import params_map, PKG_PATH
 
 class pathPub(Node):
 
