@@ -42,4 +42,10 @@ public class OrderController {
     public List<OrderResponseDto> completeList(@PathVariable String robot) {
         return orderService.completeList(robot);
     }
+
+    @GetMapping("/order-inprogress/{robot}")
+    @Operation(summary = "진행 중인 명령 조회 API", description = "로봇이 현재 진행 중인 명령 조회")
+    public OrderResponseDto inProgressOrder(@PathVariable String robot) {
+        return orderService.inProgressOrder(robot);
+    }
 }

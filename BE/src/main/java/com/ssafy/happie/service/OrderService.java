@@ -69,4 +69,17 @@ public class OrderService {
                         .build())
                 .collect(Collectors.toList());
     }
+
+    @Transactional(readOnly = true)
+    public OrderResponseDto inProgressOrder(String robot) {
+        Order order = orderRepository.findTop1ByRobotAndStateOrderByIdDesc(robot, "진행중");
+
+        return OrderResponseDto.builder()
+                .Id(order.getId())
+                .robot(order.getRobot())
+                .place(order.getPlace())
+                .todo(order.getTodo())
+                .state(order.getState())
+                .build();
+    }
 }
