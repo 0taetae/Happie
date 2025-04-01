@@ -144,35 +144,7 @@ class a_star(Node):
 
                 # step 8
                 print('Step 8: Pathfinding process completed!')
-    def dijkstra(self, start):
-        Q = deque()
-        Q.append(start)
-        self.cost[start[0]][start[1]] = 0
-        found = False
 
-        while Q:
-            current = Q.popleft()
-            if current == self.goal:
-                found = True
-                break
-
-            for i in range(8):
-                next = (current[0] + self.dx[i], current[1] + self.dy[i])
-
-                if 0 <= next[0] < self.GRIDSIZE and 0 <= next[1] < self.GRIDSIZE:
-                    if self.grid[next[0]][next[1]] < 40:  # 장애물이 아닌 영역
-                        new_cost = self.cost[current[0]][current[1]] + self.dCost[i]
-
-                        if new_cost < self.cost[next[0]][next[1]]:
-                            Q.append(next)
-                            self.path[next[0]][next[1]] = current
-                            self.cost[next[0]][next[1]] = new_cost
-
-        if found:
-            node = self.goal
-            while node != start:
-                self.final_path.append(node)
-                node = self.path[node[0]][node[1]]
 
 def main(args=None):
     rclpy.init(args=args)
