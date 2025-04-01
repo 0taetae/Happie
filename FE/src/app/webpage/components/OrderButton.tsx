@@ -28,8 +28,7 @@ export default function OrderButton({ onOrderSuccess }: { onOrderSuccess?: () =>
     if (!selectedRobot || !selectedLocation || !selectedTask) {
       Swal.fire({
         icon: "warning",
-        title: "항목 선택 필요",
-        text: "모든 항목을 선택해주세요!",
+        title: "모든 항목을 선택해주세요!😢",
         confirmButtonColor: "#3085d6",
       });
       return;
@@ -62,7 +61,7 @@ export default function OrderButton({ onOrderSuccess }: { onOrderSuccess?: () =>
   
       Swal.fire({
         icon: "success",
-        title: "명령 입력 완료",
+        title: "명령을 시켰어요.☺️",
         confirmButtonColor: "#3085d6",
       });
   
