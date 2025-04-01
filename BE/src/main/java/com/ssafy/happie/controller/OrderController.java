@@ -37,5 +37,9 @@ public class OrderController {
         return orderService.deleteOrder(orderId);
     }
 
-//    @GetMapping
+    @GetMapping("/orders-reverse/{robot}")
+    @Operation(summary = "명령 완료 역순 조회 API", description = "로봇이 완료한 명령을 역순으로 조회")
+    public List<OrderResponseDto> completeList(@PathVariable String robot) {
+        return orderService.completeList(robot);
+    }
 }
