@@ -145,11 +145,7 @@ class Mapping:
             p2 = np.array([laser_global_x[i], laser_global_y[i]]).astype(np.int32)
 
             line_iter = createLineIterator(p1, p2, self.map)
-<<<<<<< HEAD
             # print(line_iter)
-=======
-            #print(line_iter)
->>>>>>> 4fee1762f0d26b2234d93023e823aa0847a44e9c
 
             if line_iter.shape[0] == 0:
                 continue
@@ -158,11 +154,11 @@ class Mapping:
             avail_y = line_iter[:, 1].astype(np.int32)
 
             ## Empty
-            self.map[avail_y[:-1], avail_x[:-1]] -= self.occu_down
+            self.map[avail_y[:-1], avail_x[:-1]] += self.occu_down
             self.map[avail_y[:-1], avail_x[:-1]] = np.clip(self.map[avail_y[:-1], avail_x[:-1]], 0, 1)
 
             ## Occupied
-            self.map[avail_y[-1], avail_x[-1]] += self.occu_up
+            self.map[avail_y[-1], avail_x[-1]] -= self.occu_up
             self.map[avail_y[-1], avail_x[-1]] = np.clip(self.map[avail_y[-1], avail_x[-1]], 0, 1)
                 
         self.show_pose_and_points(pose, laser_global) 
@@ -229,8 +225,10 @@ class Mapper(Node):
         m.height = int(params_map["MAP_SIZE"][1]/params_map["MAP_RESOLUTION"])
         quat = np.array([0, 0, 0, 1])
         m.origin = Pose()
-        m.origin.position.x = 375.0
-        m.origin.position.y = 375.0
+
+        m.origin.position.x = ((params_map["MAP_CENTER"][0]-params_map["MAP_SIZE"][0])/2)
+        m.origin.position.y = ((params_map["MAP_CENTER"][1]-params_map["MAP_SIZE"][0])/2)
+
         
         print(m.origin.position.x, '=====')
         print(m.origin.position.y, '=====')
@@ -272,7 +270,8 @@ class Mapper(Node):
         # 로직 11 : 업데이트 중인 map publish
 
         self.map_msg.header.stamp =rclpy.clock.Clock().now().to_msg()
-        self.map_msg.data = (self.mapping.map.flatten() * 100).astype(np.int32).tolist()
+        # self.map_msg.data = (self.mapping.map.flatten() * 100).astype(np.int32).tolist()
+        self.map_msg.data = np.clip((self.mapping.map.flatten() * 100), -128, 127).astype(np.int32).tolist()
         self.map_pub.publish(self.map_msg)
 
         current_time = time.time()
@@ -281,43 +280,34 @@ class Mapper(Node):
             self.last_save_time = current_time
 
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 4fee1762f0d26b2234d93023e823aa0847a44e9c
 def save_map(node, file_path):
     print("save map start!!!")
     
     # 로직 12 : 맵 저장
     pkg_path = PKG_PATH
-    back_folder = '..'
-    folder_name = 'data'
-    file_name = file_path
-    full_path = os.path.join(pkg_path, back_folder, folder_name, file_name)
+    back_folder='..'
+    folder_name='data'
+    file_name=file_path
+    full_path=os.path.join(pkg_path,back_folder,folder_name,file_name)
     print(full_path)
     
-    # node.map_msg.data가 1D 배열이므로 2D 배열로 변환 (예: 맵 크기 지정)
-<<<<<<< HEAD
-    map_width = params_map['MAP_SIZE'][0]/params_map['MAP_RESOLUTION']
-    map_height = params_map['MAP_SIZE'][1]/params_map['MAP_RESOLUTION']
-=======
-    map_width = int(params_map['MAP_SIZE'][0]/params_map['MAP_RESOLUTION'])
-    map_height = int(params_map['MAP_SIZE'][1]/params_map['MAP_RESOLUTION'])
->>>>>>> 4fee1762f0d26b2234d93023e823aa0847a44e9c
+    f=open(full_path,'w')
+    data=''
+    for pixel in node.map_msg.data :
+        data+='{0} '.format(pixel)
+    print("map 데이터 저장 완료")
+    f.write(data) 
+    f.close()
+
+    # # node.map_msg.data가 1D 배열이므로 2D 배열로 변환 (예: 맵 크기 지정)
+    # map_width = int(params_map['MAP_SIZE'][0]/params_map['MAP_RESOLUTION'])
+    # map_height = int(params_map['MAP_SIZE'][1]/params_map['MAP_RESOLUTION'])
     
-    # 1D 데이터를 2D 배열로 변환
-    map_data = np.array(node.map_msg.data).reshape(map_height, map_width)
+    # # 1D 데이터를 2D 배열로 변환
+    # map_data = np.array(node.map_msg.data).reshape(int(map_height), int(map_width))
 
-    # 회전된 맵을 1D 배열로 다시 변환
-    map_data_flat = map_data.flatten()
-
-    # 파일에 저장
-    with open(full_path, 'w') as f:
-        data = ''
-        for pixel in map_data_flat:
-            data += '{0} '.format(pixel)
-        print("map 데이터 저장 완료")
-        f.write(data)
+    # # 회전된 맵을 1D 배열로 다시 변환
+    # map_data_flat = map_data.flatten()
 
 
 def main(args=None):    
@@ -328,7 +318,7 @@ def main(args=None):
         rclpy.spin(run_mapping)
     except Exception as e:
         print(f"Error: {e}")
-        save_map(run_mapping, 'map.txt')
+        # save_map(run_mapping, 'map.txt')
     finally:
         if 'run_mapping' in locals():
         #     print('최종 map 저장')

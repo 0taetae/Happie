@@ -1,22 +1,12 @@
 # # custom map parameters
 params_map = {
-<<<<<<< HEAD
-    "MAP_RESOLUTION": 0.04,
-    "OCCUPANCY_UP": 0.02,
-    "OCCUPANCY_DOWN": 0.01,
-    "MAP_CENTER": (0, 0),
-    "MAP_SIZE": (30, 30),
-    "MAP_FILENAME": 'test.png',
-    "MAPVIS_RESIZE_SCALE": 0.5
-=======
     "MAP_RESOLUTION": 0.1,
     "OCCUPANCY_UP": 0.02,
     "OCCUPANCY_DOWN": 0.01,
     "MAP_CENTER": (-50, -50),
     "MAP_SIZE": (30, 30),
     "MAP_FILENAME": 'test.png',
-    "MAPVIS_RESIZE_SCALE": 1.0
->>>>>>> 4fee1762f0d26b2234d93023e823aa0847a44e9c
+    "MAPVIS_RESIZE_SCALE": 2.5
 }
 
 # smart home 1 map parameters
@@ -24,11 +14,7 @@ params_map = {
 #     "MAP_RESOLUTION": 0.05,
 #     "OCCUPANCY_UP": 0.02,
 #     "OCCUPANCY_DOWN": 0.01,
-<<<<<<< HEAD
-#     "MAP_CENTER": (1, 5),
-=======
 #     "MAP_CENTER": (0, 0),
->>>>>>> 4fee1762f0d26b2234d93023e823aa0847a44e9c
 #     "MAP_SIZE": (17.5, 17.5),
 #     "MAP_FILENAME": 'test.png',
 #     "MAPVIS_RESIZE_SCALE": 2.0
