@@ -54,4 +54,19 @@ public class OrderService {
 
         return "명령 삭제 완료";
     }
+
+    @Transactional(readOnly = true)
+    public List<OrderResponseDto> completeList(String robot) {
+        List<Order> completelist = orderRepository.findByRobotAndStateOrderByIdDesc(robot, "완료");
+
+        return completelist.stream()
+                .map(order -> OrderResponseDto.builder()
+                        .Id(order.getId())
+                        .robot(order.getRobot())
+                        .place(order.getPlace())
+                        .todo(order.getTodo())
+                        .state(order.getState())
+                        .build())
+                .collect(Collectors.toList());
+    }
 }
