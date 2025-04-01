@@ -1,21 +1,21 @@
 ### 데이터 벡터화 및 저장 로직 ###
 
-import time
-from mqtt_pub import mqtt_publish  # mqtt_pub.py의 함수 import
-from mqtt_sub import mqtt_subscribe  # mqtt_sub.py의 함수 import
+# import time
+# from speech.mqtt_pub_chromadb import mqtt_publish  # mqtt_pub.py의 함수 import
+# from speech.mqtt_sub_chromadb import mqtt_subscribe
 
-def main():
-    # 1. 벡터화된 데이터 발행 (Publisher)
+# def main():
+    ## chromadb 관련 데이터 벡터화 저장
     # print("MQTT Publisher 실행 중...")
-    mqtt_publish()  # MQTT Publisher 실행
-
-    # 2. MQTT Subscriber 실행 (수신 대기)
+    # mqtt_publish()  # MQTT Publisher 실행
     # print("MQTT Subscriber 실행 중...")
-    mqtt_subscribe()  # MQTT Subscriber 실행
+    # mqtt_subscribe()  # MQTT Subscriber 실행
     
-if __name__ == "__main__":
-    main()
-
+    ## 실시간 대화형 챗봇
+    
+    
+# if __name__ == "__main__":
+#     main()
 
 
 
@@ -36,3 +36,5 @@ if __name__ == "__main__":
 # print("출력값:")
 # for sentence in response:
     # print(sentence)
+    
+    

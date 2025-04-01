@@ -266,7 +266,7 @@ def save_map(node,file_path):
     # 로직 12 : 맵 저장
     pkg_path =r"C:\Users\SSAFY\Desktop\catkin_ws\src\happie\data"
     back_folder='..'
-    folder_name='map'
+    folder_name='data'
     file_name=file_path
     full_path=os.path.join(pkg_path,back_folder,folder_name,file_name)
     print(full_path)

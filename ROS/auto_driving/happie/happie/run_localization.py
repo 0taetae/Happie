@@ -91,7 +91,7 @@ class Localization:
 
         pkg_path =r"C:\Users\SSAFY\Desktop\catkin_ws\src\happie\data"
         back_folder='..'
-        folder_name='map'
+        folder_name='data'
         file_name='map.txt'
         full_path=os.path.join(pkg_path,back_folder,folder_name,file_name)
         f=open(full_path,'r')

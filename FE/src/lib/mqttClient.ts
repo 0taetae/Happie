@@ -3,6 +3,7 @@ import mqtt from "mqtt";
 const brokerUrl = "wss://j12e103.p.ssafy.io/ws/";
 
 const options = {
+
   clientId: `nextjs_mqtt_${Math.random().toString(16).substr(2, 8)}`,
   reconnectPeriod: 1000,
   clean: true,

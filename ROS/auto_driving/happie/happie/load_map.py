@@ -59,7 +59,7 @@ class loadMap(Node):
         # 로직 2. 맵 데이터 읽고, 2차원 행렬로 변환
         pkg_path = r"C:\Users\SSAFY\Desktop\catkin_ws\src\happie\data"  # 패키지 경로
         back_folder = '..'  # 상위 폴더를 지정하려는 경우
-        folder_name = 'map'  # 맵을 저장할 폴더 이름
+        folder_name = 'data'  # 맵을 저장할 폴더 이름
         file_name = 'map.txt'
         full_path = os.path.join(pkg_path, back_folder, folder_name, file_name)
 
