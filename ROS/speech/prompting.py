@@ -66,6 +66,11 @@ def generate_response(query, search_results):
     # 🔹 응답에서 텍스트만 추출하고, 불필요한 부분 제거
     response_text = response.get('choices', [{}])[0].get('text', 'No response generated.').strip()
     response_text = response_text.replace("챗봇: ", "", 1).strip()
+    
+    # 🔹 후처리: 뒤에서부터 가장 가까운 마침표까지 유지
+    last_period_index = response_text.rfind(".")
+    if last_period_index != -1:  # 마침표가 있으면 해당 부분까지만 남김
+        response_text = response_text[: last_period_index + 1]
 
     logging.debug(f"최종 응답: {response_text}")
     return response_text
