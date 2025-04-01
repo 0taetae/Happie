@@ -55,7 +55,7 @@ export default function BotHistory({ botId }: { botId: number }) {
               </li>
             ))
           ) : (
-            <li className="text-gray-500 text-sm text-center">🫡 오늘은 꿈쩍도 안했어요. 👍</li>
+            <li className="text-gray-500 text-sm text-center">🫡 오늘은 꿈쩍도 안했어요.👍</li>
           )}
         </ul>
       </div>
