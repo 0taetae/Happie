@@ -2,6 +2,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 import heapq
 import os
+# from .config import params_map, PKG_PATH
+
+
+params_map = {
+    "MAP_RESOLUTION": 0.1,
+    "OCCUPANCY_UP": 0.02,
+    "OCCUPANCY_DOWN": 0.01,
+    "MAP_CENTER": (-50.036964416503906, -50.065105438232),
+    "MAP_SIZE": (30, 30),
+    "MAP_FILENAME": 'test.png',
+    "MAPVIS_RESIZE_SCALE": 2.5
+}
 
 # A* 알고리즘 클래스
 class AStar:
@@ -15,21 +27,23 @@ class AStar:
         return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
     def neighbors(self, node):
-        # 상, 하, 좌, 우 방향으로의 이동
-        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        directions = [
+            (-1, 0), (1, 0), (0, -1), (0, 1),  # 상, 하, 좌, 우
+            (-1, -1), (-1, 1), (1, -1), (1, 1) # 대각선
+        ]
+        dCost = [1, 1, 1, 1, 1.414, 1.414, 1.414, 1.414] # 이동 비용 설정
         neighbors = []
-        for direction in directions:
+        # 경계를 벗어나지 않고 벽(40 이상)이 아니면 유효한 인접 노드
+        for i, direction in enumerate(directions):
             neighbor = (node[0] + direction[0], node[1] + direction[1])
-            # 경계를 벗어나지 않고 벽(40 이상)이 아니면 유효한 인접 노드
             if 0 <= neighbor[0] < self.rows and 0 <= neighbor[1] < self.cols and self.grid[neighbor[0]][neighbor[1]] < 40:
-                neighbors.append(neighbor)
+                neighbors.append((neighbor, dCost[i]))
         return neighbors
 
     def a_star(self, start, goal):
         open_list = []
         closed_list = set()
         
-        # (f, g, h, node), f = g + h
         heapq.heappush(open_list, (0 + self.heuristic(start, goal), 0, self.heuristic(start, goal), start))
         
         came_from = {}
@@ -39,29 +53,28 @@ class AStar:
             current_f, current_g, current_h, current_node = heapq.heappop(open_list)
             
             if current_node == goal:
-                # 목표에 도달했을 때 경로 반환
                 path = []
                 while current_node in came_from:
                     path.append(current_node)
                     current_node = came_from[current_node]
                 path.append(start)
-                return path[::-1]  # 경로 반환 (시작 -> 목표 순으로)
+                return path[::-1]  
             
             closed_list.add(current_node)
             
-            for neighbor in self.neighbors(current_node):
+            for neighbor, cost in self.neighbors(current_node):
                 if neighbor in closed_list:
                     continue
                 
-                tentative_g_score = current_g + 1  # 모든 이동 비용은 동일 (1로 설정)
+                tentative_g_score = current_g + cost  
                 
                 if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
                     g_score[neighbor] = tentative_g_score
                     f_score = tentative_g_score + self.heuristic(neighbor, goal)
                     heapq.heappush(open_list, (f_score, tentative_g_score, self.heuristic(neighbor, goal), neighbor))
                     came_from[neighbor] = current_node
-        
-        return None  # 경로가 없으면 None 반환
+
+        return None  
 
 # 파일 경로 설정
 back_folder = '..'  # 상위 폴더를 지정하려는 경우
@@ -75,9 +88,9 @@ with open(full_path, 'r') as file:
     data = file.read().split()
 
 # 데이터 크기 확인
-grid_size = 750
+grid_size = int(params_map['MAP_SIZE'][0]/params_map['MAP_RESOLUTION'])
 
-# 1차원 배열을 750x750 크기의 2차원 배열로 변환
+# 1차원 배열을 NxM 크기의 2차원 배열로 변환
 data_array = np.array(data, dtype=int).reshape(grid_size, grid_size)
 
 # A* 객체 생성
@@ -85,8 +98,13 @@ astar = AStar(data_array)
 
 # 시작점과 목표점 설정
 start = (grid_size//2, grid_size//2)  # (시작 좌표)
-goal = (270, 340)     # (목표 좌표)
-goal = (281, 323)     # (목표 좌표)
+# goal = (270, 340)     # (목표 좌표)
+# goal = (281, 323)     # (목표 좌표) 281/2.5
+# goal = (112, 130)
+goal = (112, 140)
+# goal = (151, 180)
+# goal = (180, 151)
+# goal = (150, 200)
 
 # A* 알고리즘을 통해 경로 찾기
 path = astar.a_star(start, goal)
@@ -113,3 +131,32 @@ if path:
 plt.colorbar(cax)  # 색상 막대 추가
 plt.title("A* Pathfinding with Red Path")
 plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    # def pose_to_grid_cell(self, x, y):
+    #     map_point_x = int((x - self.map_offset_x) / self.map_resolution)
+    #     map_point_y = int((y - self.map_offset_y) / self.map_resolution)
+
+    #     ## 로직 4. 위치(x,y)를 map의 grid cell로 변환
+    #     map_point_x = max(0, min(self.GRIDSIZE - 1, map_point_x))
+    #     map_point_y = max(0, min(self.GRIDSIZE - 1, map_point_y))
+    #     print(map_point_x, map_point_y)
+    #     return map_point_x, map_point_y
