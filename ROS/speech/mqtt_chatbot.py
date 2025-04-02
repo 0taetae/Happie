@@ -6,10 +6,13 @@
 import paho.mqtt.client as mqtt
 import io
 import base64
+import json
 from stt import transcribe_stt # 음성을 텍스트로 변환
+from search_vector import search_hospital_info  # 벡터 검색
+from prompting import generate_response  # 프롬프트 생성
 
 # MQTT 설정
-BROKER = ""
+BROKER = "j12e103.p.ssafy.io"
 PORT = 1883
 USERNAME = ""
 PASSWORD = ""
@@ -32,10 +35,28 @@ def on_message(client, userdata, msg):
         transcribed_text = transcribe_stt(audio_buffer)
         if transcribed_text:
             print("변환된 텍스트:", transcribed_text)
-
-            # 변환된 텍스트를 MQTT로 발행
-            client.publish(TOPIC_PUBLISH, transcribed_text)
-            print("텍스트가 MQTT 브로커에 발행되었습니다.")
+            
+            # 음성에서 텍스트로 변환된 내용을 벡터 검색에 사용
+            search_results = search_hospital_info(transcribed_text)
+            print(f"검색된 병원 정보 : {search_results}")
+            
+            # LLM 응답 생성
+            response_text = generate_response(transcribed_text, search_results)
+            print(f"LLM 응답 : {response_text}")
+            
+            # 사용자 질문과 LLM 응답을 JSON 객체로 묶어서 전송
+            message_data = {
+                "request" : transcribed_text,
+                "response" : response_text
+            }
+            
+            # JSON 형식으로 변환
+            message_json = json.dumps(message_data, ensure_ascii=False)
+            
+            # 변환된 JSON 메시지를 MQTT로 발행
+            client.publish(TOPIC_PUBLISH, message_json)
+            print("응답이 MQTT 브로커에 발행되었습니다.")
+            
     except Exception as e:
         print(f"Error during message handling: {e}")
 
