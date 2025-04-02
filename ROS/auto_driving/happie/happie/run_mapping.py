@@ -16,7 +16,8 @@ import numpy as np
 import cv2
 import time
 
-from .config import params_map, PKG_PATH
+from .config import params_map, PKG_PATH, MQTT_CONFIG
+import paho.mqtt.client as mqtt
 
 import matplotlib.pyplot as plt
 
@@ -215,6 +216,19 @@ class Mapper(Node):
         # 로직 1 : publisher, subscriber, msg 생성
         self.subscription = self.create_subscription(LaserScan,'/scan',self.scan_callback,10)
         self.goal_sub = self.create_subscription(PoseStamped, 'goal_pose', self.goal_callback, 1)
+
+        # MQTT 설정
+        self.mqtt_client = mqtt.Client()
+        self.mqtt_broker = MQTT_CONFIG["BROKER"]
+        self.mqtt_port = MQTT_CONFIG["PORT"]
+        self.mqtt_topic = "robot/map_position"
+
+        self.mqtt_client.username_pw_set(MQTT_CONFIG["USERNAME"], MQTT_CONFIG["PASSWORD"])
+
+        # MQTT 브로커에 연결
+        self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
+        self.mqtt_client.loop_start()  # 비동기 처리 시작
+
         self.map_pub = self.create_publisher(OccupancyGrid, '/map', 1)
         
         self.map_msg=OccupancyGrid()
@@ -329,14 +343,43 @@ class Mapper(Node):
         self.map_pose_x = map_x
         self.map_pose_y = map_y
 
-        pose = np.array([[pose_x], [pose_y], [heading]])
-        self.mapping.update(pose, laser)
+        # pose = np.array([[pose_x], [pose_y], [heading]])
+        # self.mapping.update(pose, laser)
     
         # [4] 로그 출력 (현재 위치 확인)
         print(f"현재 위치 (실제 좌표): x={pose_x:.2f}, y={pose_y:.2f}, heading={heading:.2f} rad")
         print(f"맵 좌표계 인덱스: map_x={map_x:.0f}, map_y={map_y:.0f}")
     
         # [5] 맵 퍼블리시
+        # 각도 계산 (1도씩 증가하므로, 각도를 라디안으로 변환)
+        angles = np.linspace(0, 2 * np.pi, len(distance), endpoint=False)  # 360개의 각도 생성 (0에서 2π까지)
+
+        # 거리 데이터를 기반으로 x, y 좌표 계산
+        x = distance * np.cos(angles)  # x = 거리 * cos(각도)
+        y = distance * np.sin(angles)  # y = 거리 * sin(각도)
+
+        laser = np.vstack((x, y))  # x, y 값을 결합하여 레이저 좌표를 생성
+
+        # 로봇의 현재 위치 
+        map_x = (pose_x - params_map["MAP_CENTER"][0] + params_map["MAP_SIZE"][0]/2) / params_map["MAP_RESOLUTION"]
+        map_y = (pose_y - params_map["MAP_CENTER"][1] + params_map["MAP_SIZE"][1]/2) / params_map["MAP_RESOLUTION"]
+
+        # MQTT로 위치 데이터 전송
+        mqtt_payload = f"{map_x:.0f},{map_y:.0f}"
+        try:
+            self.mqtt_client.publish(self.mqtt_topic, mqtt_payload)
+            print(f"MQTT 발행: {mqtt_payload}")
+        except Exception as e:
+            print(f"MQTT 발행 실패: {e}")
+
+        # 로직 6 : map 업데이트 실행
+        pose = np.array([[pose_x], [pose_y], [heading]])
+        self.mapping.update(pose, laser)
+
+        # [4] 로그 출력 (현재 위치 확인)
+        print(f"현재 위치 (실제 좌표): x={pose_x:.2f}, y={pose_y:.2f}, heading={heading:.2f} rad")
+        print(f"맵 좌표계 인덱스: map_x={map_x:.0f}, map_y={map_y:.0f}")
+        
         np_map_data = self.mapping.map.reshape(-1)
         list_map_data = [100 - int(value * 100) for value in np_map_data]
         list_map_data = [max(0, min(100, v)) for v in list_map_data]
