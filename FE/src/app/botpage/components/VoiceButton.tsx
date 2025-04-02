@@ -1,16 +1,44 @@
 "use client";
 
-type Props = {
-  onClick: () => void;
-};
+import { useAudioRecorder } from "../hooks/useAudioRecorder";
+import { sendMessage } from "../hooks/useChatbotResponse";
 
-export default function VoiceButton({ onClick }: Props) {
+interface VoiceButtonProps {
+  setQuestion: (q: string) => void;
+  setAnswer: (a: string) => void;
+  setStage: (s: "idle" | "recording" | "loading" | "answering") => void;
+  label?: string; // 🔹 버튼 텍스트를 prop으로 받을 수 있게
+}
+
+export default function VoiceButton({
+  setQuestion,
+  setAnswer,
+  setStage,
+  label = "🎙 음성으로 질문하기", // 기본값
+}: VoiceButtonProps) {
+  const handleAudioComplete = (blob: Blob) => {
+    setStage("loading");
+    blob.arrayBuffer().then((buffer) => {
+      const base64Data = Buffer.from(buffer).toString("base64");
+      sendMessage(base64Data);
+    });
+  };
+
+  const { startRecording } = useAudioRecorder(handleAudioComplete);
+
+  const handleClick = () => {
+    setQuestion("");
+    setAnswer("");
+    setStage("recording");
+    startRecording();
+  };
+
   return (
     <button
-      onClick={onClick}
-      className="bg-blue-500 text-white px-6 py-3 rounded-full shadow-lg hover:bg-blue-600 transition text-lg font-semibold"
+      onClick={handleClick}
+      className="bg-gray-700 text-white px-5 py-3 rounded-full hover:bg-gray-800 shadow-lg"
     >
-      🎙️ 음성으로 질문하기
+      {label}
     </button>
   );
 }

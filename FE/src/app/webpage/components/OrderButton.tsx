@@ -11,11 +11,11 @@ export default function OrderButton({ onOrderSuccess }: { onOrderSuccess?: () =>
   const [selectedTask, setSelectedTask] = useState("");
 
   const taskOptionsByLocation: Record<string, string[]> = {
-    "병실 1": ["링거 전달하기", "휠체어 전달하기", "방문하기"],
-    "병실 2": ["링거 전달하기", "휠체어 전달하기", "방문하기"],
-    "병실 3": ["링거 전달하기", "휠체어 전달하기", "방문하기"],
-    "데스크": ["출동하기"],
-    "전체": ["운행하기", "청소하기"],
+    "501호실": ["링거 전달하기", "휠체어 전달하기", "방문하기"],
+    "502호실": ["링거 전달하기", "휠체어 전달하기", "방문하기"],
+    "503호실": ["링거 전달하기", "휠체어 전달하기", "방문하기"],
+    "간호사실": ["출동하기"],
+    "병동": ["운행하기", "청소하기"],
   };
 
   const resetSelections = () => {

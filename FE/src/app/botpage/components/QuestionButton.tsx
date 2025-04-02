@@ -1,15 +1,26 @@
 "use client";
 
-type Props = {
-  text: string;
-  onClick: (text: string) => void;
-};
+import { sendMessage } from "../hooks/useChatbotResponse";
 
-export default function QuestionButton({ text, onClick }: Props) {
+interface Props {
+  text: string;
+  setQuestion: (q: string) => void;
+  setAnswer: (a: string) => void;
+  setStage: (s: "idle" | "recording" | "loading" | "answering") => void;
+}
+
+export default function QuestionButton({ text, setQuestion, setAnswer, setStage }: Props) {
+  const handleClick = () => {
+    setQuestion(text);
+    setAnswer("");
+    setStage("answering");
+    sendMessage(text);
+  };
+
   return (
     <button
-      onClick={() => onClick(text)}
-      className="bg-white border border-gray-300 rounded-xl px-6 py-4 shadow hover:bg-blue-50 transition text-gray-800 font-medium"
+      onClick={handleClick}
+      className="bg-blue-100 hover:bg-blue-200 text-blue-800 font-semibold px-4 py-2 rounded-full shadow transition"
     >
       {text}
     </button>

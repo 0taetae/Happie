@@ -1,37 +1,40 @@
-"use client";
-
+// hooks/useChatbotResponse.ts
 import { useCallback } from "react";
+import { mqttClient } from "@/lib/mqttClient";
+
+export const sendMessage = (data: string) => {
+  mqttClient.publish("user/chatbot/request", data);
+  console.log("📤 MQTT 메시지 전송:", data);
+};
 
 type ChatbotResponseProps = {
   setQuestion: (q: string) => void;
   setAnswer: (a: string) => void;
   setStage: (s: "idle" | "recording" | "loading" | "answering") => void;
   setShowWarning: (show: boolean) => void;
+  setFacility?: (f: string | null) => void;
 };
 
-const useChatbotResponse = ({
+export function useChatbotResponse({
   setQuestion,
   setAnswer,
   setStage,
   setShowWarning,
-}: ChatbotResponseProps) => {
+  setFacility,
+}: ChatbotResponseProps) {
   const handleChatResponse = useCallback(
-    (topic: string, message: Buffer) => {
+    (topic: string, message: Uint8Array | string) => {
       const msg = message.toString().trim();
-      console.log("📩 수신된 메시지 원본:", JSON.stringify(msg));
+      console.log("📩 수신된 메시지 원본:", msg);
 
       if (topic === "chatbot/response") {
         try {
           const parsed = JSON.parse(msg);
-          if (parsed.request && parsed.response) {
-            setQuestion(parsed.request);
-            setAnswer(parsed.response);
-          } else {
-            setQuestion("");
-            setAnswer(msg);
-          }
+          setQuestion(parsed.request || "");
+          setAnswer(parsed.response || msg);
+          if (parsed.facility) setFacility?.(parsed.facility);
         } catch (e) {
-          console.error("❌ 응답 파싱 실패:", e);
+          console.warn("❌ 파싱 실패:", e);
           setQuestion("");
           setAnswer(msg);
         }
@@ -42,10 +45,8 @@ const useChatbotResponse = ({
         setShowWarning(true);
       }
     },
-    [setQuestion, setAnswer, setStage, setShowWarning]
+    [setQuestion, setAnswer, setStage, setShowWarning, setFacility]
   );
 
   return { handleChatResponse };
-};
-
-export default useChatbotResponse;
+}
