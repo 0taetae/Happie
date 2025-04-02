@@ -20,12 +20,12 @@ export default function Home() {
     if (isLoginOpen) {
       setTimeout(() => {
         inputRef.current?.focus();
-      }, 100); // 약간의 딜레이 후 안정적으로 포커스
+      }, 100);
     }
   }, [isLoginOpen]);
 
   const handleLogin = () => {
-    if (inputCode === "103") {
+    if (inputCode === "gkstkfckdl0411!") {
       Swal.fire({
         icon: "success",
         title: "로그인 성공!",
@@ -35,7 +35,7 @@ export default function Home() {
       });
 
       setTimeout(() => {
-        localStorage.setItem("access_code", "103");
+        localStorage.setItem("access_code", "gkstkfckdl0411!");
         router.push("/webpage/home");
       }, 1500);
     } else {
@@ -53,7 +53,7 @@ export default function Home() {
     <div className="flex h-screen">
       {/* 왼쪽 화면 (WEB) */}
       <div
-        className="w-1/2 flex items-center justify-center bg-blue-300 text-white text-2xl font-bold cursor-pointer hover:bg-blue-400 transition"
+        className="w-1/2 flex items-center justify-center bg-blue-300 text-white text-2xl font-bold cursor-pointer-custom hover:bg-blue-400 transition"
         onClick={() => setIsLoginOpen(true)}
       >
         WEB
@@ -61,7 +61,7 @@ export default function Home() {
 
       {/* 오른쪽 화면 (BOT) */}
       <div
-        className="w-1/2 flex items-center justify-center bg-green-400 text-white text-2xl font-bold cursor-pointer hover:bg-green-500 transition"
+        className="w-1/2 flex items-center justify-center bg-green-400 text-white text-2xl font-bold cursor-pointer-custom hover:bg-green-500 transition"
         onClick={() => router.push("/botpage")}
       >
         BOT
@@ -75,17 +75,16 @@ export default function Home() {
 
             <input
               ref={inputRef}
-              type="text"
+              type="password" // ✅ 여기 수정! 텍스트 → 패스워드
               placeholder="코드를 입력하세요"
               value={inputCode}
               onChange={(e) => setInputCode(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
-                  e.preventDefault(); // ✅ 이 한 줄로 해결!
+                  e.preventDefault();
                   handleLogin();
                 }
               }}
-              
               className="w-full p-2 border rounded mb-4"
             />
 
