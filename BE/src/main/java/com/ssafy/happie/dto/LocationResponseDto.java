@@ -9,14 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class OrderResponseDto {
-    private Integer Id;
-
-    private String robot;
-
-    private String place;
-
-    private String todo;
-
-    private String state;
+public class LocationResponseDto {
+    private String x;
+    private String y;
 }
