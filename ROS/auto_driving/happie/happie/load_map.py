@@ -13,7 +13,7 @@ from PIL import Image  # 이미지 처리 라이브러리 추가
 import io
 import base64  # base64로 인코딩하여 MQTT로 전송하기 위함
 
-from .config import params_map, PKG_PATH
+from .config import params_map, PKG_PATH, MQTT_CONFIG
 
 class loadMap(Node):
 
@@ -26,15 +26,10 @@ class loadMap(Node):
 
         # MQTT 설정
         self.mqtt_client = mqtt.Client()
-        self.mqtt_broker = "j12e103.p.ssafy.io"  # MQTT 브로커 주소 (IP 또는 도메인)
-        self.mqtt_port = 1883  # MQTT 기본 포트
+        self.mqtt_broker = MQTT_CONFIG["BROKER"]
+        self.mqtt_port = MQTT_CONFIG["PORT"]
         self.mqtt_topic = "map/data"  # 퍼블리시할 토픽
-
-        self.mqtt_username = "happie_mqtt_user"  # 사용자명
-        self.mqtt_password = "gkstkfckdl0411!"  # 비밀번호
-        self.mqtt_client.username_pw_set(self.mqtt_username, self.mqtt_password)
-
-
+        self.mqtt_client.username_pw_set(MQTT_CONFIG["USERNAME"], MQTT_CONFIG["PASSWORD"])
         # MQTT 브로커에 연결
         self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
         self.mqtt_client.loop_start()  # 비동기 처리 시작
@@ -97,11 +92,18 @@ class loadMap(Node):
         self.image_data = self.create_image_from_map(grid)
 
     def create_image_from_map(self, grid):
-        # 맵 데이터를 이미지로 변환 (0은 검은색, 100은 흰색)
-        image_data = np.zeros_like(grid, dtype=np.uint8)
+        # 맵 데이터를 이미지로 변환
+        image_data = np.zeros((grid.shape[0], grid.shape[1], 3), dtype=np.uint8)
 
-        image_data[grid == 100] = 0  # 벽은 검은색
-        image_data[grid != 100] = 255    # 나머지는 흰색
+        for y in range(grid.shape[0]):
+            for x in range(grid.shape[1]):
+                value = grid[y][x]  # 각 grid 값 (0-100)
+                
+                # 반대 그라데이션 계산: 값이 0일 때 흰색, 100일 때 검은색으로 선형 보간
+                r = g = b = int((100 - value) * 2.55)  # 0에서 100 사이 값을 255에서 0 사이 값으로 변환 (100 * 2.55 = 255, 0 * 2.55 = 0)
+                
+                # 색상 설정
+                image_data[y, x] = [r, g, b]
 
         # 이미지를 PIL 이미지 객체로 변환
         image = Image.fromarray(image_data)
@@ -113,6 +115,22 @@ class loadMap(Node):
 
         # 바이트 데이터 가져오기
         image_bytes = image_io.read()
+
+        # base64 인코딩
+        #image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+
+        # 디버깅: base64 디코딩 후 다시 이미지 변환
+        #decoded_bytes = base64.b64decode(image_base64)
+        #decoded_image = Image.open(io.BytesIO(decoded_bytes))
+
+        # 디코딩된 이미지 저장 (디버깅용)
+        #decoded_image_path = "map_decoded.png"
+        #decoded_image.save(decoded_image_path)
+        #print(f"디코딩된 이미지 저장 완료: {decoded_image_path}")
+
+        # 이미지 직접 보기 (옵션)
+        #image.show(title="원본 맵 이미지")
+        #decoded_image.show(title="디코딩된 맵 이미지")
 
         return image_bytes
 

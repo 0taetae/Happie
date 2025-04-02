@@ -29,10 +29,9 @@ S3_FOLDER = 'fall_images'
 AWS_ACCESS_KEY_ID='AKIAY2QJD24SHENZCWDY'
 AWS_SECRET_ACCESS_KEY='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'
 
-
-# MQTT 설정
-BROKER = 'j12e103.p.ssafy.io'
-PORT = 1883
-TOPIC = 'fall_detection'
-USERNAME = 'happie_mqtt_user'
-PASSWORD = 'gkstkfckdl0411!'
+MQTT_CONFIG = {
+    "BROKER": "j12e103.p.ssafy.io",  # MQTT 브로커 주소
+    "PORT": 1883,  # MQTT 기본 포트
+    "USERNAME": "happie_mqtt_user",  # 사용자명
+    "PASSWORD": "gkstkfckdl0411!"  # 비밀번호
+}
