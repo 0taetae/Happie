@@ -9,7 +9,12 @@ import base64
 import json
 from stt import transcribe_stt # 음성을 텍스트로 변환
 from search_vector import search_hospital_info  # 벡터 검색
-from prompting import generate_response  # 프롬프트 생성
+from prompting import generate_response, clear_history  # 프롬프트 생성
+import threading
+
+# 타이머 변수
+history_reset_timer = None
+TIMEOUT_SECONDS = 60*3  # 응답 대기 시간(3분분)
 
 # MQTT 설정
 BROKER = "j12e103.p.ssafy.io"
@@ -22,7 +27,14 @@ TOPIC_PUBLISH = "chatbot/response"       # 변환된 텍스트 발행 토픽
 
 # MQTT 메시지 수신 콜백 함수
 def on_message(client, userdata, msg):
+    global history_reset_timer  # 🔹전역 변수 선언 추가
+
     print(f"수신한 메시지 (topic: {msg.topic})")
+
+    # 기존 타이머 취소 (사용자가 입력했으므로)
+    if history_reset_timer:
+        history_reset_timer.cancel()
+
     try:
         # Base64 인코딩 된 음성 데이터 디코딩
         audio_data = base64.b64decode(msg.payload)
@@ -66,9 +78,20 @@ def on_message(client, userdata, msg):
             # 변환된 JSON 메시지를 MQTT로 발행
             client.publish(TOPIC_PUBLISH, message_json)
             print("응답이 MQTT 브로커에 발행되었습니다.")
+
+            # 새로운 타이머 시작 (TIMEOUT_SECONDS 후 history 초기화)
+            history_reset_timer = threading.Timer(TIMEOUT_SECONDS, reset_history)
+            history_reset_timer.start()
             
     except Exception as e:
         print(f"Error during message handling: {e}")
+
+
+def reset_history():
+    global history_reset_timer
+    print("사용자 응답 없음 - 대화 기록 초기화")
+    clear_history()  # prompting.py 내부에서 history를 비우는 함수 실행
+    history_reset_timer = None
 
 
 # MQTT 연결 콜백 함수

@@ -93,6 +93,12 @@ def generate_response(query, search_results):
     logging.debug(f"최종 응답: {response_text}")
     return response_text
 
+# history 초기화 함수
+def clear_history():
+    global history
+    history = []
+    print("대화 기록이 초기화되었습니다.")
+
 
 # 🔹 대화형 챗봇 실행 함수
 def chat():
