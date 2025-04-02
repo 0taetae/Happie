@@ -53,7 +53,7 @@ export default function Home() {
     <div className="flex h-screen">
       {/* 왼쪽 화면 (WEB) */}
       <div
-        className="w-1/2 flex items-center justify-center bg-blue-300 text-white text-2xl font-bold cursor-pointer hover:bg-blue-400 transition"
+        className="w-1/2 flex items-center justify-center bg-blue-300 text-white text-2xl font-bold cursor-pointer-custom hover:bg-blue-400 transition"
         onClick={() => setIsLoginOpen(true)}
       >
         WEB
@@ -61,7 +61,7 @@ export default function Home() {
 
       {/* 오른쪽 화면 (BOT) */}
       <div
-        className="w-1/2 flex items-center justify-center bg-green-400 text-white text-2xl font-bold cursor-pointer hover:bg-green-500 transition"
+        className="w-1/2 flex items-center justify-center bg-green-400 text-white text-2xl font-bold cursor-pointer-custom hover:bg-green-500 transition"
         onClick={() => router.push("/botpage")}
       >
         BOT

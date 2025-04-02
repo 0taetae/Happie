@@ -8,6 +8,8 @@ from math import pi,cos,sin,sqrt
 import tf2_ros
 import os
 
+from .config import params_map, PKG_PATH
+
 class pathPub(Node):
 
     def __init__(self):
@@ -26,8 +28,7 @@ class pathPub(Node):
         self.global_path_msg.header.frame_id = 'map'
 
         # 로직 2. 만들어 놓은 경로 데이터를 읽기 모드로 open
-        full_path = r"C:\Users\SSAFY\Desktop\catkin_ws\src\happie\data\path.txt"
-        self.f = open(full_path, "r")
+        full_path = os.path.join(PKG_PATH, "path.txt")
 
         # 로직 3. 경로 데이터를 읽어서 Path 메시지에 데이터를 넣기
         lines = self.f.readlines()

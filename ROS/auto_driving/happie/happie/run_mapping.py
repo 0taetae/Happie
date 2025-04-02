@@ -15,6 +15,9 @@ import numpy as np
 import cv2
 import time
 
+from .config import params_map, PKG_PATH, MQTT_CONFIG
+import paho.mqtt.client as mqtt
+
 # mapping node의 전체 로직 순서
 # 1. publisher, subscriber, msg 생성
 # 2. mapping 클래스 생성
@@ -28,16 +31,6 @@ import time
 # 10. laser scan 공간을 맵에 표시
 # 11. 업데이트 중인 map publish
 # 12. 맵 저장
-
-params_map = {
-    "MAP_RESOLUTION": 0.04,
-    "OCCUPANCY_UP": 0.02,
-    "OCCUPANCY_DOWN": 0.01,
-    "MAP_CENTER": (-50, -50),
-    "MAP_SIZE": (30, 30),
-    "MAP_FILENAME": 'test.png',
-    "MAPVIS_RESIZE_SCALE": 1.0
-}
 
 ## Bresenham's Algorithm
 def createLineIterator(P1, P2, img):
@@ -95,6 +88,7 @@ class Mapping:
         # 로직 3. 맵의 resolution, 중심좌표, occupancy에 대한 threshold 등의 설정들을 받습니다
         self.map_resolution = params_map["MAP_RESOLUTION"]
         self.map_size = np.array(params_map["MAP_SIZE"]) / self.map_resolution
+        self.map_size = self.map_size.astype(int)
         self.map_center = params_map["MAP_CENTER"]
         self.map = np.ones((self.map_size[0].astype(np.int), self.map_size[1].astype(np.int)))*0.5
         self.occu_up = params_map["OCCUPANCY_UP"]
@@ -104,6 +98,25 @@ class Mapping:
         self.map_vis_resize_scale = params_map["MAPVIS_RESIZE_SCALE"]
 
         self.T_r_l = np.array([[0,-1,0],[1,0,0],[0,0,1]])
+        # 🔥 기존 맵 파일이 있으면 로드
+        map_path = os.path.join(PKG_PATH, '..', 'data', 'map.txt')
+        if os.path.exists(map_path):
+            print(f"기존 맵 {map_path} 불러오기...")
+            
+            print(self.map_size[0])
+            print(self.map_size[1])
+            with open(map_path, 'r') as f:
+                existing_data = list(map(float, f.read().split()))
+                print(len(existing_data))
+
+            if len(existing_data) == self.map_size[0] * self.map_size[1]:
+                self.map = np.array(existing_data).reshape(self.map_size[0], self.map_size[1])
+            else:
+                print("⚠ 기존 맵 크기가 현재 설정과 다름 → 새 맵 생성")
+                self.map = np.ones((self.map_size[0].astype(int), self.map_size[1].astype(int))) * 0.5
+        else:
+            print("📂 기존 맵 없음 → 새 맵 생성")
+            self.map = np.ones((self.map_size[0].astype(int), self.map_size[1].astype(int))) * 0.5
 
 
     def update(self, pose, laser):
@@ -133,7 +146,7 @@ class Mapping:
             p2 = np.array([laser_global_x[i], laser_global_y[i]]).astype(np.int32)
 
             line_iter = createLineIterator(p1, p2, self.map)
-            print(line_iter)
+            # print(line_iter)
 
             if line_iter.shape[0] == 0:
                 continue
@@ -142,14 +155,15 @@ class Mapping:
             avail_y = line_iter[:, 1].astype(np.int32)
 
             ## Empty
-            self.map[avail_y[:-1], avail_x[:-1]] -= self.occu_down
+            self.map[avail_y[:-1], avail_x[:-1]] += self.occu_down
             self.map[avail_y[:-1], avail_x[:-1]] = np.clip(self.map[avail_y[:-1], avail_x[:-1]], 0, 1)
 
             ## Occupied
-            self.map[avail_y[-1], avail_x[-1]] += self.occu_up
+            self.map[avail_y[-1], avail_x[-1]] -= self.occu_up
             self.map[avail_y[-1], avail_x[-1]] = np.clip(self.map[avail_y[-1], avail_x[-1]], 0, 1)
                 
         self.show_pose_and_points(pose, laser_global) 
+        cv2.waitKey(1)
 
     def __del__(self):
         # 로직 12. 종료 시 map 저장
@@ -184,7 +198,7 @@ class Mapping:
         cv2.circle(map_bgr, center, 2, (0,0,255), -1)
 
         map_bgr = cv2.resize(map_bgr, dsize=(0, 0), fx=self.map_vis_resize_scale, fy=self.map_vis_resize_scale)
-        print("Map shape:", map_bgr.shape)
+        # print("Map shape:", map_bgr.shape)
         cv2.imshow('Sample Map', map_bgr)
         cv2.waitKey(1)
 
@@ -198,6 +212,19 @@ class Mapper(Node):
         
         # 로직 1 : publisher, subscriber, msg 생성
         self.subscription = self.create_subscription(LaserScan,'/scan',self.scan_callback,10)
+
+        # MQTT 설정
+        self.mqtt_client = mqtt.Client()
+        self.mqtt_broker = MQTT_CONFIG["BROKER"]
+        self.mqtt_port = MQTT_CONFIG["PORT"]
+        self.mqtt_topic = "robot/map_position"
+
+        self.mqtt_client.username_pw_set(MQTT_CONFIG["USERNAME"], MQTT_CONFIG["PASSWORD"])
+
+        # MQTT 브로커에 연결
+        self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
+        self.mqtt_client.loop_start()  # 비동기 처리 시작
+
         self.map_pub = self.create_publisher(OccupancyGrid, '/map', 1)
         
         self.map_msg=OccupancyGrid()
@@ -212,8 +239,13 @@ class Mapper(Node):
         m.height = int(params_map["MAP_SIZE"][1]/params_map["MAP_RESOLUTION"])
         quat = np.array([0, 0, 0, 1])
         m.origin = Pose()
-        m.origin.position.x = params_map["MAP_CENTER"][0]-8.75
-        m.origin.position.y = params_map["MAP_CENTER"][1]-8.75
+
+        m.origin.position.x = ((params_map["MAP_CENTER"][0]-params_map["MAP_SIZE"][0])/2)
+        m.origin.position.y = ((params_map["MAP_CENTER"][1]-params_map["MAP_SIZE"][0])/2)
+
+        
+        print(m.origin.position.x, '=====')
+        print(m.origin.position.y, '=====')
         self.map_meta_data = m
 
         self.map_msg.info=self.map_meta_data
@@ -241,9 +273,25 @@ class Mapper(Node):
 
         laser = np.vstack((x, y))  # x, y 값을 결합하여 레이저 좌표를 생성
 
-        # 로직 6 : map 업데이트 실행(4,5번이 완성되면 바로 주석처리된 것을 해제하고 쓰시면 됩니다.)
+        # 로봇의 현재 위치 
+        map_x = (pose_x - params_map["MAP_CENTER"][0] + params_map["MAP_SIZE"][0]/2) / params_map["MAP_RESOLUTION"]
+        map_y = (pose_y - params_map["MAP_CENTER"][1] + params_map["MAP_SIZE"][1]/2) / params_map["MAP_RESOLUTION"]
+
+        # MQTT로 위치 데이터 전송
+        mqtt_payload = f"{map_x:.0f},{map_y:.0f}"
+        try:
+            self.mqtt_client.publish(self.mqtt_topic, mqtt_payload)
+            print(f"MQTT 발행: {mqtt_payload}")
+        except Exception as e:
+            print(f"MQTT 발행 실패: {e}")
+
+        # 로직 6 : map 업데이트 실행
         pose = np.array([[pose_x], [pose_y], [heading]])
         self.mapping.update(pose, laser)
+
+        # [4] 로그 출력 (현재 위치 확인)
+        print(f"현재 위치 (실제 좌표): x={pose_x:.2f}, y={pose_y:.2f}, heading={heading:.2f} rad")
+        print(f"맵 좌표계 인덱스: map_x={map_x:.0f}, map_y={map_y:.0f}")
         
         np_map_data = self.mapping.map.reshape(-1)
         list_map_data = [100 - int(value * 100) for value in np_map_data]
@@ -252,7 +300,8 @@ class Mapper(Node):
         # 로직 11 : 업데이트 중인 map publish
 
         self.map_msg.header.stamp =rclpy.clock.Clock().now().to_msg()
-        self.map_msg.data = (self.mapping.map.flatten() * 100).astype(np.int32).tolist()
+        # self.map_msg.data = (self.mapping.map.flatten() * 100).astype(np.int32).tolist()
+        self.map_msg.data = np.clip((self.mapping.map.flatten() * 100), -128, 127).astype(np.int32).tolist()
         self.map_pub.publish(self.map_msg)
 
         current_time = time.time()
@@ -261,23 +310,34 @@ class Mapper(Node):
             self.last_save_time = current_time
 
 
-def save_map(node,file_path):
+def save_map(node, file_path):
     print("save map start!!!")
+    
     # 로직 12 : 맵 저장
-    pkg_path =r"C:\Users\SSAFY\Desktop\catkin_ws\src\happie\data"
+    pkg_path = PKG_PATH
     back_folder='..'
     folder_name='data'
     file_name=file_path
     full_path=os.path.join(pkg_path,back_folder,folder_name,file_name)
     print(full_path)
+    
     f=open(full_path,'w')
     data=''
     for pixel in node.map_msg.data :
-
         data+='{0} '.format(pixel)
     print("map 데이터 저장 완료")
     f.write(data) 
     f.close()
+
+    # # node.map_msg.data가 1D 배열이므로 2D 배열로 변환 (예: 맵 크기 지정)
+    # map_width = int(params_map['MAP_SIZE'][0]/params_map['MAP_RESOLUTION'])
+    # map_height = int(params_map['MAP_SIZE'][1]/params_map['MAP_RESOLUTION'])
+    
+    # # 1D 데이터를 2D 배열로 변환
+    # map_data = np.array(node.map_msg.data).reshape(int(map_height), int(map_width))
+
+    # # 회전된 맵을 1D 배열로 다시 변환
+    # map_data_flat = map_data.flatten()
 
 
 def main(args=None):    
@@ -288,7 +348,7 @@ def main(args=None):
         rclpy.spin(run_mapping)
     except Exception as e:
         print(f"Error: {e}")
-        save_map(run_mapping, 'map.txt')
+        # save_map(run_mapping, 'map.txt')
     finally:
         if 'run_mapping' in locals():
         #     print('최종 map 저장')
@@ -299,4 +359,3 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
-

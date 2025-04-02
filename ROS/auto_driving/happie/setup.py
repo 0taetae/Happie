@@ -21,7 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'my_node = happie.my_node:main',
-            'controller = happie.controller:main'
+            'controller = happie.controller:main',
             'talker = happie.publisher_member_function:main',
             'listener = happie.subscriber_member_function:main',
             'communication = happie.communication:main',
