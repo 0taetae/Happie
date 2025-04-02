@@ -1,7 +1,21 @@
-import chromadb
-from langchain_huggingface import HuggingFaceEmbeddings
-import re
+### 벡터 데이터 기반 검색 ###
+# 사용자 입력 정보(텍스트)를 벡터화 > 시설명 정확 일치 검색 + 의미적 유사도 검색
 
+import chromadb
+import re
+from langchain.embeddings import OpenAIEmbeddings
+import openai
+from dotenv import load_dotenv
+import os
+
+# .env 연결
+load_dotenv()
+
+#OPENAPI 변수 : OpenAI API 키 환경 변수에서 가져오기
+API_KEY = os.environ.get('API_KEY')
+
+# OpenAI API 키 설정
+openai.api_key = API_KEY
 
 # ChromaDB 연결
 def connect_chromadb():
@@ -18,7 +32,7 @@ def connect_chromadb():
 # 사용자 질문(텍스트) 벡터화
 def vectorize_query(query):
     print("사용자 질문 벡터화 중...")
-    embeddings_model = HuggingFaceEmbeddings(model_name="jhgan/ko-sbert-sts")
+    embeddings_model = OpenAIEmbeddings(openai_api_key=API_KEY, model="text-embedding-ada-002")
     return embeddings_model.embed_query(query)
 
 
@@ -54,7 +68,6 @@ def search_hospital_info(query):
 
 ### STT 결과 처리 : 불필요한 문장 요소 제거
 def clean_query(query):
-    """사용자 입력(STT 결과)을 정리하여 불필요한 조사, 공백을 제거"""
     query = query.strip()  # 앞뒤 공백 제거
     query = re.sub(r'[^가-힣0-9\s]', '', query)  # 한글, 숫자, 공백 제외한 문자 제거
     query = re.sub(r'\s+', ' ', query)  # 연속된 공백 하나로 변환
