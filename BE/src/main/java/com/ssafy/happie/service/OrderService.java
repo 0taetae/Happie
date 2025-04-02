@@ -31,14 +31,16 @@ public class OrderService {
     @Transactional
     public OrderResponseDto createOrder(OrderRequestDto orderRequestDto) {
         String place = orderRequestDto.getPlace();
+
+        // 장소에 따른 좌표를 가져옴
         String[] coordinates = PLACE_COORDINATES.getOrDefault(place, new String[]{"0", "0"}); // 기본값은 0,0
 
         Order order = new Order(
                 orderRequestDto.getRobot(),
                 place,
                 orderRequestDto.getTodo(),
-                coordinates[0], // x
-                coordinates[1]  // y
+                coordinates[0], // x 좌표
+                coordinates[1]  // y 좌표
         );
 
         orderRepository.save(order);
