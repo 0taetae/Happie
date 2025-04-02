@@ -11,6 +11,9 @@ from sensor_msgs.msg import LaserScan
 import paho.mqtt.client as mqtt  # MQTT 라이브러리 추가
 import json  # 데이터를 JSON으로 변환하기 위함
 
+from .human_detector import HumanDetector # 사람 감지 
+from sensor_msgs.msg import CompressedImage
+
 class Controller(Node):
 
     def __init__(self):
@@ -22,8 +25,9 @@ class Controller(Node):
         self.turtlebot_status_sub = self.create_subscription(TurtlebotStatus, '/turtlebot_status', self.listener_callback, 10)
         self.envir_status_sub = self.create_subscription(EnviromentStatus, '/envir_status', self.envir_callback, 10)
         self.app_status_sub = self.create_subscription(Int8MultiArray, '/app_status', self.app_callback, 10)
-        self.timer = self.create_timer(0.033, self.timer_callback)
+        
         self.scan_sub = self.create_subscription(LaserScan, '/scan', self.scan_callback, 10)
+        #self.img_sub = self.create_subscription(CompressedImage, '/image_jpeg/compressed', self.img_callback, 10)
         
 
         self.cmd_msg = Twist()
@@ -45,6 +49,7 @@ class Controller(Node):
 
         self.pose_x = 0.0  # 로봇의 x 좌표
         self.pose_y = 0.0  # 로봇의 y 좌표
+        self.moving = True
 
         # MQTT 메시지를 통해 x,y 좌표를 받음 
         self.mqtt_broker = "j12e103.p.ssafy.io"
@@ -60,6 +65,12 @@ class Controller(Node):
 
         self.destination_x = 0.0
         self.destination_y = 0.0
+
+        self.human_detector = HumanDetector()
+
+        self.moving = True
+        self.timer = self.create_timer(0.033, self.timer_callback)
+
 
     # MQTT 연결 완료 시 호출되는 콜백 함수
     def on_connect(self, client, userdata, flags, rc):
@@ -77,6 +88,11 @@ class Controller(Node):
             self.get_logger().error("Failed to decode MQTT message")
 
 
+    #def img_callback(self, msg):
+        # 카메라 이미지를 받아서 처리
+    #    np_arr = np.frombuffer(msg.data, np.uint8)
+    #    self.img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+    
     def scan_callback(self, msg):
         self.pose_x = msg.range_min  # range_min을 x 좌표로 설정
         self.pose_y = msg.scan_time  # scan_time을 y 좌표로 설정
@@ -86,13 +102,18 @@ class Controller(Node):
         #destination_x = -5.3  # 임의로 설정한 x 좌표
         #destination_y = -6.3  # 임의로 설정한 y 좌표
         #self.move_to_destination(destination_x, destination_y)
-        self.move_to_destination(self.destination_x, self.destination_y)
+        
+
+        # 사람을 감지하면 로봇을 멈추게 함
+        if self.detect_human(msg):
+            self.get_logger().info("Human detected! Stopping the robot.")
+            self.turtlebot_stop()
+        else:
+            self.move_to_destination(self.destination_x, self.destination_y)
 
 
     # goal_pose를 퍼블리시
     def move_to_destination(self, x, y):
-
-        
         self.get_logger().info(f"Moving to destination: ({x}, {y})")
 
         # 로봇의 현재 위치 
@@ -112,11 +133,20 @@ class Controller(Node):
             #self.get_logger().info("Destination reached, stopping the robot.")
             print("멈추기")
         else:
-            print("직진")
-            #self.cmd_msg.linear.x = 0.5  # 직진 속도
-            #self.cmd_msg.angular.z = 0.0  # 회전하지 않음
-            #self.cmd_publisher.publish(self.cmd_msg)
-            self.turtlebot_go() 
+            # 사람을 감지하면 로봇 멈춤
+            if self.detect_human():
+                self.get_logger().info("Human detected! Stopping the robot.")
+                self.turtlebot_stop()
+            
+            else:
+                print("직진")
+                #self.cmd_msg.linear.x = 0.5  # 직진 속도
+                #self.cmd_msg.angular.z = 0.0  # 회전하지 않음
+                #self.cmd_publisher.publish(self.cmd_msg)
+                self.turtlebot_go() 
+
+    def detect_human(self, scan_data):
+        return self.human_detector.detect_human(scan_data)  # scan_data를 넘겨줌
 
     def listener_callback(self, msg):
         self.is_turtlebot_status = True
@@ -189,8 +219,19 @@ class Controller(Node):
         
         # if self.is_app_status:
         #     # self.get_logger().info(f"Appliance Status: {self.app_status_msg.data}")
-        
-        self.cmd_publisher.publish(self.cmd_msg)
+
+
+        # 주기적으로 상태 점검: 사람이 감지되지 않으면 이동을 재개
+        if not self.detect_human():
+            if not self.moving:
+                self.get_logger().info("No human detected, resuming movement.")
+                self.turtlebot_go()  # 사람 감지되지 않으면 이동 재개
+                self.moving = True
+        else:
+            if self.moving:
+                self.get_logger().info("Human detected, stopping the movement.")
+                self.turtlebot_stop()  # 사람 감지되면 멈추기
+                self.moving = False
 
 
 def main(args=None):
