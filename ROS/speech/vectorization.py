@@ -1,14 +1,26 @@
 ### 데이터 벡터화 (LangChain 활용) ###
 
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain.embeddings import OpenAIEmbeddings
+import openai
 from excel_load import load_excel
 import pandas as pd
+from dotenv import load_dotenv
+import os
+
+# .env 연결
+load_dotenv()
+
+#OPENAPI 변수 : OpenAI API 키 환경 변수에서 가져오기
+API_KEY = os.environ.get('API_KEY')
+
+# OpenAI API 키 설정
+openai.api_key = API_KEY
 
 def vectorize_data(df):
-    # Sentence-BERT 모델
-    ### LangChain의 HuggingFaceEmbeddings를 활용해서 벡터화 코드 간소화
-    print("한국어 임베딩 모델 로드 중...")
-    embeddings_model = HuggingFaceEmbeddings(model_name="jhgan/ko-sbert-sts")
+    print("OpenAI 임베딩 모델 로드 중...")
+    # OpenAI 임베딩 모델을 사용
+    embeddings_model = OpenAIEmbeddings(openai_api_key=API_KEY, model="text-embedding-ada-002")
+    # embeddings_model = HuggingFaceEmbeddings(model_name="jhgan/ko-sbert-sts")
     
     # 시설명 + 위치설명 + 서비스설명 + 층정보를를 하나로 합쳐서 벡터화
     df["combined_text"] = df[["시설명", "위치설명", "서비스설명", "층정보"]].fillna('').agg(' '.join, axis=1)
