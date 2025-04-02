@@ -56,14 +56,14 @@ def search_hospital_info(query):
 
     # 3️⃣ 의미적 유사도 검색 (시설명이 없거나, 보완 검색이 필요한 경우)
     query_embedding = vectorize_query(query_cleaned)
-    search_results = collection.query(query_embeddings=[query_embedding], n_results=3)
+    search_results = collection.query(query_embeddings=[query_embedding], n_results=5)
     semantic_results = format_results(search_results)
 
     # 4️⃣ 시설명 검색 결과가 있다면 최우선적으로 포함하고, 부족한 경우 유사도 검색 결과 포함
     final_results = exact_matches + semantic_results
     unique_results = {res['facility_name']: res for res in final_results}  # 중복 제거
 
-    return list(unique_results.values())[:3]  # 최종 3개까지만 반환
+    return list(unique_results.values())[:5]  # 최종 5개까지만 반환
 
 
 ### STT 결과 처리 : 불필요한 문장 요소 제거
