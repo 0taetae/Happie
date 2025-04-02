@@ -19,12 +19,12 @@ public class OrderService {
 
     // 맵 좌표
     private static final Map<String, String[]> PLACE_COORDINATES = Map.of(
-            "병실 1", new String[] {"36.58", "-52.52"},
-            "병실 2", new String[] {"36.65", "-47.51"},
-            "병실 3", new String[] {"36.55", "-42.56"},
-            "데스크", new String[] {"55.37", "-50.85"},
-            "휠체어 보관", new String[] {"53.21", "-56.75"},
-            "링거 보관", new String[] {"53.38", "-60.21"},
+            "501호실", new String[] {"36.58", "-52.52"},
+            "502호실", new String[] {"36.65", "-47.51"},
+            "503호실", new String[] {"36.55", "-42.56"},
+            "간호사실", new String[] {"55.37", "-50.85"},
+            "휠체어 보관실", new String[] {"53.21", "-56.75"},
+            "링거폴대 보관실", new String[] {"53.38", "-60.21"},
             "로봇방", new String[] {"44.93", "-42.44"}
     );
 
