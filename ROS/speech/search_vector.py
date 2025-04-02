@@ -1,9 +1,10 @@
 ### 벡터 데이터 기반 검색 ###
-# 사용자 입력 정보(텍스트)를 벡터화 > 시설명 정확 일치 검색 + 의미적 유사도 검색
+# [RAG방법론] 사용자 입력 정보(텍스트)를 벡터화 > 시설명 정확 일치 검색 > 의미적 유사도 검색 > 결과 정리 (format_results)
+# LangChain의 OpenAIEmbedding -> 벡터 검색 (ChromaDB) -> 병원 정보 반환
 
 import chromadb
 import re
-from langchain.embeddings import OpenAIEmbeddings
+from langchain.embeddings import OpenAIEmbeddings # OpenAI의 임베딩 모델로 사용자 질문 벡터화 + ChromaDB 의미적 유사도 기반 병원 정보 검색
 import openai
 from dotenv import load_dotenv
 import os
@@ -56,14 +57,14 @@ def search_hospital_info(query):
 
     # 3️⃣ 의미적 유사도 검색 (시설명이 없거나, 보완 검색이 필요한 경우)
     query_embedding = vectorize_query(query_cleaned)
-    search_results = collection.query(query_embeddings=[query_embedding], n_results=3)
+    search_results = collection.query(query_embeddings=[query_embedding], n_results=5)
     semantic_results = format_results(search_results)
 
     # 4️⃣ 시설명 검색 결과가 있다면 최우선적으로 포함하고, 부족한 경우 유사도 검색 결과 포함
     final_results = exact_matches + semantic_results
     unique_results = {res['facility_name']: res for res in final_results}  # 중복 제거
 
-    return list(unique_results.values())[:3]  # 최종 3개까지만 반환
+    return list(unique_results.values())[:5]
 
 
 ### STT 결과 처리 : 불필요한 문장 요소 제거
@@ -82,7 +83,6 @@ def clean_query(query):
 
 ### 질문에서 시설명 추출 : 띄어쓰기 오류 보정 + 층 정보 무시
 def extract_facility_names(query, collection):
-    """질문에서 층 정보(숫자+층)를 제거하고 시설명 추출"""
     query = re.sub(r'\d+층', '', query)  # "1층", "2층" 등 제거
     query = query.strip()
     
