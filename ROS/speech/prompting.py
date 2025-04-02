@@ -3,6 +3,8 @@ sys.path.append(r"C:\Users\SSAFY\Desktop\S12P21E103\ROS\speech")
 from search_vector import search_hospital_info
 from llama_cpp import Llama
 import logging
+# from memory_manager import ConversationMemoryManager  # memory_manager.py에서 정의한 메모리 관리 클래스를 임포트
+
 
 # 🔹 로깅 설정
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -12,6 +14,9 @@ model_path = r"C:\Users\SSAFY\Desktop\LLM\llama-3-Korean-Bllossom-8B.Q8_0.gguf"
 logging.info(f"모델 로딩 중: {model_path}")
 llama = Llama(model_path=model_path)
 logging.info("모델 로딩 완료.")
+
+### 메모리 매니저 인스턴스 생성
+# memory_manager = ConversationMemoryManager()
 
 # 대화형 챗봇 생성 함수
 def generate_response(query, search_results):
@@ -25,10 +30,13 @@ def generate_response(query, search_results):
     ]
     search_results_str = "\n".join(summarized_results)
     
+    ### 이전 대화 이력 가져오기
+    # previous_conversations = memory_manager.get_previous_conversations()
+    
     # 프롬프트 템플릿 구성
     prompt_template = """
-    너는 삼성병원의 의료 시설 정보를 안내하는 AI야. 사용자의 질문을 이해하고, 검색된 병원 정보를 바탕으로 정확하고 자연스러운 답변을 제공해.  
-
+    너는 삼성병원의 의료 시설 정보를 안내하는 AI야. 사용자의 질문을 이해하고, 검색된 병원 정보를 바탕으로 정확하고 자연스러운 답변을 제공해.
+    
     ### 질문:
     {user_query}  
 
@@ -52,6 +60,7 @@ def generate_response(query, search_results):
 
     # 프롬프트 포맷팅
     prompt = prompt_template.format(
+        # previous_conversations=previous_conversations,
         user_query=query,
         search_results=search_results_str
     )

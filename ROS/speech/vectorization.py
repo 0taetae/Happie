@@ -10,9 +10,6 @@ def vectorize_data(df):
     print("한국어 임베딩 모델 로드 중...")
     embeddings_model = HuggingFaceEmbeddings(model_name="jhgan/ko-sbert-sts")
     
-    # 층정보를 문자열로 변환
-    # df["층정보"] = df["층정보"].fillna('').astype(str)
-    
     # 시설명 + 위치설명 + 서비스설명 + 층정보를를 하나로 합쳐서 벡터화
     df["combined_text"] = df[["시설명", "위치설명", "서비스설명", "층정보"]].fillna('').agg(' '.join, axis=1)
     
