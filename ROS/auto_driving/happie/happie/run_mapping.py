@@ -359,7 +359,7 @@ class Mapper(Node):
         return None
 
     def publish_global_path(self, path_points):
-        """경로를 Path 메시지로 변환 후 Publish"""
+        #경로를 Path 메시지로 변환 후 Publish
         path_msg = Path()
         path_msg.header.stamp = self.get_clock().now().to_msg()
         path_msg.header.frame_id = "map"
@@ -467,7 +467,7 @@ class Mapper(Node):
 
             # 파일 경로 설정
             back_folder = '..'  # 상위 폴더를 지정하려는 경우
-            PKG_PATH = r'C:\Users\SSAFY\Desktop\S12P21E103\ROS\auto_driving\happie\happie'
+            #PKG_PATH = r'C:\Users\SSAFY\Desktop\S12P21E103\ROS\auto_driving\happie\happie'
             folder_name = 'data'  # 맵을 저장할 폴더 이름
             file_name = 'map.txt'  # 파일 이름
             full_path = os.path.join(PKG_PATH, back_folder, folder_name, file_name)  # 전체 경로 설정
