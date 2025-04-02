@@ -7,6 +7,8 @@ from nav_msgs.msg import Odometry,Path
 import os
 from math import sqrt
 
+from .config import params_map, PKG_PATH
+
 class makePath(Node):
     def __init__(self):
         super().__init__('make_path')
@@ -16,9 +18,8 @@ class makePath(Node):
         self.subscription = self.create_subscription(Odometry, '/odom', self.listener_callback, 10)
 
         # 로직 2. 저장할 경로 및 텍스트파일 이름을 정하고, 쓰기 모드로 열기
-        path_dir = r"C:\Users\SSAFY\Desktop\catkin_ws\src\happie\data"
-        os.makedirs(path_dir, exist_ok=True)
-        full_path = os.path.join(path_dir, 'path.txt')
+        os.makedirs(PKG_PATH, exist_ok=True)
+        full_path = os.path.join(PKG_PATH, 'path.txt')
         self.f = open(full_path, 'w')  # 쓰기 모드로 열기
         
         self.is_odom = False  # 초기 상태를 False로 설정
