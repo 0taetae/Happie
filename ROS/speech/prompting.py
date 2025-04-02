@@ -5,7 +5,6 @@ from llama_cpp import Llama
 import logging
 # from memory_manager import ConversationMemoryManager  # memory_manager.py에서 정의한 메모리 관리 클래스를 임포트
 
-
 # 🔹 로깅 설정
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)s] %(message)s")
 
