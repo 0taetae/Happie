@@ -21,14 +21,22 @@ public class Order {
     private String place;
 
     @Column
+    private String x;
+
+    @Column
+    private String y;
+
+    @Column
     private String todo;
 
     @Column
     private String state = "대기";
 
-    public Order(String robot, String place, String todo) {
+    public Order(String robot, String place, String todo, String x, String y) {
         this.robot = robot;
         this.place = place;
         this.todo = todo;
+        this.x = x;
+        this.y = y;
     }
 }

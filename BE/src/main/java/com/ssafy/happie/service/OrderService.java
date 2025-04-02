@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -16,9 +17,30 @@ import java.util.stream.Collectors;
 public class OrderService {
     private final OrderRepository orderRepository;
 
+    // 맵 좌표
+    private static final Map<String, String[]> PLACE_COORDINATES = Map.of(
+            "병실 1", new String[] {"36.58", "-52.52"},
+            "병실 2", new String[] {"36.65", "-47.51"},
+            "병실 3", new String[] {"36.55", "-42.56"},
+            "데스크", new String[] {"55.37", "-50.85"},
+            "휠체어 보관", new String[] {"53.21", "-56.75"},
+            "링거 보관", new String[] {"53.38", "-60.21"},
+            "로봇방", new String[] {"44.93", "-42.44"}
+    );
+
     @Transactional
     public OrderResponseDto createOrder(OrderRequestDto orderRequestDto) {
-        Order order = new Order(orderRequestDto.getRobot(), orderRequestDto.getPlace(), orderRequestDto.getTodo());
+        String place = orderRequestDto.getPlace();
+        String[] coordinates = PLACE_COORDINATES.getOrDefault(place, new String[]{"0", "0"}); // 기본값은 0,0
+
+        Order order = new Order(
+                orderRequestDto.getRobot(),
+                place,
+                orderRequestDto.getTodo(),
+                coordinates[0], // x
+                coordinates[1]  // y
+        );
+
         orderRepository.save(order);
 
         return OrderResponseDto.builder()
