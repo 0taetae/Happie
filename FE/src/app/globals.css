@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* globals.css */
+html,
+body,
+#__next {
+  height: 100%;
+}
+
+
 /* 배경색 & 글자색 */
 :root {
   --background: #ffffff;
@@ -64,10 +72,25 @@ body {
   .animate-fadeInModal {
     animation: fadeInModal 0.3s ease-out forwards;
   }
+  @keyframes fadeInTooltip {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fadeInTooltip {
+    animation: fadeInTooltip 0.3s ease-out forwards;
+  }
 }
 
 @layer base {
-  html, body {
+  html, body,
+  .cursor-default-custom {
     cursor: url("/images/cursor-default.png"), auto;
   }
 
@@ -75,5 +98,19 @@ body {
   button,
   .cursor-pointer-custom {
     cursor: url("/images/cursor-pointer.png"), pointer;
+  }
+
+  /* ✅ SweetAlert2 모달 영역에 기본 커서 적용 */
+  .swal2-container,
+  .swal2-popup {
+    cursor: url("/images/cursor-default.png"), auto !important;
+  }
+
+  /* ✅ SweetAlert2 버튼에 포인터 커서 적용 */
+  .swal2-confirm,
+  .swal2-cancel,
+  .swal2-close,
+  .swal2-actions button {
+    cursor: url("/images/cursor-pointer.png"), pointer !important;
   }
 }
