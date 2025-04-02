@@ -6,6 +6,7 @@ from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage, LaserScan
 from std_msgs.msg import Float32MultiArray
 from ssafy_msgs.msg import BBox
+from std_msgs.msg import Bool
 
 # human detector node의 전체 로직 순서
 # 로직 1 : 노드에 필요한 publisher, subscriber, descriptor, detector 정의
@@ -72,11 +73,8 @@ class HumanDetector(Node):
         super().__init__(node_name='human_detector')
 
         # 로직 1 : 노드에 필요한 publisher, subscriber, descriptor, detector, timer 정의
-        self.subs_img = self.create_subscription(
-            CompressedImage,
-            '/image_jpeg/compressed',
-            self.img_callback,
-            1)
+        self.subs_img = self.create_subscription(CompressedImage,'/image_jpeg/compressed',self.img_callback,1)
+        self.human_detected_pub = self.create_publisher(Bool, '/object_detected', 1)
 
         self.img_bgr = None
 
@@ -102,7 +100,7 @@ class HumanDetector(Node):
         img_pre = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
 
         # 로직 3 : human detection 실행 후 bounding box 출력
-        (rects_temp, _) = self.pedes_detector.detectMultiScale(img_pre, winStride=(2, 2), padding=(8, 8), scale=2)
+        (rects_temp, _) = self.pedes_detector.detectMultiScale(img_pre, winStride=(2, 2), padding=(8, 8), scale=1.3)
 
         if len(rects_temp) != 0:
             # 로직 4 : non maximum supression으로 bounding box 정리
@@ -124,12 +122,15 @@ class HumanDetector(Node):
                 self.bbox_msg.w = wl
                 self.bbox_msg.h = hl
 
+            self.human_detected_pub.publish(Bool(data=True))
+
             # 로직 6 : bbox를 원본 이미지에 draw
             for (x, y, w, h) in rects:
                 cv2.rectangle(img_bgr, (x, y), (x + w, y + h), (0, 255, 255), 2)
 
         else:
             self.bbox_msg.num_bbox = len(rects_temp)
+            self.human_detected_pub.publish(Bool(data=False))
 
         # 로직 7 : bbox 결과 show
         cv2.imshow("detection result", img_bgr)
