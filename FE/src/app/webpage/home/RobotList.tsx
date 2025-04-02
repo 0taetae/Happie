@@ -84,7 +84,19 @@ export default function RobotList({ refreshTrigger }: { refreshTrigger: number }
             <span className="text-lg">🤖</span>
             <p className="font-bold text-blue-600">로봇{num}</p>
           </div>
-          <p className="text-sm text-gray-500">⭐{inProgress[num]?.todo ? (/(충전 중|수리 중)$/.test(inProgress[num].todo) ? inProgress[num].todo : `${inProgress[num].todo}하는 중...`) : "노는 중.."}</p>
+          <p className="text-sm text-gray-500">
+  ⭐
+            {inProgress[num]?.todo ? (
+              /(충전 중|수리 중)$/.test(inProgress[num].todo) ? (
+                inProgress[num].todo
+              ) : (
+                `${inProgress[num].place}에 ${inProgress[num].todo}하는 중...`
+              )
+            ) : (
+              "노는 중.."
+            )}
+          </p>
+
 
           <button className="mt-2 px-3 py-1 text-sm bg-gray-200 rounded-md shadow-sm hover:bg-gray-300 transition" onClick={() => setOpenRobot(openRobot === num ? null : num)}>
             {openRobot === num ? "닫기" : robotTasks[num]?.length > 0 ? `대기 명령 ${robotTasks[num].length}개` : "대기 명령 없음"}

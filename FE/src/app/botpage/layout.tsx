@@ -1,156 +1,147 @@
 "use client";
 
-import Image from "next/image";
-import { useEffect, useState } from "react";
-import HelpModal from "./components/HelpModal";
+import { useEffect, useState, useCallback } from "react";
 import Warning from "./components/Warning";
-import { useAudioRecorder } from "./hooks/useAudioRecorder";
+import QuestionButton from "./components/QuestionButton";
+import VoiceButton from "./components/VoiceButton";
 import { mqttClient } from "@/lib/mqttClient";
+import { useChatbotResponse } from "./hooks/useChatbotResponse";
+import Swal from "sweetalert2";
+import "sweetalert2/dist/sweetalert2.min.css";
 
 type Stage = "idle" | "recording" | "loading" | "answering";
 
-export default function BotLayout({ children }: { children: React.ReactNode }) {
+export default function BotLayout() {
   const [stage, setStage] = useState<Stage>("idle");
-  const [isHelpOpen, setIsHelpOpen] = useState(false);
-  const [fadeOut, setFadeOut] = useState(false);
-
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
-  const [displayedAnswer, setDisplayedAnswer] = useState("");
-
-  // ⛑️ 낙상 감지 상태
+  const [facility, setFacility] = useState<string | null>(null);
   const [showWarning, setShowWarning] = useState(false);
 
-  const handleAudioComplete = (blob: Blob) => {
-    setStage("loading");
+  const { handleChatResponse } = useChatbotResponse({
+    setQuestion,
+    setAnswer,
+    setStage,
+    setShowWarning,
+    setFacility,
+  });
 
-    blob.arrayBuffer().then((buffer) => {
-      const base64Data = Buffer.from(buffer).toString("base64");
-      mqttClient.publish("user/chatbot/request", base64Data);
-      console.log("📤 MQTT 발신 완료");
-    });
-  };
-
-  const { startRecording } = useAudioRecorder(handleAudioComplete);
-
-  const handleAskClick = () => {
-    setQuestion("");
-    setAnswer("");
-    setDisplayedAnswer("");
-    setStage("recording");
-    startRecording();
-  };
-
-  const handleClose = () => {
-    setFadeOut(true);
-    setTimeout(() => {
-      setIsHelpOpen(false);
-      setFadeOut(false);
-    }, 300);
-  };
+  const onMqttMessage = useCallback(
+    (topic: string, message: Buffer) => {
+      handleChatResponse(topic, message);
+    },
+    [handleChatResponse]
+  );
 
   useEffect(() => {
-    mqttClient.on("message", (topic, message) => {
-      const msg = message.toString();
+    mqttClient.on("message", onMqttMessage);
+    return () => mqttClient.removeListener("message", onMqttMessage);
+  }, [onMqttMessage]);
 
-      // 🤖 챗봇 응답 수신
-      if (topic === "chatbot/response") {
-        try {
-          const { quest, answer } = JSON.parse(msg);
-          setQuestion(quest);
-          setAnswer(answer);
-          setDisplayedAnswer("");
-          setStage("answering");
-        } catch (e) {
-          console.error("❌ 응답 파싱 실패:", e);
-        }
-      }
-
-      // ⛑️ 낙상 감지 수신
-      if (topic === "fall_detection") {
-        try {
-          setShowWarning(true);
-        } catch (e) {
-          console.error("❌ 낙상 데이터 파싱 실패:", e);
-        }
-      }
-    });
-  }, []);
-
-  // 💬 답변 타이핑 효과 + TTS
   useEffect(() => {
-    if (stage !== "answering" || !answer) return;
-
-    let i = 0;
-    const interval = setInterval(() => {
-      setDisplayedAnswer((prev) => {
-        const nextChar = answer[i];
-        i++;
-        if (i >= answer.length) clearInterval(interval);
-        return prev + (nextChar ?? "");
-      });
-    }, 60);
-
-    speakText(answer);
-    return () => clearInterval(interval);
+    if (stage === "answering" && answer) {
+      const utter = new SpeechSynthesisUtterance(answer);
+      utter.lang = "ko-KR";
+      window.speechSynthesis.speak(utter);
+    }
   }, [answer, stage]);
-
-  const speakText = (text: string) => {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "ko-KR";
-    window.speechSynthesis.speak(utterance);
-  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 px-4 py-6 relative">
-      {/* 단계별 화면 렌더링 */}
+      {/* 질문 및 음성 입력 */}
       {stage === "idle" && (
-        <div className="flex flex-col items-center justify-center text-center">
-          <Image src="/images/robot.jpg" alt="Chatbot" width={300} height={300} className="rounded-full shadow-xl mb-6" />
-          <button onClick={handleAskClick} className="bg-blue-500 text-white px-6 py-3 rounded-full shadow-lg hover:bg-blue-600 transition">
-            하피에게 물어봐요!
-          </button>
-        </div>
+        <>
+          <div className="flex justify-center gap-4 mb-4 flex-wrap">
+            {["원무수납처 어디야?", "심장혈관 조형실은 뭐하는 곳이야?", "502호실이 어디있어?"].map((text, idx) => (
+              <QuestionButton key={idx} text={text} setQuestion={setQuestion} setAnswer={setAnswer} setStage={setStage} />
+            ))}
+          </div>
+          <VoiceButton setQuestion={setQuestion} setAnswer={setAnswer} setStage={setStage} />
+        </>
       )}
 
+      {/* 녹음 중 */}
       {stage === "recording" && (
-        <div className="flex flex-col items-center justify-center text-center">
-          <Image src="/images/voice-wave.gif" alt="녹음 중" width={220} height={80} className="object-contain" />
-          <span className="mt-4 text-gray-600 font-medium">하피가 귀 기울이고 있어요...</span>
+        <div className="text-center">
+          <img src="/images/voice-wave.gif" alt="녹음 중" width={220} />
+          <p className="mt-4">하피가 귀 기울이고 있어요...</p>
         </div>
       )}
 
+      {/* 로딩 중 */}
       {stage === "loading" && (
-        <div className="flex flex-col items-center justify-center text-center">
-          <Image src="/images/voice-loading.gif" alt="로딩 중" width={100} height={100} className="object-contain" />
-          <span className="mt-2 text-gray-600 font-medium">하피가 대답을 준비 중이에요...</span>
+        <div className="text-center">
+          <img src="/images/voice-loading.gif" alt="로딩 중" width={100} />
+          <p className="mt-2">하피가 대답을 준비 중이에요...</p>
         </div>
       )}
 
+      {/* 답변 출력 */}
       {stage === "answering" && (
-        <div className="w-full max-w-2xl">
-          <div className="bg-white p-4 rounded-xl shadow mb-3 text-left">
-            <p className="text-sm text-gray-500 mb-1">🙋‍♀️ 질문</p>
-            <div className="text-base text-gray-800">{question}</div>
+        <div className="w-full max-w-2xl relative">
+          <div className="bg-white p-4 rounded-xl shadow mb-3">
+            <p className="text-sm text-gray-500">🙋 질문</p>
+            <p className="text-base">{question}</p>
           </div>
-          <div className="bg-blue-50 p-4 rounded-xl shadow text-left">
-            <p className="text-sm text-blue-500 mb-1">🤖 하피의 답변</p>
-            <div className="text-base text-gray-800 whitespace-pre-wrap">{displayedAnswer}</div>
+          <div className="bg-blue-50 p-4 rounded-xl shadow">
+            <p className="text-sm text-blue-500">🤖 하피의 답변</p>
+            <p className="text-base whitespace-pre-wrap">{answer || "하피가 응답 중이에요..."}</p>
+
+            {/* 안내 유도 버튼 */}
+            {answer?.endsWith("안내를 시작할까요?") && facility && (
+              <div className="mt-4 flex justify-end gap-3">
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(`https://j12e103.p.ssafy.io/api/location/name/${facility}`);
+                      if (!res.ok) throw new Error("API 호출 실패");
+
+                      const data = await res.json();
+                      console.log("✅ 안내 시작 API 응답:", data);
+
+                      Swal.fire({
+                        icon: "success",
+                        title: `${facility}로 안내를 시작합니다.`,
+                        text: "로봇이 곧 출발할 예정이에요!",
+                        confirmButtonColor: "#3085d6",
+                        confirmButtonText: "확인",
+                      });
+
+                      // ✅ 추후 stage 변경 등 로직 추가 가능
+                    } catch (err) {
+                      console.error("❌ 안내 API 오류:", err);
+                      Swal.fire({
+                        icon: "error",
+                        title: "안내 시작 실패",
+                        text: "죄송해요. 안내를 시작할 수 없어요 🥲",
+                        confirmButtonText: "확인",
+                      });
+                    }
+                  }}
+                  className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                >
+                  예
+                </button>
+
+                <button onClick={() => setStage("idle")} className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400">
+                  아니요
+                </button>
+              </div>
+            )}
+
+            {/* ✅ 기본 종료 버튼: 응답이 완료된 경우에만 노출 */}
+            {answer && !answer.endsWith("안내를 시작할까요?") && (
+              <div className="pt-5 flex justify-end gap-3">
+                <button onClick={() => setStage("idle")} className="bg-blue-500 text-white px-4 py-2 rounded-md shadow hover:bg-blue-600 transition">
+                  홈으로 돌아가기
+                </button>
+                <VoiceButton setQuestion={setQuestion} setAnswer={setAnswer} setStage={setStage} label="🎤 음성으로 다시 질문하기" />
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* children */}
-      <div className="mt-8 w-full max-w-4xl">{children}</div>
-
-      {/* 도움말 버튼 */}
-      <button onClick={() => setIsHelpOpen(true)} className="fixed bottom-6 right-6 w-16 h-16 bg-gray-400 text-white text-2xl font-bold rounded-full shadow-xl hover:bg-blue-500 transition" aria-label="도움말 열기">
-        ?
-      </button>
-
-      {isHelpOpen && <HelpModal isOpen={isHelpOpen} fadeOut={fadeOut} onClose={handleClose} />}
-
-      {/* 낙상 경고 모달 */}
       {showWarning && <Warning onClose={() => setShowWarning(false)} />}
     </div>
   );
