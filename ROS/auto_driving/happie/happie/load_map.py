@@ -13,7 +13,24 @@ from PIL import Image  # 이미지 처리 라이브러리 추가
 import io
 import base64  # base64로 인코딩하여 MQTT로 전송하기 위함
 
+<<<<<<< HEAD
+# from .config import params_map, PKG_PATH
+params_map = {
+    "MAP_RESOLUTION": 0.1,
+    "OCCUPANCY_UP": 0.02,
+    "OCCUPANCY_DOWN": 0.01,
+    "MAP_CENTER": (0, 0),
+     "MAP_SIZE": (30, 30),
+    "MAP_FILENAME": 'test.png',
+    "MAPVIS_RESIZE_SCALE": 2.5
+}
+
+# 맵 데이터 저장 경로 
+PKG_PATH = r"C:\Users\SSAFY\Desktop\S12P21E103\ROS\auto_driving\happie\data"
+
+=======
 from .config import params_map, PKG_PATH, MQTT_CONFIG
+>>>>>>> c423c0b50caf25a64561ffe1269c4d85445c2244
 
 class loadMap(Node):
 
@@ -36,10 +53,13 @@ class loadMap(Node):
 
         # 로직 1. 맵 파라미터 설정
         self.map_msg = OccupancyGrid()
+
+        # Get map parameters from params_map
         self.map_size_x = int(params_map["MAP_SIZE"][0] / params_map["MAP_RESOLUTION"])
         self.map_size_y = int(params_map["MAP_SIZE"][1] / params_map["MAP_RESOLUTION"])
         self.map_resolution = params_map["MAP_RESOLUTION"]
         
+        # Update offsets based on MAP_CENTER from params_map
         self.map_offset_x = params_map["MAP_CENTER"][0] - params_map["MAP_SIZE"][0]/2
         self.map_offset_y = params_map["MAP_CENTER"][1] - params_map["MAP_SIZE"][1]/2
         
