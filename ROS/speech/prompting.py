@@ -30,7 +30,7 @@ def generate_response(query, search_results):
     # 검색된 병원 정보를 텍스트 형식으로 요약
     summarized_results = [
         f"{item.get('facility_name', '알 수 없음')}: {item.get('floor_info', '정보 없음')} | {item.get('location', '정보 없음')} | {item.get('service_description', '정보 없음')}"
-        for item in search_results[:5]  # 최대 3개 결과만 요약
+        for item in search_results[:5]
     ]
     search_results_str = "\n".join(summarized_results)
 
@@ -38,9 +38,9 @@ def generate_response(query, search_results):
             {
                 "role": "system",
                 "content": f"""
-                    너는 삼성병원의 의료 시설 정보를 안내하는 AI야. 
-                    사용자의 질문을 이해하고, 검색된 병원 정보를 바탕으로 정확하고 자연스러운 답변을 제공해. 
-        
+                    너는 삼성병원의 의료 시설 정보를 안내하는 AI야.
+                    사용자의 질문을 이해하고, 검색된 병원 정보를 바탕으로 정확하고 자연스러운 답변을 제공해.
+
                     현재 제공할 수 있는 병원 정보:
                     {search_results_str if search_results else "현재 제공할 수 있는 병원 정보가 없습니다."}
 
@@ -68,7 +68,7 @@ def generate_response(query, search_results):
     # 🔹 현재 질문 추가
     messages.append({"role": "user", "content": query})
 
-    
+
     logging.info(f"메시지 출력 : {messages}")
 
     # 🔹 OpenAI GPT 모델 호출
@@ -80,14 +80,15 @@ def generate_response(query, search_results):
         temperature=0.7
     )
 
-    print(f"응답!!! {response}")
+    print(f"응답: {response}")
     response_text = response.choices[0].message.content
 
     # ✅ 새로운 대화 내역 저장
     history.append({"role": "user", "content": query})
     history.append({"role": "assistant", "content": response_text})
-    
-    
+
+
+    response_text = response.choices[0].message.content
 
     logging.debug(f"최종 응답: {response_text}")
     return response_text
@@ -117,9 +118,7 @@ def chat():
             continue
 
         # 검색 결과를 처리하여 응답 생성
-        # generate_response(user_input, search_results)
         response = generate_response(user_input, search_results)
-        # print(f"챗봇: {response} 이상 끝!")
 
 
 if __name__ == "__main__":
