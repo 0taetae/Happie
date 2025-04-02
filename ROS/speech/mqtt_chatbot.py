@@ -44,10 +44,20 @@ def on_message(client, userdata, msg):
             response_text = generate_response(transcribed_text, search_results)
             print(f"LLM 응답 : {response_text}")
             
+            # "5층"이 포함되어 있는지 확인
+            facility_name = ""
+            if "5층" in response_text:
+                for result in search_results:
+                    if result.get("floor_info") == "5층":
+                        facility_name = result.get("facility_name", "")
+                        break
+                response_text += " 안내를 시작할까요?"
+            
             # 사용자 질문과 LLM 응답을 JSON 객체로 묶어서 전송
             message_data = {
-                "request" : transcribed_text,
-                "response" : response_text
+                "request": transcribed_text,
+                "response": response_text,
+                "facility": facility_name  # "5층"이 포함된 경우 시설명 추가
             }
             
             # JSON 형식으로 변환
