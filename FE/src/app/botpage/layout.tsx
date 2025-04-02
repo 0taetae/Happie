@@ -35,8 +35,12 @@ export default function BotLayout() {
 
   useEffect(() => {
     mqttClient.on("message", onMqttMessage);
-    return () => mqttClient.removeListener("message", onMqttMessage);
+    
+    return () => {
+      mqttClient.removeListener("message", onMqttMessage);
+    };
   }, [onMqttMessage]);
+  
 
   useEffect(() => {
     if (stage === "answering" && answer) {
