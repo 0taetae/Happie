@@ -18,8 +18,8 @@ public class Location {
     private String name;
 
     @Column
-    private String x;
+    private double x;
 
     @Column
-    private String y;
+    private double y;
 }

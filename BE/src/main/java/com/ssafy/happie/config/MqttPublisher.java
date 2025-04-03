@@ -1,0 +1,34 @@
+package com.ssafy.happie.config;
+
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+
+public class MqttPublisher {
+    private final MqttClient mqttClient;
+    private final String topic;
+
+    public MqttPublisher(String broker, String clientId, String topic) throws MqttException {
+        this.topic = topic;
+        this.mqttClient = new MqttClient(broker, clientId, new MemoryPersistence());
+
+        MqttConnectOptions options = new MqttConnectOptions();
+        options.setAutomaticReconnect(true);
+        options.setCleanSession(true);
+
+        mqttClient.connect(options);
+    }
+
+    public void sendLocation(double x, double y) {
+        String payload = String.format("{\"x\": %.2f, \"y\": %.2f}", x, y);
+        try {
+            MqttMessage message = new MqttMessage(payload.getBytes());
+            message.setQos(1);
+            mqttClient.publish(topic, message);
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
+    }
+}

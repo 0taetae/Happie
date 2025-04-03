@@ -21,10 +21,10 @@ public class Order {
     private String place;
 
     @Column
-    private String x;
+    private double x;
 
     @Column
-    private String y;
+    private double y;
 
     @Column
     private String todo;
@@ -32,7 +32,7 @@ public class Order {
     @Column
     private String state = "대기";
 
-    public Order(String robot, String place, String todo, String x, String y) {
+    public Order(String robot, String place, String todo, double x, double y) {
         this.robot = robot;
         this.place = place;
         this.todo = todo;
