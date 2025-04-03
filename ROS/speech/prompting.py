@@ -6,6 +6,8 @@ import openai
 from dotenv import load_dotenv
 import os
 from hospital_google_search import google_search
+from tavily_search import tavily_search
+import re
 
 # load .env
 load_dotenv()
@@ -24,7 +26,7 @@ history = []
 
 
 # 대화형 챗봇 생성 함수
-def generate_response(query, search_results):
+def generate_response(query, search_results, external_search):
     logging.debug(f"사용자 질문 수신: {query}")
     logging.debug(f"검색된 병원 정보 원본: {search_results}")
     
@@ -44,6 +46,9 @@ def generate_response(query, search_results):
 
                     현재 제공할 수 있는 병원 정보:
                     {search_results_str if search_results else "현재 제공할 수 있는 병원 정보가 없습니다."}
+
+                    외부 검색 정보: 
+                    {external_search if external_search else "현재 제공할 수 있는 외부 검색 정보가 없습니다."}
 
                     응답 규칙:
                     1. **질문을 분석**해서 사용자가 원하는 정보를 찾아.
@@ -77,7 +82,7 @@ def generate_response(query, search_results):
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",  # 또는 "gpt-3.5-turbo"
         messages=messages,
-        max_tokens=100,
+        max_tokens=150,
         temperature=0.7
     )
 
@@ -124,18 +129,26 @@ def chat():
         #     print("❌ 관련된 정보를 찾을 수 없습니다.")
         #     continue
 
-                # 검색 결과가 없으면 Google Custom Search API 사용
-        if not search_results:
-            logging.warning("내부 데이터에 검색 결과 없음, Google 검색 시도")
-            search_results = google_search(user_input)
-            if search_results:
-                print("🔎 Google 검색 결과를 사용합니다.")
-            else:
-                print("❌ 관련된 정보를 찾을 수 없습니다.")
-                continue
+        #외부 검색
+        external_search= []
+    
+        # Google 검색 결과 추가
+        google_results = google_search(user_input)
+        if google_results:
+            logging.info("Google 검색 결과 추가")
+            external_search.extend(google_results)  # 기존 검색 결과에 추가
+            print("🔎 Google 검색 결과를 추가했습니다.")
+        
+        tavily_search_answer = tavily_search(user_input)
+        if tavily_search_answer:
+            logging.info("tavily 검색 결과 추가")
+            external_search.extend(tavily_search_answer)
 
         # 검색 결과를 처리하여 응답 생성
-        response = generate_response(user_input, search_results)
+        print(search_results)
+        response = generate_response(user_input, search_results, external_search)
+
+
 
 
 if __name__ == "__main__":
