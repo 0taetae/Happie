@@ -4,6 +4,7 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist, Point
 from nav_msgs.msg import Path
 from sensor_msgs.msg import LaserScan
+from std_msgs.msg import Bool
 import time
 
 class Controller(Node):
@@ -12,6 +13,8 @@ class Controller(Node):
         self.pub = self.create_publisher(Twist, '/cmd_vel', 10)
         self.scan_sub = self.create_subscription(LaserScan, '/scan', self.scan_callback, 1)
         self.a_star_global_path_sub = self.create_subscription(Path, '/a_star_global_path', self.global_path_callback, 1)
+        self.move_order_sub = self.create_subscription(Bool, '/move_order', self.move_order_callback, 1)
+        self.move_order_pub = self.create_publisher(Bool, '/move_order', 1)
         self.cmd_msg = Twist()
 
         # 현재 위치 및 방향
@@ -23,6 +26,7 @@ class Controller(Node):
         self.timer = self.create_timer(0.1, self.move_to_destination)
 
         self.is_to_move = False
+        self.is_order = False
 
         # a_star를 통해 생성한 global_path
         self.global_path = [(-1.0, -1.0)]
@@ -31,11 +35,20 @@ class Controller(Node):
         # 목표 지점 설정
         self.goal = Point()
         self.set_new_goal()
-
+    
+    def move_order_callback(self, msg):
+        # /move_order를 구독하여 이동 상태를 업데이트
+        if msg.data:
+            self.is_order = True
+            self.get_logger().info("Received move_order: True → 이동 시작")
+        else:
+            self.is_order = False
+            self.get_logger().info("Received move_order: False → 이동 중지")
+    
     def scan_callback(self, msg):
-        """ LaserScan 데이터를 받아 현재 위치와 heading 업데이트 """
-        self.pose_x = msg.range_min  # 예제 코드 (실제 데이터 적용 필요)
-        self.pose_y = msg.scan_time  # 예제 코드 (실제 데이터 적용 필요)
+        # LaserScan 데이터를 받아 현재 위치와 heading 업데이트 
+        self.pose_x = msg.range_min
+        self.pose_y = msg.scan_time 
 
         # heading 값 계산 (예제, 실제 데이터에서 계산 필요)
         self.heading = (msg.time_increment + 360) % 360
@@ -43,14 +56,14 @@ class Controller(Node):
         # print(f"현재 heading: {round(self.heading, 2)}°")
 
     def global_path_callback(self, msg):
-        
-        path = [(pose.pose.position.x, pose.pose.position.y) for pose in msg.poses]
-        self.global_path = path
-        self.goal.x = path[0][0]
-        self.goal.y = path[0][1]
-        print(path)
+        if self.is_order:
+            path = [(pose.pose.position.x, pose.pose.position.y) for pose in msg.poses]
+            self.global_path = path
+            self.goal.x = path[0][0]
+            self.goal.y = path[0][1]
+            print(path)
 
-        self.is_to_move = True
+            self.is_to_move = True
 
     def set_new_goal(self):
         print(self.current_goal_idx, '인덱스')
@@ -81,6 +94,9 @@ class Controller(Node):
             self.turtlebot_stop()
             self.current_goal_idx += 1
             self.set_new_goal()
+            move_order_msg = Bool()
+            move_order_msg.data = False
+            self.move_order_pub.publish(move_order_msg)
             return
 
         # 목표 heading 계산

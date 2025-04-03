@@ -20,6 +20,7 @@ from .config import params_map, PKG_PATH, MQTT_CONFIG
 import paho.mqtt.client as mqtt
 
 import matplotlib.pyplot as plt
+from std_msgs.msg import Bool
 
 # mapping node의 전체 로직 순서
 # 1. publisher, subscriber, msg 생성
@@ -242,17 +243,20 @@ class Mapper(Node):
         self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
         self.goal_sub = self.create_subscription(PoseStamped, 'goal_pose', self.goal_callback, 1)
         self.global_path_pub = self.create_publisher(Path, 'a_star_global_path', 10)
+        self.move_order_pub = self.create_publisher(Bool,'/move_order',10)
 
         # MQTT 설정
         self.mqtt_client = mqtt.Client()
         self.mqtt_broker = MQTT_CONFIG["BROKER"]
         self.mqtt_port = MQTT_CONFIG["PORT"]
-        self.mqtt_topic = "robot/map_position"
+        self.mqtt_topic_position = "robot/map_position"
+        self.mqtt_topic_destination = "robot/destination"
 
         self.mqtt_client.username_pw_set(MQTT_CONFIG["USERNAME"], MQTT_CONFIG["PASSWORD"])
-
+        self.mqtt_client.loop_start()
         # MQTT 브로커에 연결
         self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
+        self.mqtt_client.subscribe(self.mqtt_topic_destination)  # 목적지 좌표 수신
         self.mqtt_client.loop_start()  # 비동기 처리 시작
 
         self.map_pub = self.create_publisher(OccupancyGrid, '/map', 1)
@@ -274,6 +278,9 @@ class Mapper(Node):
         self.map_pose_x = 0
         self.map_pose_y = 0
 
+        #self.destination_x = 0.0
+        #self.destination_y = 0.0
+
         m = MapMetaData()
         m.resolution = params_map["MAP_RESOLUTION"]
         m.width = int(params_map["MAP_SIZE"][0]/params_map["MAP_RESOLUTION"])
@@ -293,6 +300,26 @@ class Mapper(Node):
 
         # 로직 2 : mapping 클래스 생성
         self.mapping = Mapping(params_map)
+
+    # MQTT 연결 완료 시 호출되는 콜백 함수
+    def on_connect(self, client, userdata, flags, rc):
+        print("Connected to MQTT broker!")
+        
+        client.subscribe(self.mqtt_topic_destination)
+    
+    # MQTT 메시지 수신 시 호출되는 콜백 함수
+    def on_message(self, client, userdata, msg):
+        if msg.topic == self.mqtt_topic_destination:
+            try:
+                destination = msg.payload.decode("utf-8").strip()
+                destination_x, destination_y = map(int, destination.split(","))
+                self.goal_callback(destination_x, destination_y)
+
+                move_order_msg = Bool()
+                move_order_msg.data = True
+                self.move_order_pub.publish(move_order_msg)
+            except Exception as e:
+                print(f"Error parsing destination: {e}")
 
     def heuristic(self, a, b):
         # 맨해튼 거리 (거리 계산 방법을 변경할 수 있음)
@@ -314,8 +341,6 @@ class Mapper(Node):
 
     def a_star(self, start, goal):
 
-<<<<<<< HEAD
-=======
         def compute_obstacle_distance_map(grid_map):
             """각 셀이 가장 가까운 장애물과의 거리를 계산하는 함수"""
             rows, cols = len(grid_map), len(grid_map[0])
@@ -340,7 +365,6 @@ class Mapper(Node):
 
             return distance_map
 
->>>>>>> bcb8a6242648844f2b372352dbb97bb397b8f13c
         def grid_to_real(path, params):
             grid_size = int(params["MAP_SIZE"][0] / params["MAP_RESOLUTION"])  # 그리드 크기 계산
             x_center, y_center = params["MAP_CENTER"]  # 맵 중심 좌표
@@ -408,7 +432,7 @@ class Mapper(Node):
             path_msg.poses.append(pose)
 
         self.global_path_pub.publish(path_msg)
-        self.get_logger().info("Published global path.")
+        #self.get_logger().info("Published global path.")
 
 
     def scan_callback(self, msg):
@@ -440,8 +464,8 @@ class Mapper(Node):
         # self.mapping.update(pose, laser)
     
         # [4] 로그 출력 (현재 위치 확인)
-        print(f"현재 위치 (실제 좌표): x={pose_x:.2f}, y={pose_y:.2f}, heading={heading:.2f} rad")
-        print(f"맵 좌표계 인덱스: map_x={map_x:.0f}, map_y={map_y:.0f}")
+        #print(f"현재 위치 (실제 좌표): x={pose_x:.2f}, y={pose_y:.2f}, heading={heading:.2f} rad")
+        #print(f"맵 좌표계 인덱스: map_x={map_x:.0f}, map_y={map_y:.0f}")
     
         # [5] 맵 퍼블리시
         # 각도 계산 (1도씩 증가하므로, 각도를 라디안으로 변환)
@@ -460,7 +484,7 @@ class Mapper(Node):
         # MQTT로 위치 데이터 전송
         mqtt_payload = f"{map_x:.0f},{map_y:.0f}"
         try:
-            self.mqtt_client.publish(self.mqtt_topic, mqtt_payload)
+            self.mqtt_client.publish(self.mqtt_topic_position, mqtt_payload)
             print(f"MQTT 발행: {mqtt_payload}")
         except Exception as e:
             print(f"MQTT 발행 실패: {e}")
@@ -470,8 +494,8 @@ class Mapper(Node):
         self.mapping.update(pose, laser)
 
         # [4] 로그 출력 (현재 위치 확인)
-        print(f"현재 위치 (실제 좌표): x={pose_x:.2f}, y={pose_y:.2f}, heading={heading:.2f} rad")
-        print(f"맵 좌표계 인덱스: map_x={map_x:.0f}, map_y={map_y:.0f}")
+        #print(f"현재 위치 (실제 좌표): x={pose_x:.2f}, y={pose_y:.2f}, heading={heading:.2f} rad")
+        #print(f"맵 좌표계 인덱스: map_x={map_x:.0f}, map_y={map_y:.0f}")
         
         np_map_data = self.mapping.map.reshape(-1)
         list_map_data = [100 - int(value * 100) for value in np_map_data]
@@ -491,9 +515,9 @@ class Mapper(Node):
         orientation_q = msg.pose.pose.orientation
         quat = Quaternion(orientation_q.w, orientation_q.x, orientation_q.y, orientation_q.z)
         _, _, self.yaw = quat.to_euler()
-        print('odometry info =========', msg.pose.x, msg.pose.y, round(self.yaw, 3))
+        #print('odometry info =========', msg.pose.x, msg.pose.y, round(self.yaw, 3))
 
-    def goal_callback(self, msg):
+    def goal_callback(self, destination_x, destination_y):
         if msg.header.frame_id == 'map':
             goal_x = msg.pose.position.x
             goal_y = msg.pose.position.y
@@ -507,17 +531,10 @@ class Mapper(Node):
 
             # 파일 경로 설정
             back_folder = '..'  # 상위 폴더를 지정하려는 경우
-<<<<<<< HEAD
-            PKG_PATH = r'C:\Users\SSAFY\Desktop\S12P21E103\ROS\auto_driving\happie\happie'
-            folder_name = 'data'  # 맵을 저장할 폴더 이름
-            file_name = 'map.txt'  # 파일 이름
-            full_path = os.path.join(PKG_PATH, back_folder, folder_name, file_name)  # 전체 경로 설정
-=======
             pkg_path = PKG_PATH
             folder_name = 'data'  # 맵을 저장할 폴더 이름
             file_name = 'update_map.txt'  # 파일 이름
             full_path = os.path.join(pkg_path, back_folder, folder_name, file_name)  # 전체 경로 설정
->>>>>>> bcb8a6242648844f2b372352dbb97bb397b8f13c
 
             # 데이터 읽기
             with open(full_path, 'r') as file:
@@ -534,7 +551,7 @@ class Mapper(Node):
             # map의 중심좌표
             #start = (int(((-50 - params_map["MAP_CENTER"][0] + (params_map["MAP_SIZE"][0] / params_map["MAP_RESOLUTION"])) /2)), int(((-50 - params_map["MAP_CENTER"][1] + (params_map["MAP_SIZE"][1] / params_map["MAP_RESOLUTION"])) /2)))
             #goal = (int(self.map_pose_y), int(self.map_pose_x))<<<< MQTT통신을 통해서 받은 목표 좌표를 의미
-            goal = (-45, -50)
+            goal = (destination_x, destination_y)
             path, real_path = self.a_star(start, goal)
 
             print(real_path)
