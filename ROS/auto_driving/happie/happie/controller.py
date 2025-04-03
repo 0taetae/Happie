@@ -10,6 +10,7 @@ from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Bool
 import paho.mqtt.client as mqtt  # MQTT 라이브러리 추가
 import json  # 데이터를 JSON으로 변환하기 위함
+from .config import params_map, PKG_PATH, MQTT_CONFIG
 
 class Controller(Node):
 
@@ -49,13 +50,12 @@ class Controller(Node):
         self.object_detected = False
 
         # MQTT 메시지를 통해 x,y 좌표를 받음 
-        self.mqtt_broker = "j12e103.p.ssafy.io"
-        self.mqtt_port = 1883
-        self.mqtt_topic = "robot/destination"
-        self.mqtt_username = "happie_mqtt_user"
-        self.mqtt_password = "gkstkfckdl0411!"
-        
+        self.mqtt_client = mqtt.Client()
+        self.mqtt_broker = MQTT_CONFIG["BROKER"]
+        self.mqtt_port = MQTT_CONFIG["PORT"]
         self.mqtt_client.username_pw_set(self.mqtt_username, self.mqtt_password)
+        self.mqtt_topic = "robot/destination"
+        
         self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
         self.mqtt_client.subscribe(self.mqtt_topic)  # 목적지 좌표 수신
         self.mqtt_client.loop_start()

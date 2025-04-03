@@ -126,7 +126,7 @@ class Mapping:
 
         self.T_r_l = np.array([[0,-1,0],[1,0,0],[0,0,1]])
         # 🔥 기존 맵 파일이 있으면 로드
-        map_path = os.path.join(PKG_PATH, '..', 'data', 'map.txt')
+        map_path = os.path.join(PKG_PATH, '..', 'data', 'update_map.txt')
         if os.path.exists(map_path):
             print(f"기존 맵 {map_path} 불러오기...")
             
@@ -314,6 +314,33 @@ class Mapper(Node):
 
     def a_star(self, start, goal):
 
+<<<<<<< HEAD
+=======
+        def compute_obstacle_distance_map(grid_map):
+            """각 셀이 가장 가까운 장애물과의 거리를 계산하는 함수"""
+            rows, cols = len(grid_map), len(grid_map[0])
+            distance_map = np.full((rows, cols), np.inf)
+
+            # 장애물(40 이상인 셀) 위치 저장
+            obstacle_cells = [(i, j) for i in range(rows) for j in range(cols) if grid_map[i][j] >= 40]
+
+            # BFS를 사용하여 각 셀과 가장 가까운 장애물과의 거리 계산
+            queue = obstacle_cells[:]
+            for x, y in queue:
+                distance_map[x, y] = 0  # 장애물 위치는 거리 0
+
+            directions = [(-1,0), (1,0), (0,-1), (0,1)]
+            while queue:
+                x, y = queue.pop(0)
+                for dx, dy in directions:
+                    nx, ny = x + dx, y + dy
+                    if 0 <= nx < rows and 0 <= ny < cols and distance_map[nx, ny] == np.inf:
+                        distance_map[nx, ny] = distance_map[x, y] + 1
+                        queue.append((nx, ny))
+
+            return distance_map
+
+>>>>>>> bcb8a6242648844f2b372352dbb97bb397b8f13c
         def grid_to_real(path, params):
             grid_size = int(params["MAP_SIZE"][0] / params["MAP_RESOLUTION"])  # 그리드 크기 계산
             x_center, y_center = params["MAP_CENTER"]  # 맵 중심 좌표
@@ -480,10 +507,17 @@ class Mapper(Node):
 
             # 파일 경로 설정
             back_folder = '..'  # 상위 폴더를 지정하려는 경우
+<<<<<<< HEAD
             PKG_PATH = r'C:\Users\SSAFY\Desktop\S12P21E103\ROS\auto_driving\happie\happie'
             folder_name = 'data'  # 맵을 저장할 폴더 이름
             file_name = 'map.txt'  # 파일 이름
             full_path = os.path.join(PKG_PATH, back_folder, folder_name, file_name)  # 전체 경로 설정
+=======
+            pkg_path = PKG_PATH
+            folder_name = 'data'  # 맵을 저장할 폴더 이름
+            file_name = 'update_map.txt'  # 파일 이름
+            full_path = os.path.join(pkg_path, back_folder, folder_name, file_name)  # 전체 경로 설정
+>>>>>>> bcb8a6242648844f2b372352dbb97bb397b8f13c
 
             # 데이터 읽기
             with open(full_path, 'r') as file:
