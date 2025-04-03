@@ -1,15 +1,14 @@
 package com.ssafy.happie.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class LocationResponseDto {
-    private double x;
-    private double y;
+public class LocationRequestDto {
+    private String name;
 }
