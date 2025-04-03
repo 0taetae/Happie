@@ -5,6 +5,7 @@ import logging
 import openai
 from dotenv import load_dotenv
 import os
+from hospital_google_search import google_search
 
 # load .env
 load_dotenv()
@@ -38,7 +39,7 @@ def generate_response(query, search_results):
             {
                 "role": "system",
                 "content": f"""
-                    너는 삼성병원의 의료 시설 정보를 안내하는 AI야.
+                    너는 삼성병원의 의료 시설 정보를 안내하고 일상대화도 가능한 AI챗봇이이야.
                     사용자의 질문을 이해하고, 검색된 병원 정보를 바탕으로 정확하고 자연스러운 답변을 제공해.
 
                     현재 제공할 수 있는 병원 정보:
@@ -48,7 +49,7 @@ def generate_response(query, search_results):
                     1. **질문을 분석**해서 사용자가 원하는 정보를 찾아.
                     2. **검색된 정보가 있으면**, 해당 내용을 정확한 높임말로 전달해.
                        - 예: "응급실은 1층에 있습니다."
-                    3. **검색된 정보가 없으면**, `"해당 정보를 찾을 수 없습니다."`라고 답하고, 추가 질문을 유도해.
+                    3. **검색된 정보가 없으면**, `"해당 정보를 찾을 수 없습니다."`라고 답하거나 너가 답할 수 있는거면 답해주거나 추가 질문을 유도해.
                     4. **사용자가 잘못 알고 있을 경우**, 올바른 정보를 제공해.
                        - 예: "응급실은 2층이 아니라 1층에 있습니다."
                     5. **응답은 항상 높임말로 작성**해.
@@ -74,7 +75,7 @@ def generate_response(query, search_results):
     # 🔹 OpenAI GPT 모델 호출
     logging.info("GPT 모델을 사용해 응답 생성 중...")
     response = client.chat.completions.create(
-        model="gpt-4o",  # 또는 "gpt-3.5-turbo"
+        model="gpt-3.5-turbo",  # 또는 "gpt-3.5-turbo"
         messages=messages,
         max_tokens=100,
         temperature=0.7
@@ -118,10 +119,20 @@ def chat():
         logging.debug(f"검색 결과 반환: {search_results}")
         
         # 검색 결과가 없다면 경고 메시지
+        # if not search_results:
+        #     logging.warning("검색 결과 없음")
+        #     print("❌ 관련된 정보를 찾을 수 없습니다.")
+        #     continue
+
+                # 검색 결과가 없으면 Google Custom Search API 사용
         if not search_results:
-            logging.warning("검색 결과 없음")
-            print("❌ 관련된 정보를 찾을 수 없습니다.")
-            continue
+            logging.warning("내부 데이터에 검색 결과 없음, Google 검색 시도")
+            search_results = google_search(user_input)
+            if search_results:
+                print("🔎 Google 검색 결과를 사용합니다.")
+            else:
+                print("❌ 관련된 정보를 찾을 수 없습니다.")
+                continue
 
         # 검색 결과를 처리하여 응답 생성
         response = generate_response(user_input, search_results)
