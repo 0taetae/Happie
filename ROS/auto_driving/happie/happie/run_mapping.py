@@ -450,7 +450,7 @@ class Mapper(Node):
         # [6] 10초마다 맵 저장
         current_time = time.time()
         if current_time - self.last_save_time > 10:
-            save_map(self, 'map.txt')
+            save_map(self, 'update_map.txt')
             self.last_save_time = current_time
 
     def goal_callback(self, msg):
@@ -469,7 +469,7 @@ class Mapper(Node):
             back_folder = '..'  # 상위 폴더를 지정하려는 경우
             #PKG_PATH = r'C:\Users\SSAFY\Desktop\S12P21E103\ROS\auto_driving\happie\happie'
             folder_name = 'data'  # 맵을 저장할 폴더 이름
-            file_name = 'map.txt'  # 파일 이름
+            file_name = 'update_map.txt'  # 파일 이름
             full_path = os.path.join(PKG_PATH, back_folder, folder_name, file_name)  # 전체 경로 설정
 
             # 데이터 읽기
