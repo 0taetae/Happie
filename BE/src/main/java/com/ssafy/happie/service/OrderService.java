@@ -18,14 +18,14 @@ public class OrderService {
     private final OrderRepository orderRepository;
 
     // 맵 좌표
-    private static final Map<String, String[]> PLACE_COORDINATES = Map.of(
-            "501호실", new String[] {"36.58", "-52.52"},
-            "502호실", new String[] {"36.65", "-47.51"},
-            "503호실", new String[] {"36.55", "-42.56"},
-            "간호사실", new String[] {"55.37", "-50.85"},
-            "휠체어 보관실", new String[] {"53.21", "-56.75"},
-            "링거폴대 보관실", new String[] {"53.38", "-60.21"},
-            "로봇방", new String[] {"44.93", "-42.44"}
+    private static final Map<String, double[]> PLACE_COORDINATES = Map.of(
+            "501호실", new double[] {36.58, -52.52},
+            "502호실", new double[] {36.65, -47.51},
+            "503호실", new double[] {36.55, -42.56},
+            "간호사실", new double[] {55.37, -50.85},
+            "휠체어 보관실", new double[] {53.21, -56.75},
+            "링거폴대 보관실", new double[] {53.38, -60.21},
+            "로봇방", new double[] {44.93, -42.44}
     );
 
     @Transactional
@@ -33,7 +33,7 @@ public class OrderService {
         String place = orderRequestDto.getPlace();
 
         // 장소에 따른 좌표를 가져옴
-        String[] coordinates = PLACE_COORDINATES.getOrDefault(place, new String[]{"0", "0"}); // 기본값은 0,0
+        double[] coordinates = PLACE_COORDINATES.getOrDefault(place, new double[]{0, 0}); // 기본값은 0,0
 
         Order order = new Order(
                 orderRequestDto.getRobot(),
