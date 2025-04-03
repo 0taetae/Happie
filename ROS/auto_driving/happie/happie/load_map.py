@@ -36,13 +36,10 @@ class loadMap(Node):
 
         # 로직 1. 맵 파라미터 설정
         self.map_msg = OccupancyGrid()
-
-        # Get map parameters from params_map
         self.map_size_x = int(params_map["MAP_SIZE"][0] / params_map["MAP_RESOLUTION"])
         self.map_size_y = int(params_map["MAP_SIZE"][1] / params_map["MAP_RESOLUTION"])
         self.map_resolution = params_map["MAP_RESOLUTION"]
         
-        # Update offsets based on MAP_CENTER from params_map
         self.map_offset_x = params_map["MAP_CENTER"][0] - params_map["MAP_SIZE"][0]/2
         self.map_offset_y = params_map["MAP_CENTER"][1] - params_map["MAP_SIZE"][1]/2
         
@@ -120,20 +117,20 @@ class loadMap(Node):
         image_bytes = image_io.read()
 
         # base64 인코딩
-        #image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+        image_base64 = base64.b64encode(image_bytes).decode('utf-8')
 
         # 디버깅: base64 디코딩 후 다시 이미지 변환
-        #decoded_bytes = base64.b64decode(image_base64)
-        #decoded_image = Image.open(io.BytesIO(decoded_bytes))
+        decoded_bytes = base64.b64decode(image_base64)
+        decoded_image = Image.open(io.BytesIO(decoded_bytes))
 
         # 디코딩된 이미지 저장 (디버깅용)
-        #decoded_image_path = "map_decoded.png"
-        #decoded_image.save(decoded_image_path)
-        #print(f"디코딩된 이미지 저장 완료: {decoded_image_path}")
+        decoded_image_path = "map_decoded.png"
+        decoded_image.save(decoded_image_path)
+        print(f"디코딩된 이미지 저장 완료: {decoded_image_path}")
 
         # 이미지 직접 보기 (옵션)
-        #image.show(title="원본 맵 이미지")
-        #decoded_image.show(title="디코딩된 맵 이미지")
+        image.show(title="원본 맵 이미지")
+        decoded_image.show(title="디코딩된 맵 이미지")
 
         return image_bytes
 

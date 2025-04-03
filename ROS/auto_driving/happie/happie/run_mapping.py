@@ -312,33 +312,32 @@ class Mapper(Node):
                 neighbors.append((neighbor, dCost[i]))
         return neighbors
 
-    def compute_obstacle_distance_map(grid_map):
-        """각 셀이 가장 가까운 장애물과의 거리를 계산하는 함수"""
-        rows, cols = len(grid_map), len(grid_map[0])
-        distance_map = np.full((rows, cols), np.inf)
-        
-        # 장애물(40 이상인 셀) 위치 저장
-        obstacle_cells = [(i, j) for i in range(rows) for j in range(cols) if grid_map[i][j] >= 40]
-        
-        # BFS를 사용하여 각 셀과 가장 가까운 장애물과의 거리 계산
-        queue = obstacle_cells[:]
-        for x, y in queue:
-            distance_map[x, y] = 0  # 장애물 위치는 거리 0
-        
-        directions = [(-1,0), (1,0), (0,-1), (0,1)]
-        while queue:
-            x, y = queue.pop(0)
-            for dx, dy in directions:
-                nx, ny = x + dx, y + dy
-                if 0 <= nx < rows and 0 <= ny < cols and distance_map[nx, ny] == np.inf:
-                    distance_map[nx, ny] = distance_map[x, y] + 1
-                    queue.append((nx, ny))
-        
-        return distance_map
-
-
     def a_star(self, start, goal, grid_map):
         """안전한 경로를 탐색하는 A* 알고리즘"""
+
+        def compute_obstacle_distance_map(grid_map):
+            """각 셀이 가장 가까운 장애물과의 거리를 계산하는 함수"""
+            rows, cols = len(grid_map), len(grid_map[0])
+            distance_map = np.full((rows, cols), np.inf)
+            
+            # 장애물(40 이상인 셀) 위치 저장
+            obstacle_cells = [(i, j) for i in range(rows) for j in range(cols) if grid_map[i][j] >= 40]
+            
+            # BFS를 사용하여 각 셀과 가장 가까운 장애물과의 거리 계산
+            queue = obstacle_cells[:]
+            for x, y in queue:
+                distance_map[x, y] = 0  # 장애물 위치는 거리 0
+            
+            directions = [(-1,0), (1,0), (0,-1), (0,1)]
+            while queue:
+                x, y = queue.pop(0)
+                for dx, dy in directions:
+                    nx, ny = x + dx, y + dy
+                    if 0 <= nx < rows and 0 <= ny < cols and distance_map[nx, ny] == np.inf:
+                        distance_map[nx, ny] = distance_map[x, y] + 1
+                        queue.append((nx, ny))
+            
+            return distance_map
         
         def grid_to_real(path, params):
             grid_size = int(params["MAP_SIZE"][0] / params["MAP_RESOLUTION"])
@@ -502,7 +501,7 @@ class Mapper(Node):
         # [6] 10초마다 맵 저장
         current_time = time.time()
         if current_time - self.last_save_time > 10:
-            save_map(self, 'map.txt')
+            save_map(self, 'update_map.txt')
             self.last_save_time = current_time
     def odom_callback(self, msg):
         """ Odometry 데이터를 받아 현재 방향 (yaw) 업데이트 """
@@ -525,9 +524,9 @@ class Mapper(Node):
 
             # 파일 경로 설정
             back_folder = '..'  # 상위 폴더를 지정하려는 경우
-            PKG_PATH = r'C:\Users\SSAFY\Desktop\S12P21E103\ROS\auto_driving\happie\happie'
+            #PKG_PATH = r'C:\Users\SSAFY\Desktop\S12P21E103\ROS\auto_driving\happie\happie'
             folder_name = 'data'  # 맵을 저장할 폴더 이름
-            file_name = 'map.txt'  # 파일 이름
+            file_name = 'update_map.txt'  # 파일 이름
             full_path = os.path.join(PKG_PATH, back_folder, folder_name, file_name)  # 전체 경로 설정
 
             # 데이터 읽기

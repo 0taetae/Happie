@@ -1,19 +1,18 @@
 # # custom map parameters
 params_map = {
     "MAP_RESOLUTION": 0.03,
-    "OCCUPANCY_UP": 0.04,
-    "OCCUPANCY_DOWN": 0.08,
+    "OCCUPANCY_UP": 0.02,
+    "OCCUPANCY_DOWN": 0.01,
     "MAP_CENTER": (-50, -50),
     "MAP_SIZE": (30, 30),
     "MAP_FILENAME": 'test.png',
     "MAPVIS_RESIZE_SCALE": 0.5
 }
 
-
 # smart home 1 map parameters
 # params_map = {
 #     "MAP_RESOLUTION": 0.05,
-#     "OCCUPANCY_UP": 0.02, 
+#     "OCCUPANCY_UP": 0.02,
 #     "OCCUPANCY_DOWN": 0.01,
 #     "MAP_CENTER": (0, 0),
 #     "MAP_SIZE": (17.5, 17.5),

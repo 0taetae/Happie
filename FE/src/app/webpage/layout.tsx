@@ -6,19 +6,23 @@ import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 import Sidebar from "./components/Sidebar";
 import Map from "./components/Map";
-import OrderButton from "./components/OrderButton";
-import DrugHistoryButton from "./components/DrugHistoryButton";
 import Warning from "./components/Warning";
+import { mqttClient } from "@/lib/mqttClient";
 
 export default function WebPageLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
   const [unauthorized, setUnauthorized] = useState(false);
+  const [showWarning, setShowWarning] = useState(false);
+  const [warningImage, setWarningImage] = useState("");
+
+  // ✅ RobotList 갱신 트리거 상태
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     const code = localStorage.getItem("access_code");
 
-    if (code !== "103") {
+    if (code !== "gkstkfckdl0411!") {
       Swal.fire({
         icon: "warning",
         title: "접근 권한 없음",
@@ -36,10 +40,25 @@ export default function WebPageLayout({ children }: { children: React.ReactNode 
     setIsChecking(false);
   }, [router]);
 
+  useEffect(() => {
+    mqttClient.on("message", (topic, message) => {
+      if (topic === "fall_detection") {
+        console.log("📩 낙상 감지 수신:", message.toString());
+        try {
+          const data = JSON.parse(message.toString());
+          setWarningImage(data.image_url); // 🔹 이미지 URL 저장
+          setShowWarning(true);
+        } catch (err) {
+          console.error("❌ JSON 파싱 오류:", err);
+        }
+      }
+    });
+  }, []);
+
   if (isChecking) return null;
 
   if (unauthorized) {
-    return <div className="min-h-screen bg-white" />; // 아무것도 안 보여주기 (모달만 뜸)
+    return <div className="min-h-screen bg-white" />;
   }
 
   return (
@@ -49,22 +68,23 @@ export default function WebPageLayout({ children }: { children: React.ReactNode 
         <div className="text-white">한살차이</div>
       </header>
 
-      <div className="flex flex-grow">
-        <Sidebar />
-        <main className="flex flex-col flex-grow p-4">
-          <div>{children}</div>
-          <div className="mt-4 flex flex-col items-center space-y-4">
-            <Map />
-            <div className="self-end">
-              <div className="flex flex-row gap-3">
-                <Warning />
-                <DrugHistoryButton />
-                <OrderButton />
-              </div>
-            </div>
-          </div>
-        </main>
+      {/* ⚙️ 콘텐츠 */}
+      <div className="flex flex-grow overflow-hidden">
+        {/* ✅ Sidebar에 refreshTrigger 전달 */}
+        <Sidebar refreshTrigger={refreshTrigger} />
+
+        {/* 콘텐츠 전체 영역 */}
+        <div className="flex flex-col flex-grow bg-white relative">
+          {/* 📍 지도 - ✅ setRefreshTrigger 함수 전달 */}
+          <Map onOrderSuccess={() => setRefreshTrigger((prev) => prev + 1)} />
+
+          {/* 📄 기타 콘텐츠 */}
+          <div className="mt-6">{children}</div>
+        </div>
       </div>
+
+      {/* 낙상 경고 모달 */}
+      {showWarning && <Warning imageUrl={warningImage} onClose={() => setShowWarning(false)} />}
     </div>
   );
 }
