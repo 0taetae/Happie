@@ -215,7 +215,7 @@ class Mapper(Node):
         
         # 로직 1 : publisher, subscriber, msg 생성
         self.subscription = self.create_subscription(LaserScan,'/scan',self.scan_callback,10)
-        self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
+        # self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
 
         # MQTT 설정
         self.mqtt_client = mqtt.Client()
