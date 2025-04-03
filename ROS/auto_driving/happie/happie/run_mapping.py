@@ -126,7 +126,7 @@ class Mapping:
 
         self.T_r_l = np.array([[0,-1,0],[1,0,0],[0,0,1]])
         # 🔥 기존 맵 파일이 있으면 로드
-        map_path = os.path.join(PKG_PATH, '..', 'data', 'map.txt')
+        map_path = os.path.join(PKG_PATH, '..', 'data', 'update_map.txt')
         if os.path.exists(map_path):
             print(f"기존 맵 {map_path} 불러오기...")
             
@@ -239,6 +239,7 @@ class Mapper(Node):
         
         # 로직 1 : publisher, subscriber, msg 생성
         self.subscription = self.create_subscription(LaserScan,'/scan',self.scan_callback,10)
+        self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
         self.goal_sub = self.create_subscription(PoseStamped, 'goal_pose', self.goal_callback, 1)
         self.global_path_pub = self.create_publisher(Path, 'a_star_global_path', 10)
 
@@ -260,6 +261,11 @@ class Mapper(Node):
         self.map_msg.header.frame_id="map"
         self.map_size=int(params_map["MAP_SIZE"][0]\
             /params_map["MAP_RESOLUTION"]*params_map["MAP_SIZE"][1]/params_map["MAP_RESOLUTION"])
+        
+        # 현재 위치 및 방향
+        self.pose_x = 0.0
+        self.pose_y = 0.0
+        self.yaw = 0.0
         
         self.grid = []
         self.rows = []
@@ -359,7 +365,7 @@ class Mapper(Node):
         return None
 
     def publish_global_path(self, path_points):
-        #경로를 Path 메시지로 변환 후 Publish
+        """경로를 Path 메시지로 변환 후 Publish"""
         path_msg = Path()
         path_msg.header.stamp = self.get_clock().now().to_msg()
         path_msg.header.frame_id = "map"
@@ -452,6 +458,12 @@ class Mapper(Node):
         if current_time - self.last_save_time > 10:
             save_map(self, 'update_map.txt')
             self.last_save_time = current_time
+    def odom_callback(self, msg):
+        """ Odometry 데이터를 받아 현재 방향 (yaw) 업데이트 """
+        orientation_q = msg.pose.pose.orientation
+        quat = Quaternion(orientation_q.w, orientation_q.x, orientation_q.y, orientation_q.z)
+        _, _, self.yaw = quat.to_euler()
+        print('odometry info =========', msg.pose.x, msg.pose.y, round(self.yaw, 3))
 
     def goal_callback(self, msg):
         if msg.header.frame_id == 'map':
@@ -467,10 +479,10 @@ class Mapper(Node):
 
             # 파일 경로 설정
             back_folder = '..'  # 상위 폴더를 지정하려는 경우
-            #PKG_PATH = r'C:\Users\SSAFY\Desktop\S12P21E103\ROS\auto_driving\happie\happie'
+            pkg_path = PKG_PATH
             folder_name = 'data'  # 맵을 저장할 폴더 이름
             file_name = 'update_map.txt'  # 파일 이름
-            full_path = os.path.join(PKG_PATH, back_folder, folder_name, file_name)  # 전체 경로 설정
+            full_path = os.path.join(pkg_path, back_folder, folder_name, file_name)  # 전체 경로 설정
 
             # 데이터 읽기
             with open(full_path, 'r') as file:
