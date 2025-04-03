@@ -10,13 +10,15 @@ public class MqttPublisher {
     private final MqttClient mqttClient;
     private final String topic;
 
-    public MqttPublisher(String broker, String clientId, String topic) throws MqttException {
+    public MqttPublisher(String broker, String clientId, String topic, String username, String password) throws MqttException {
         this.topic = topic;
         this.mqttClient = new MqttClient(broker, clientId, new MemoryPersistence());
 
         MqttConnectOptions options = new MqttConnectOptions();
         options.setAutomaticReconnect(true);
         options.setCleanSession(true);
+        options.setUserName(username);
+        options.setPassword(password.toCharArray());
 
         mqttClient.connect(options);
     }

@@ -11,7 +11,9 @@ public class MqttPublisherConfig {
     @Bean
     public MqttPublisher mqttPublisher(@Value("${mqtt.broker}") String broker,
                                        @Value("${mqtt.client-id}") String clientId,
-                                       @Value("${mqtt.topic}") String topic) throws MqttException {
-        return new MqttPublisher(broker, clientId, topic);
+                                       @Value("${mqtt.topic}") String topic,
+                                       @Value("${mqtt.username}") String username,
+                                       @Value("${mqtt.password}") String password) throws MqttException {
+        return new MqttPublisher(broker, clientId, topic, username, password);
     }
 }
