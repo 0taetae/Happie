@@ -3,9 +3,10 @@ import io
 import base64
 import json
 from stt import transcribe_stt
-from search_vector import search_hospital_info
+from search_chromadb import search_hospital_info
 from prompting import generate_response, clear_history
 import threading
+from search_mysql import get_image_for_keyword
 
 class MQTTChatbot:
     def __init__(self):
@@ -22,8 +23,8 @@ class MQTTChatbot:
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
 
+    # MQTT 연결
     def start(self):
-        """MQTT 연결 시작"""
         try:
             self.client.connect(self.BROKER, self.PORT, 60)
             print("🔄 MQTT 브로커에 연결 중...")
@@ -31,8 +32,9 @@ class MQTTChatbot:
         except Exception as e:
             print(f"❌ MQTT 브로커 연결 오류: {e}")
 
+    # MQTT 연결 이벤트
+    # MQTT 구독
     def on_connect(self, client, userdata, flags, reason_code, properties):
-        """MQTT 연결 이벤트"""
         if reason_code == 0:
             print("✅ MQTT 브로커 연결 성공")
             client.subscribe(self.TOPIC_SUBSCRIBE)
@@ -67,17 +69,39 @@ class MQTTChatbot:
             response_text = generate_response(transcribed_text, search_results)
 
             facility_name = ""
+            image_url = ""
+            
+            keywords = ["간호사실", "501호실", "502호실", "503호실"]
+            
             if "5층" in response_text:
+                found_facilities = []  # 5층에 있는 시설명을 저장할 리스트
+                
                 for result in search_results:
                     if result.get("floor_info") == "5층":
-                        facility_name = result.get("facility_name", "")
-                        break
+                        found_facilities.append(result.get("facility_name", ""))
+
+                print(f"🏢 [DEBUG] 5층에서 찾은 시설들: {found_facilities}")
+
+                # 5층 시설 중에서 우리가 찾는 키워드가 포함된 시설명을 우선 선택
+                facility_name = next((f for f in found_facilities if f in keywords), "")
+
+                if facility_name:
+                    print(f"✅ [DEBUG] 키워드 매칭된 facility_name: {facility_name}")
+                    image_url = get_image_for_keyword(facility_name)  # 이미지 조회
+                    print(f"📸 조회된 이미지 URL: {image_url}")
+                else:
+                    print(f"⚠️ [DEBUG] 키워드 매칭 실패. 기본 facility_name 사용.")
+                    facility_name = found_facilities[0] if found_facilities else ""  # 첫 번째 시설 선택
+
                 response_text += " 안내를 시작할까요?"
 
+
+            # ✅ 최종 메시지 데이터
             message_data = {
                 "request": transcribed_text,
                 "response": response_text,
-                "facility": facility_name
+                "facility": facility_name,
+                "image": image_url
             }
 
             message_json = json.dumps(message_data, ensure_ascii=False)

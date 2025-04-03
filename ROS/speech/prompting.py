@@ -1,6 +1,6 @@
 import sys
 sys.path.append(r"C:\Users\SSAFY\Desktop\S12P21E103\ROS\speech")
-from search_vector import search_hospital_info
+from search_chromadb import search_hospital_info
 import logging
 import openai
 from dotenv import load_dotenv
