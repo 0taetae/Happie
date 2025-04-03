@@ -104,6 +104,20 @@ def convert_path_to_ros(path, map_center, map_resolution):
 
     return ros_path
 
+def grid_to_real(path, params):
+        grid_size = int(params["MAP_SIZE"][0] / params["MAP_RESOLUTION"])  # 그리드 크기 계산
+        x_center, y_center = params["MAP_CENTER"]  # 맵 중심 좌표
+        resolution = params["MAP_RESOLUTION"]  # 해상도
+
+        real_path = [
+            (
+                x_center + (j - grid_size // 2) * resolution,
+                y_center + (i - grid_size // 2) * resolution
+            )
+            for i, j in path
+        ]
+        return real_path
+
 class Mapping:
     # 사용자가 정의한 맵 설정을 받아서 회색의 어레이로 초기화 시키고,
     # 로봇의 pose와 2d 라이다 값들을 받은 다음,
@@ -266,7 +280,7 @@ class Mapper(Node):
         self.pose_x = 0.0
         self.pose_y = 0.0
         self.yaw = 0.0
-        
+
         self.grid = []
         self.rows = []
         self.cols = []
@@ -305,67 +319,38 @@ class Mapper(Node):
         ]
         dCost = [1, 1, 1, 1, 1.414, 1.414, 1.414, 1.414] # 이동 비용 설정
         neighbors = []
-        # 경계를 벗어나지 않고 벽(40 이상)이 아니면 유효한 인접 노드
+
         for i, direction in enumerate(directions):
-            neighbor = (node[0] + direction[0], node[1] + direction[1])
-            if 0 <= neighbor[0] < self.rows and 0 <= neighbor[1] < self.cols and self.grid[neighbor[0]][neighbor[1]] < 40:
-                neighbors.append((neighbor, dCost[i]))
+            neighbor_x = node[0] + direction[0]
+            neighbor_y = node[1] + direction[1]
+            
+            # 경계 체크 추가
+            if not (0 <= neighbor_x < self.rows and 0 <= neighbor_y < self.cols):
+                continue 
+
+            grid_value = self.grid[neighbor_x, neighbor_y]
+
+            if grid_value < 40:  # 여기서 list와 비교하면 에러 발생 가능
+                neighbors.append(((neighbor_x, neighbor_y), dCost[i]))
+
         return neighbors
 
     def a_star(self, start, goal):
+        # 좌표 정수 변환
+        start = (int(round(start[0])), int(round(start[1])))
+        goal = (int(round(goal[0])), int(round(goal[1])))
 
-<<<<<<< HEAD
-=======
-        def compute_obstacle_distance_map(grid_map):
-            """각 셀이 가장 가까운 장애물과의 거리를 계산하는 함수"""
-            rows, cols = len(grid_map), len(grid_map[0])
-            distance_map = np.full((rows, cols), np.inf)
-
-            # 장애물(40 이상인 셀) 위치 저장
-            obstacle_cells = [(i, j) for i in range(rows) for j in range(cols) if grid_map[i][j] >= 40]
-
-            # BFS를 사용하여 각 셀과 가장 가까운 장애물과의 거리 계산
-            queue = obstacle_cells[:]
-            for x, y in queue:
-                distance_map[x, y] = 0  # 장애물 위치는 거리 0
-
-            directions = [(-1,0), (1,0), (0,-1), (0,1)]
-            while queue:
-                x, y = queue.pop(0)
-                for dx, dy in directions:
-                    nx, ny = x + dx, y + dy
-                    if 0 <= nx < rows and 0 <= ny < cols and distance_map[nx, ny] == np.inf:
-                        distance_map[nx, ny] = distance_map[x, y] + 1
-                        queue.append((nx, ny))
-
-            return distance_map
-
->>>>>>> bcb8a6242648844f2b372352dbb97bb397b8f13c
-        def grid_to_real(path, params):
-            grid_size = int(params["MAP_SIZE"][0] / params["MAP_RESOLUTION"])  # 그리드 크기 계산
-            x_center, y_center = params["MAP_CENTER"]  # 맵 중심 좌표
-            resolution = params["MAP_RESOLUTION"]  # 해상도
-
-            real_path = [
-                (
-                    x_center + (j - grid_size // 2) * resolution,
-                    y_center + (i - grid_size // 2) * resolution
-                )
-                for i, j in path
-            ]
-            return real_path
-        
         open_list = []
         closed_list = set()
-        
+
         heapq.heappush(open_list, (0 + self.heuristic(start, goal), 0, self.heuristic(start, goal), start))
-        
+
         came_from = {}
         g_score = {start: 0}
-        print('test!!!!')        
+
         while open_list:
             current_f, current_g, current_h, current_node = heapq.heappop(open_list)
-            
+
             if current_node == goal:
                 path = []
                 while current_node in came_from:
@@ -373,17 +358,18 @@ class Mapper(Node):
                     current_node = came_from[current_node]
                 path.append(start)
                 real_path = grid_to_real(path[::-1], params_map)
-                print(path[::-1])
                 return path[::-1], real_path
-            
+
             closed_list.add(current_node)
-            
+
             for neighbor, cost in self.neighbors(current_node):
+                neighbor = (int(round(neighbor[0])), int(round(neighbor[1])))  # 정수 변환 추가
+                
                 if neighbor in closed_list:
                     continue
-                
+
                 tentative_g_score = current_g + cost  
-                
+
                 if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
                     g_score[neighbor] = tentative_g_score
                     f_score = tentative_g_score + self.heuristic(neighbor, goal)
@@ -391,6 +377,7 @@ class Mapper(Node):
                     came_from[neighbor] = current_node
 
         return None
+
 
     def publish_global_path(self, path_points):
         """경로를 Path 메시지로 변환 후 Publish"""
@@ -439,9 +426,6 @@ class Mapper(Node):
         # pose = np.array([[pose_x], [pose_y], [heading]])
         # self.mapping.update(pose, laser)
     
-        # [4] 로그 출력 (현재 위치 확인)
-        print(f"현재 위치 (실제 좌표): x={pose_x:.2f}, y={pose_y:.2f}, heading={heading:.2f} rad")
-        print(f"맵 좌표계 인덱스: map_x={map_x:.0f}, map_y={map_y:.0f}")
     
         # [5] 맵 퍼블리시
         # 각도 계산 (1도씩 증가하므로, 각도를 라디안으로 변환)
@@ -498,69 +482,73 @@ class Mapper(Node):
             goal_x = msg.pose.position.x
             goal_y = msg.pose.position.y
             print(f"목표 위치 (실제 좌표): x={goal_x:.2f}, y={goal_y:.2f}")
-            # 위치변환
-            goal_map_x = (goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0]/2) / params_map['MAP_RESOLUTION']
-            goal_map_y = (goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1]/2) / params_map['MAP_RESOLUTION']
-            # 목표 위치 확인
-            print(f"맵 좌표계 인덱스: map_x={goal_map_x:.0f}, map_y={goal_map_y:.0f}")
+            
+            # 위치 변환
+            goal_map_x = (goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION']
+            goal_map_y = (goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1] / 2) / params_map['MAP_RESOLUTION']
+            
+            goal_map_x = int(goal_map_x) 
+            goal_map_y = int(goal_map_y)
 
-
+            # 맵 좌표 인덱스 변환 후 정수화
+            map_x = int(goal_map_x)
+            map_y = int(goal_map_y)
+            
+            print(f"맵 좌표계 인덱스: map_x={map_x}, map_y={map_y}")
+            
             # 파일 경로 설정
-            back_folder = '..'  # 상위 폴더를 지정하려는 경우
-<<<<<<< HEAD
-            PKG_PATH = r'C:\Users\SSAFY\Desktop\S12P21E103\ROS\auto_driving\happie\happie'
-            folder_name = 'data'  # 맵을 저장할 폴더 이름
-            file_name = 'map.txt'  # 파일 이름
-            full_path = os.path.join(PKG_PATH, back_folder, folder_name, file_name)  # 전체 경로 설정
-=======
+            back_folder = '..'  # 상위 폴더 지정
             pkg_path = PKG_PATH
-            folder_name = 'data'  # 맵을 저장할 폴더 이름
-            file_name = 'update_map.txt'  # 파일 이름
-            full_path = os.path.join(pkg_path, back_folder, folder_name, file_name)  # 전체 경로 설정
->>>>>>> bcb8a6242648844f2b372352dbb97bb397b8f13c
+            folder_name = 'data'
+            file_name = 'update_map.txt'
+            full_path = os.path.join(pkg_path, back_folder, folder_name, file_name)
 
             # 데이터 읽기
             with open(full_path, 'r') as file:
                 data = file.read().split()
-    
-            # 데이터 크기 확인
-            grid_size = int(params_map['MAP_SIZE'][0]/params_map['MAP_RESOLUTION'])
+
+            # 그리드 크기 계산
+            grid_size = int(params_map['MAP_SIZE'][0] / params_map['MAP_RESOLUTION'])
+            print(f"그리드 사이즈: {grid_size} x {grid_size}")
+
+            # 데이터 크기 불일치 확인
+            if len(data) != grid_size * grid_size:
+                print("⚠ 데이터 크기가 맞지 않습니다! 파일 데이터 개수와 그리드 크기가 일치하는지 확인하세요.")
+                return
 
             # 1차원 배열을 NxM 크기의 2차원 배열로 변환
+            # data_array = np.array(data, dtype=int).flatten().reshape(grid_size, grid_size)
             data_array = np.array(data, dtype=int).reshape(grid_size, grid_size)
-            self.grid, self.rows, self.cols  = data_array, len(self.grid), len((self.grid)[0])
 
+            # 맵 좌표 인덱스 범위 초과 방지
+            if not (0 <= map_x < data_array.shape[0] and 0 <= map_y < data_array.shape[1]):
+                print(f"⚠ 오류: map_x={map_x}, map_y={map_y}가 data_array 범위를 초과합니다.")
+                return
+
+            self.grid = data_array
+            self.rows, self.cols = data_array.shape
+
+            # A* 경로 탐색 수행
             start = (int(self.map_pose_y), int(self.map_pose_x))
-            # map의 중심좌표
-            #start = (int(((-50 - params_map["MAP_CENTER"][0] + (params_map["MAP_SIZE"][0] / params_map["MAP_RESOLUTION"])) /2)), int(((-50 - params_map["MAP_CENTER"][1] + (params_map["MAP_SIZE"][1] / params_map["MAP_RESOLUTION"])) /2)))
-            #goal = (int(self.map_pose_y), int(self.map_pose_x))<<<< MQTT통신을 통해서 받은 목표 좌표를 의미
-            goal = (-45, -50)
+            goal = (map_y, map_x)
             path, real_path = self.a_star(start, goal)
-
-            print(real_path)
-            # 경로 표시
+            
             if path:
-                # 경로를 맵에 빨간색으로 표시
                 for p in path:
-                    data_array[p[0]][p[1]] = 50  # 경로 표시 (예: 값 50으로 표시)
-
-            # 경로가 제대로 표시되지 않으면 경로를 점으로만 표시
+                    data_array[p[0]][p[1]] = 50  # 경로 표시
             else:
                 print("경로를 찾을 수 없습니다.")
             
             # 만든 path를 publish
             self.publish_global_path(real_path)
 
-            # 시각화 (matplotlib 사용)
+            # 시각화
             fig, ax = plt.subplots()
-            # 먼저 전체 맵을 그립니다
             cax = ax.imshow(data_array, cmap='gray', interpolation='nearest')
-            # 경로를 빨간색으로 그립니다
             if path:
                 for p in path:
-                    ax.plot(p[1], p[0], color='red', marker='o', markersize=2)  # 경로를 빨간색 점으로 표시
-
-            plt.colorbar(cax)  # 색상 막대 추가
+                    ax.plot(p[1], p[0], color='red', marker='o', markersize=2)
+            plt.colorbar(cax)
             plt.title("A* Pathfinding with Red Path")
             plt.show()
 
