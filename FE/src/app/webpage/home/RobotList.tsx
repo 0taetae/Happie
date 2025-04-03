@@ -107,7 +107,7 @@ export default function RobotList({ refreshTrigger }: { refreshTrigger: number }
               bg-yellow-100 shadow-md rounded-lg text-sm 
               ${openRobot === num ? "max-h-[300px] p-2" : "max-h-0 p-0"}`}
           >
-            <div className="overflow-y-auto max-h-[250px] pr-1">
+            <div className="pr-1">
               {robotTasks[num]?.length > 0 ? (
                 <>
                   <p className="mb-1 font-bold">📌 대기 명령</p>

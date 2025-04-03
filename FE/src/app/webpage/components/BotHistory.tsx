@@ -39,7 +39,8 @@ export default function BotHistory({ botId }: { botId: number }) {
 
   return (
     <div className="flex flex-col w-full bg-white rounded-lg shadow-md h-full">
-      <div className="flex-grow px-1 max-h-[300px] overflow-y-auto">
+      <div className="px-1 overflow-y-auto h-full">
+
         <ul className="space-y-2">
           {loading ? (
             <li className="text-gray-400 text-sm text-center py-6">⌛ 불러오는 중...</li>
