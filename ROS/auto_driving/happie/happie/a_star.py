@@ -115,32 +115,75 @@ class a_star(Node):
         self.map_pose_x = 0
         self.map_pose_y = 0
 
+    # def heuristic(self, a, b):
+    #     # 맨해튼 거리 (거리 계산 방법을 변경할 수 있음)
+    #     return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
     def heuristic(self, a, b):
-        # 맨해튼 거리 (거리 계산 방법을 변경할 수 있음)
-        return abs(a[0] - b[0]) + abs(a[1] - b[1])
+        base_heuristic = abs(a[0] - b[0]) + abs(a[1] - b[1])  # 맨해튼 거리
+        safety_penalty = 0
     
+        # 벽 근처에 있을 경우 패널티 추가 (4칸)
+        for dx in range(-4, 5):
+            for dy in range(-4, 5):
+                nx, ny = a[0] + dx, a[1] + dy
+                if 0 <= nx < self.rows and 0 <= ny < self.cols:
+                    if self.grid[nx, ny] >= 40:  # 벽이면
+                        safety_penalty += 5  # 패널티 크게 증가
+    
+        return base_heuristic + safety_penalty
+    
+    # def neighbors(self, node):
+    #     directions = [
+    #         (-1, 0), (1, 0), (0, -1), (0, 1),  # 상, 하, 좌, 우
+    #         (-1, -1), (-1, 1), (1, -1), (1, 1) # 대각선
+    #     ]
+    #     dCost = [1, 1, 1, 1, 1.414, 1.414, 1.414, 1.414] # 이동 비용 설정
+    #     neighbors = []
+
+    #     for i, direction in enumerate(directions):
+    #         neighbor_x = node[0] + direction[0]
+    #         neighbor_y = node[1] + direction[1]
+            
+    #         # 경계 체크 추가
+    #         if not (0 <= neighbor_x < self.rows and 0 <= neighbor_y < self.cols):
+    #             continue 
+
+    #         grid_value = self.grid[neighbor_x, neighbor_y]
+
+    #         if grid_value < 40:  # 여기서 list와 비교하면 에러 발생 가능
+    #             neighbors.append(((neighbor_x, neighbor_y), dCost[i]))
+
+    #     return neighbors
+
+
     def neighbors(self, node):
         directions = [
-            (-1, 0), (1, 0), (0, -1), (0, 1),  # 상, 하, 좌, 우
-            (-1, -1), (-1, 1), (1, -1), (1, 1) # 대각선
+            (-1, 0), (1, 0), (0, -1), (0, 1),  
+            (-1, -1), (-1, 1), (1, -1), (1, 1)
         ]
-        dCost = [1, 1, 1, 1, 1.414, 1.414, 1.414, 1.414] # 이동 비용 설정
+        dCost = [1, 1, 1, 1, 1.414, 1.414, 1.414, 1.414]  # 대각선 이동 비용
+
         neighbors = []
-
         for i, direction in enumerate(directions):
-            neighbor_x = node[0] + direction[0]
-            neighbor_y = node[1] + direction[1]
+            nx, ny = node[0] + direction[0], node[1] + direction[1]
             
-            # 경계 체크 추가
-            if not (0 <= neighbor_x < self.rows and 0 <= neighbor_y < self.cols):
-                continue 
-
-            grid_value = self.grid[neighbor_x, neighbor_y]
-
-            if grid_value < 40:  # 여기서 list와 비교하면 에러 발생 가능
-                neighbors.append(((neighbor_x, neighbor_y), dCost[i]))
-
+            if 0 <= nx < self.rows and 0 <= ny < self.cols:
+                cost = dCost[i]
+                
+                # 벽 근처 가중치 추가 (4칸 안전 마진 적용)
+                min_distance = 4  
+                for dx in range(-min_distance, min_distance + 1):
+                    for dy in range(-min_distance, min_distance + 1):
+                        if 0 <= nx + dx < self.rows and 0 <= ny + dy < self.cols:
+                            if self.grid[nx + dx, ny + dy] >= 40:  # 벽 근처
+                                cost += 5  # 패널티 더 증가
+                
+                if self.grid[nx, ny] < 40:  # 벽이 아닌 경우에만 추가
+                    neighbors.append(((nx, ny), cost))
+        
         return neighbors
+
     
     def a_star(self, start, goal):
         # 좌표 정수 변환
@@ -259,6 +302,7 @@ class a_star(Node):
             start = (int(self.map_pose_y), int(self.map_pose_x))
             goal = (map_y, map_x)
             path, real_path = self.a_star(start, goal)
+            print(real_path)
             
             if path:
                 for p in path:
