@@ -121,42 +121,25 @@ else:
 
 # 시각화 (matplotlib 사용)
 fig, ax = plt.subplots()
+
 # 먼저 전체 맵을 그립니다
 cax = ax.imshow(data_array, cmap='gray', interpolation='nearest')
+
 # 경로를 빨간색으로 그립니다
 if path:
     for p in path:
         ax.plot(p[1], p[0], color='red', marker='o', markersize=2)  # 경로를 빨간색 점으로 표시
+
+# x, y 축 눈금 설정 (10 간격)
+ax.set_xticks(np.arange(0, grid_size, 10))
+ax.set_yticks(np.arange(0, grid_size, 10))
+
+# x, y 축 레이블 추가
+ax.set_xticklabels(np.arange(0, grid_size, 10))
+ax.set_yticklabels(np.arange(0, grid_size, 10))
 
 plt.colorbar(cax)  # 색상 막대 추가
 plt.title("A* Pathfinding with Red Path")
 plt.show()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # def pose_to_grid_cell(self, x, y):
-    #     map_point_x = int((x - self.map_offset_x) / self.map_resolution)
-    #     map_point_y = int((y - self.map_offset_y) / self.map_resolution)
-
-    #     ## 로직 4. 위치(x,y)를 map의 grid cell로 변환
-    #     map_point_x = max(0, min(self.GRIDSIZE - 1, map_point_x))
-    #     map_point_y = max(0, min(self.GRIDSIZE - 1, map_point_y))
-    #     print(map_point_x, map_point_y)
-    #     return map_point_x, map_point_y

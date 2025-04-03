@@ -1,12 +1,12 @@
 # # custom map parameters
 params_map = {
-    "MAP_RESOLUTION": 0.1,
-    "OCCUPANCY_UP": 0.02,
-    "OCCUPANCY_DOWN": 0.01,
-    "MAP_CENTER": (-50.036964416503906, -50.065105438232),
+    "MAP_RESOLUTION": 0.03,
+    "OCCUPANCY_UP": 0.04,
+    "OCCUPANCY_DOWN": 0.08,
+    "MAP_CENTER": (-50, -50),
     "MAP_SIZE": (30, 30),
     "MAP_FILENAME": 'test.png',
-    "MAPVIS_RESIZE_SCALE": 2.5
+    "MAPVIS_RESIZE_SCALE": 0.5
 }
 
 

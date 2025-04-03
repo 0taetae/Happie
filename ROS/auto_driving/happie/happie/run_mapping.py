@@ -79,6 +79,30 @@ def createLineIterator(P1, P2, img):
     itbuffer = itbuffer[(itbuffer[:, 0] >= 0) & (itbuffer[:, 0] < imageW) & (itbuffer[:, 1] >= 0) & (itbuffer[:, 1] < imageH)]
     return itbuffer
 
+# A* 경로를 ROS Path 메시지로 변환하는 함수
+def convert_path_to_ros(path, map_center, map_resolution):
+    ros_path = Path()
+    ros_path.header.frame_id = "map"  # TF 좌표계 설정
+    ros_path.header.stamp = rclpy.clock.Clock().now().to_msg()
+
+    for node in path:
+        i, j = node  # A*에서의 (grid y, grid x) 좌표
+
+        # Grid 좌표 → 실제 좌표 변환
+        real_x = map_center[0] + (j * map_resolution)
+        real_y = map_center[1] + (i * map_resolution)
+
+        # PoseStamped 메시지 생성
+        pose = PoseStamped()
+        pose.header.frame_id = "map"
+        pose.header.stamp = rospy.Time.now()
+        pose.pose.position.x = real_x
+        pose.pose.position.y = real_y
+        pose.pose.position.z = 0.0  # 2D 경로이므로 z=0
+
+        ros_path.poses.append(pose)
+
+    return ros_path
 
 class Mapping:
     # 사용자가 정의한 맵 설정을 받아서 회색의 어레이로 초기화 시키고,
@@ -215,7 +239,9 @@ class Mapper(Node):
         
         # 로직 1 : publisher, subscriber, msg 생성
         self.subscription = self.create_subscription(LaserScan,'/scan',self.scan_callback,10)
+        self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
         self.goal_sub = self.create_subscription(PoseStamped, 'goal_pose', self.goal_callback, 1)
+        self.global_path_pub = self.create_publisher(Path, 'a_star_global_path', 10)
 
         # MQTT 설정
         self.mqtt_client = mqtt.Client()
@@ -235,6 +261,11 @@ class Mapper(Node):
         self.map_msg.header.frame_id="map"
         self.map_size=int(params_map["MAP_SIZE"][0]\
             /params_map["MAP_RESOLUTION"]*params_map["MAP_SIZE"][1]/params_map["MAP_RESOLUTION"])
+        
+        # 현재 위치 및 방향
+        self.pose_x = 0.0
+        self.pose_y = 0.0
+        self.yaw = 0.0
         
         self.grid = []
         self.rows = []
@@ -281,10 +312,66 @@ class Mapper(Node):
                 neighbors.append((neighbor, dCost[i]))
         return neighbors
 
-    def a_star(self, start, goal):
+    def compute_obstacle_distance_map(grid_map):
+        """각 셀이 가장 가까운 장애물과의 거리를 계산하는 함수"""
+        rows, cols = len(grid_map), len(grid_map[0])
+        distance_map = np.full((rows, cols), np.inf)
+        
+        # 장애물(40 이상인 셀) 위치 저장
+        obstacle_cells = [(i, j) for i in range(rows) for j in range(cols) if grid_map[i][j] >= 40]
+        
+        # BFS를 사용하여 각 셀과 가장 가까운 장애물과의 거리 계산
+        queue = obstacle_cells[:]
+        for x, y in queue:
+            distance_map[x, y] = 0  # 장애물 위치는 거리 0
+        
+        directions = [(-1,0), (1,0), (0,-1), (0,1)]
+        while queue:
+            x, y = queue.pop(0)
+            for dx, dy in directions:
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < rows and 0 <= ny < cols and distance_map[nx, ny] == np.inf:
+                    distance_map[nx, ny] = distance_map[x, y] + 1
+                    queue.append((nx, ny))
+        
+        return distance_map
+
+
+    def a_star(self, start, goal, grid_map):
+        """안전한 경로를 탐색하는 A* 알고리즘"""
+        
+        def grid_to_real(path, params):
+            grid_size = int(params["MAP_SIZE"][0] / params["MAP_RESOLUTION"])
+            x_center, y_center = params["MAP_CENTER"]
+            resolution = params["MAP_RESOLUTION"]
+            return [
+                (
+                    x_center + (j - grid_size // 2) * resolution,
+                    y_center + (i - grid_size // 2) * resolution
+                )
+                for i, j in path
+            ]
+
+        # 🔹 장애물 거리 맵을 미리 계산
+        obstacle_distance_map = compute_obstacle_distance_map(grid_map)
+        
+        def get_cost(pos):
+            """해당 좌표의 거리 기반 추가 비용 계산"""
+            x, y = pos
+            if grid_map[x][y] >= 40:
+                return float('inf')  # 장애물은 절대 탐색 불가
+            
+            distance_to_obstacle = obstacle_distance_map[x, y]
+            
+            # 장애물에서 2칸 이하라면 추가 비용 (가급적 피하도록 유도)
+            if distance_to_obstacle <= 2:
+                return 10  
+            elif distance_to_obstacle <= 4:
+                return 3  
+            return 1  # 일반 비용
+        
         open_list = []
         closed_list = set()
-        
         heapq.heappush(open_list, (0 + self.heuristic(start, goal), 0, self.heuristic(start, goal), start))
         
         came_from = {}
@@ -299,16 +386,22 @@ class Mapper(Node):
                     path.append(current_node)
                     current_node = came_from[current_node]
                 path.append(start)
-                return path[::-1]  
+                real_path = grid_to_real(path[::-1], params_map)
+                return path[::-1], real_path
             
             closed_list.add(current_node)
             
-            for neighbor, cost in self.neighbors(current_node):
+            for neighbor, base_cost in self.neighbors(current_node):
                 if neighbor in closed_list:
                     continue
-                
-                tentative_g_score = current_g + cost  
-                
+
+                # 🔹 장애물 거리 기반 추가 비용 적용
+                extra_cost = get_cost(neighbor)
+                if extra_cost == float('inf'):  # 장애물 또는 벽이면 스킵
+                    continue
+
+                tentative_g_score = current_g + base_cost + extra_cost  
+
                 if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
                     g_score[neighbor] = tentative_g_score
                     f_score = tentative_g_score + self.heuristic(neighbor, goal)
@@ -317,7 +410,25 @@ class Mapper(Node):
 
         return None
 
-    
+    def publish_global_path(self, path_points):
+        """경로를 Path 메시지로 변환 후 Publish"""
+        path_msg = Path()
+        path_msg.header.stamp = self.get_clock().now().to_msg()
+        path_msg.header.frame_id = "map"
+
+        for x, y in path_points:
+            pose = PoseStamped()
+            pose.header.stamp = self.get_clock().now().to_msg()
+            pose.header.frame_id = "map"
+            pose.pose.position.x = x
+            pose.pose.position.y = y
+            pose.pose.orientation.w = 1.0  # 기본 방향 설정
+            path_msg.poses.append(pose)
+
+        self.global_path_pub.publish(path_msg)
+        self.get_logger().info("Published global path.")
+
+
     def scan_callback(self, msg):
         # print("scan_callback start!!!")
     
@@ -393,6 +504,12 @@ class Mapper(Node):
         if current_time - self.last_save_time > 10:
             save_map(self, 'map.txt')
             self.last_save_time = current_time
+    def odom_callback(self, msg):
+        """ Odometry 데이터를 받아 현재 방향 (yaw) 업데이트 """
+        orientation_q = msg.pose.pose.orientation
+        quat = Quaternion(orientation_q.w, orientation_q.x, orientation_q.y, orientation_q.z)
+        _, _, self.yaw = quat.to_euler()
+        print('odometry info =========', msg.pose.x, msg.pose.y, round(self.yaw, 3))
 
     def goal_callback(self, msg):
         if msg.header.frame_id == 'map':
@@ -416,7 +533,7 @@ class Mapper(Node):
             # 데이터 읽기
             with open(full_path, 'r') as file:
                 data = file.read().split()
-
+    
             # 데이터 크기 확인
             grid_size = int(params_map['MAP_SIZE'][0]/params_map['MAP_RESOLUTION'])
 
@@ -426,9 +543,10 @@ class Mapper(Node):
             self.rows = len(self.grid)
             self.cols = len((self.grid)[0])
             start = (int(self.map_pose_y), int(self.map_pose_x))
-            goal = (int(284.0), int(203.0))
+            goal = (int(590.0), int(756.0))
             # goal = (int(132.0), int(188.0))
-            path = self.a_star(start, goal)
+            path, real_path = self.a_star(start, goal)
+            print(real_path)
             # 경로 표시
             if path:
                 # 경로를 맵에 빨간색으로 표시
@@ -438,6 +556,9 @@ class Mapper(Node):
             # 경로가 제대로 표시되지 않으면 경로를 점으로만 표시
             else:
                 print("경로를 찾을 수 없습니다.")
+            
+            # 만든 path를 publish
+            self.publish_global_path(real_path)
 
             # 시각화 (matplotlib 사용)
             fig, ax = plt.subplots()
@@ -451,6 +572,8 @@ class Mapper(Node):
             plt.colorbar(cax)  # 색상 막대 추가
             plt.title("A* Pathfinding with Red Path")
             plt.show()
+
+
 
 
 
