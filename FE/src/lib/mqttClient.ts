@@ -18,7 +18,9 @@ mqttClient.on("connect", () => {
   const topics = [
     "user/chatbot/request",
     "fall_detection",
-    "chatbot/response", // 🔹 LLM 응답 수신을 위한 구독
+    "chatbot/response",
+    "map/data",
+    "robot/map_position",
   ];
 
   topics.forEach((topic) => {

@@ -8,6 +8,7 @@ import Sidebar from "./components/Sidebar";
 import Map from "./components/Map";
 import Warning from "./components/Warning";
 import { mqttClient } from "@/lib/mqttClient";
+import Link from "next/link";
 
 export default function WebPageLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -64,7 +65,9 @@ export default function WebPageLayout({ children }: { children: React.ReactNode 
   return (
     <div className="flex flex-col h-screen">
       <header className="bg-blue-200 flex justify-between p-4 text-lg font-bold shadow-md">
-        <div className="text-white">🏥 하피 (happie)</div>
+        <Link href="/" className="text-white">
+          🏥 하피 (happie)
+        </Link>
         <div className="text-white">한살차이</div>
       </header>
 

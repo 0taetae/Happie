@@ -9,7 +9,6 @@ body,
   height: 100%;
 }
 
-
 /* 배경색 & 글자색 */
 :root {
   --background: #ffffff;
@@ -25,13 +24,15 @@ body,
 }
 
 /* 전체 화면 맞춤 & 스크롤 방지 */
-html, body {
+html,
+body {
   height: 100%;
   overflow: hidden;
 }
 
 /* 레이아웃 기본 설정 */
-#root, main {
+#root,
+main {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -58,6 +59,52 @@ body {
 
 /* 모달 애니메이션 */
 @layer utilities {
+  /* 귀 등장하는 애니 */
+  @keyframes slideInFromRight {
+    0% {
+      transform: translateX(300px);
+      opacity: 0;
+    }
+    100% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-slideInFromRight {
+    animation: slideInFromRight 0.8s ease-out forwards;
+  }
+
+  @layer utilities {
+    @keyframes scalePulse {
+      0%,
+      100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.08);
+      }
+    }
+
+    .animate-scalePulse {
+      animation: scalePulse 1s ease-in-out infinite;
+    }
+  }
+
+  @keyframes scalePulse {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.08);
+    }
+  }
+
+  .animate-scalePulse {
+    animation: scalePulse 1s ease-in-out infinite;
+  }
+
   @keyframes fadeInModal {
     0% {
       opacity: 0;
@@ -89,7 +136,8 @@ body {
 }
 
 @layer base {
-  html, body,
+  html,
+  body,
   .cursor-default-custom {
     cursor: url("/images/cursor-default.png"), auto;
   }
