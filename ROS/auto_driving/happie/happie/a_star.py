@@ -17,7 +17,11 @@ import matplotlib
 matplotlib.use('Agg')  # GUI 비활성화 (필수)
 import matplotlib.pyplot as plt
 
+<<<<<<< HEAD
 from .config import params_map, PKG_PATH, MQTT_CONFIG, patrol_path
+=======
+from .config import params_map, PKG_PATH, MQTT_CONFIG
+>>>>>>> 7627d6a354910e00ef5abb1259f7c156ee604e2a
 import paho.mqtt.client as mqtt
 
 
@@ -104,6 +108,17 @@ class a_star(Node):
         self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
         self.mqtt_client.loop_start()
 
+        # MQTT 설정 
+        self.mqtt_client = mqtt.Client()
+        self.mqtt_broker = MQTT_CONFIG["BROKER"]
+        self.mqtt_port = MQTT_CONFIG["PORT"]
+        self.mqtt_topic = "robot/goal"
+
+        self.mqtt_client.on_connect = self.on_connect
+        self.mqtt_client.on_message = self.on_message
+        self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
+        self.mqtt_client.loop_start()
+
 
         # 로직 2. 파라미터 설정
         self.map_size_x = int(params_map["MAP_SIZE"][0] / params_map["MAP_RESOLUTION"])
@@ -132,6 +147,7 @@ class a_star(Node):
         self.map_pose_x = 0
         self.map_pose_y = 0
 
+<<<<<<< HEAD
         # 순찰 경로 인덱스
         self.patrol_idx = 0
         self.is_patrol_command = False
@@ -199,6 +215,91 @@ class a_star(Node):
             else: 
                 pass 
 
+=======
+        #self.is_order = False
+
+    # def heuristic(self, a, b):
+    #     # 맨해튼 거리 (거리 계산 방법을 변경할 수 있음)
+    #     return abs(a[0] - b[0]) + abs(a[1] - b[1])
+>>>>>>> 7627d6a354910e00ef5abb1259f7c156ee604e2a
+
+    # MQTT 연결 시 실행될 콜백 함수
+    def on_connect(self, client, userdata, flags, rc):
+        if rc == 0:
+            print("✅ MQTT 연결 성공")
+            client.subscribe(self.mqtt_topic)
+        else:
+            print(f"❌ MQTT 연결 실패 (코드: {rc})")
+
+    def on_message(self, client, userdata, msg):
+        try:
+            payload = msg.payload.decode("utf-8")
+            goal_x, goal_y = map(float, payload.split(","))
+            print(f"📌 MQTT 목표 좌표 수신: x={goal_x}, y={goal_y}")
+
+            # MQTT에서 받은 좌표를 맵 좌표계로 변환
+            goal_map_x = (goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION']
+            goal_map_y = (goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1] / 2) / params_map['MAP_RESOLUTION']
+
+            goal_map_x = int(goal_map_x) 
+            goal_map_y = int(goal_map_y)
+
+            print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
+
+            # 맵 데이터 로드
+            back_folder = '..'  # 상위 폴더 지정
+            pkg_path = PKG_PATH
+            folder_name = 'data'
+            file_name = 'update_map.txt'
+            full_path = os.path.join(pkg_path, back_folder, folder_name, file_name)
+
+            # 데이터 읽기
+            with open(full_path, 'r') as file:
+                data = file.read().split()
+
+            # 그리드 크기 계산
+            grid_size = int(params_map['MAP_SIZE'][0] / params_map['MAP_RESOLUTION'])
+            print(f"그리드 사이즈: {grid_size} x {grid_size}")
+
+            # 데이터 크기 불일치 확인
+            if len(data) != grid_size * grid_size:
+                print("⚠ 데이터 크기가 맞지 않습니다! 파일 데이터 개수와 그리드 크기가 일치하는지 확인하세요.")
+                return
+
+            # 1차원 배열을 NxM 크기의 2차원 배열로 변환
+            # data_array = np.array(data, dtype=int).flatten().reshape(grid_size, grid_size)
+            data_array = np.array(data, dtype=int).reshape(grid_size, grid_size)
+
+            # 맵 좌표 인덱스 범위 초과 방지
+            if not (0 <= goal_map_x < data_array.shape[0] and 0 <= goal_map_y < data_array.shape[1]):
+                print(f"⚠ 오류: goal_map_x={goal_map_x}, goal_map_y={goal_map_y}가 data_array 범위를 초과합니다.")
+                return
+
+            self.grid = data_array
+            self.rows, self.cols = data_array.shape
+
+            # A* 실행
+            start = (int(self.map_pose_y), int(self.map_pose_x))
+            print(start)
+            goal = (goal_map_y, goal_map_x)
+
+            path, real_path = self.a_star(start, goal)
+            print(real_path)
+            print("끝!!!")
+            if path:
+                print(f"✅ 경로 탐색 성공! 경로 길이: {len(path)}")
+                #move_order_msg = Bool()
+                #move_order_msg.data = True
+                #self.move_order_pub.publish(move_order_msg)
+
+                self.publish_global_path(real_path)
+                
+
+            else:
+                print("⚠️ 경로를 찾을 수 없음.")
+
+        except Exception as e:
+            print(f"❌ 목표 좌표 처리 오류: {e}")
 
     def heuristic(self, a, b):
         #print("heuristic!!")
