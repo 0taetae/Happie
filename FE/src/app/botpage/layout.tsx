@@ -157,7 +157,7 @@ export default function BotLayout() {
               <div className="mt-4 flex justify-end gap-6 items-center">
                 {/* ✅ 안내 시작 (예) */}
                 <img
-                  src="/images/home.png"
+                  src="/images/yes.png"
                   alt="안내 시작"
                   title="안내 시작"
                   onClick={async () => {
@@ -189,7 +189,7 @@ export default function BotLayout() {
 
                 {/* ✅ 홈으로 이동 (아니요) */}
                 <img
-                  src="/images/home.png"
+                  src="/images/no.png"
                   alt="홈으로"
                   title="홈으로 돌아가기"
                   onClick={() => {
