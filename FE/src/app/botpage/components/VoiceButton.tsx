@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { useAudioRecorder } from "../hooks/useAudioRecorder";
 import { sendMessage } from "../hooks/useChatbotResponse";
 
@@ -7,26 +8,30 @@ interface VoiceButtonProps {
   setQuestion: (q: string) => void;
   setAnswer: (a: string) => void;
   setStage: (s: "idle" | "recording" | "loading" | "answering") => void;
-  label?: string; // 🔹 버튼 텍스트를 prop으로 받을 수 있게
+  size?: number;
 }
 
 export default function VoiceButton({
   setQuestion,
   setAnswer,
   setStage,
-  label = "🎙 음성으로 질문하기", // 기본값
+  size = 14, // 기본 사이즈
 }: VoiceButtonProps) {
-  const handleAudioComplete = (blob: Blob) => {
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+
+  const { startRecording } = useAudioRecorder((blob: Blob) => {
     setStage("loading");
     blob.arrayBuffer().then((buffer) => {
       const base64Data = Buffer.from(buffer).toString("base64");
       sendMessage(base64Data);
     });
-  };
-
-  const { startRecording } = useAudioRecorder(handleAudioComplete);
+  });
 
   const handleClick = () => {
+    if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+      window.speechSynthesis.cancel(); // ✅ TTS 중단
+    }
+
     setQuestion("");
     setAnswer("");
     setStage("recording");
@@ -35,10 +40,14 @@ export default function VoiceButton({
 
   return (
     <button
+      ref={buttonRef}
       onClick={handleClick}
-      className="bg-gray-700 text-white px-5 py-3 rounded-full hover:bg-gray-800 shadow-lg"
+      className={`w-${size} h-${size} rounded-full flex items-center justify-center hover:scale-105 transition rotate-[-45deg]`}
     >
-      {label}
+      <img src="/images/mic.png" alt="음성 질문" className={`w-${size} h-${size}`} />
     </button>
   );
 }
+
+
+
