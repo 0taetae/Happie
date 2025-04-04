@@ -89,7 +89,7 @@ export default function Map({ onOrderSuccess }: { onOrderSuccess: () => void }) 
   const title = pathname.includes("bot1") ? "로봇 1 이동 경로" : pathname.includes("bot2") ? "로봇 2 이동 경로" : pathname.includes("bot3") ? "로봇 3 이동 경로" : "로봇들의 실시간 위치";
 
   return (
-    <div className="w-full h-full flex flex-col px-4 py-4 md:px-6 md:py-6 bg-white">
+    <div className="w-full h-full flex flex-col px-4 py-4 md:px-6 md:py-4 bg-white">
       <div className="flex items-center justify-between mb-2 md:mb-4">
         <h2 className="text-xl font-semibold text-blue-600">🤖 {title}</h2>
         <OrderButton onOrderSuccess={onOrderSuccess} />
