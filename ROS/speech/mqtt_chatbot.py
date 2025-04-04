@@ -7,6 +7,8 @@ from search_chromadb import search_hospital_info
 from prompting import generate_response, clear_history
 import threading
 from search_mysql import get_image_for_keyword
+from hospital_google_search import google_search
+from tavily_search import optimize_query
 
 class MQTTChatbot:
     def __init__(self):
@@ -66,7 +68,22 @@ class MQTTChatbot:
                 return
 
             search_results = search_hospital_info(transcribed_text)
-            response_text = generate_response(transcribed_text, search_results)
+
+            #외부 검색
+            external_search= []
+
+            # 최적화된 검색어 생ㅇ성
+            optimized_query = optimize_query(search_results)
+            print("최적화된 검색어: ", optimized_query)
+
+            # Google 검색 결과 추가
+            google_results = google_search("site:samsunghospital.com " , optimized_query)
+            if google_results:
+                print("Google 검색 결과 추가")
+                external_search.extend(google_results)  # 기존 검색 결과에 추가
+                print("🔎 Google 검색 결과를 추가했습니다.")
+
+            response_text = generate_response(transcribed_text, search_results, external_search)
 
             facility_name = ""
             image_url = ""
