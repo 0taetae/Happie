@@ -64,15 +64,25 @@ export default function WebPageLayout({ children }: { children: React.ReactNode 
 
   return (
     <div className="flex flex-col h-screen">
-      <header className="bg-blue-200 flex justify-between p-4 text-lg font-bold shadow-md">
-        <Link href="/" className="text-white">
-          🏥 하피 (happie)
+      <header className="bg-blue-200 flex justify-between items-center h-16 shadow-md">
+        {/* 👈 왼쪽: 로고 + 텍스트 */}
+        <Link href="/" className="flex items-center px-12">
+          <img
+            src="/images/logo.png"
+            alt="하피 로고"
+            className="w-16 h-16 object-contain" // ✅ 크기 줄임
+          />
+          <span className="ml-2 text-white text-3xl font-bold">HAPPIE</span>
         </Link>
-        <div className="text-white">한살차이</div>
+
+        {/* 👉 오른쪽 텍스트 */}
+        <Link href="/botpage" className="flex items-center">
+          <div className="text-white text-2xl px-16 font-bold">한살차이</div>
+        </Link>
       </header>
 
       {/* ⚙️ 콘텐츠 */}
-      <div className="flex flex-grow overflow-hidden">
+      <div className="flex flex-grow overflow-hidden bg-white px-10">
         {/* ✅ Sidebar에 refreshTrigger 전달 */}
         <Sidebar refreshTrigger={refreshTrigger} />
 
