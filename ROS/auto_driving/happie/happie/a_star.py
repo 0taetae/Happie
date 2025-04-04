@@ -6,6 +6,7 @@ from geometry_msgs.msg import Pose, PoseStamped, Point
 from squaternion import Quaternion
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry,OccupancyGrid,MapMetaData,Path
+import math
 from math import pi,cos,sin,sqrt
 import heapq
 from collections import deque
@@ -96,8 +97,6 @@ class a_star(Node):
         self.mqtt_topic = "robot/destination"
         # 순찰 명령을 받을 mqtt_topic
         self.mqtt_patrol_topic = "robot/patrol"
-        # on_connect에서 추가 구독
-        self.mqtt_client.subscribe(self.mqtt_patrol_topic)
 
 
         self.mqtt_client.on_connect = self.on_connect
@@ -142,6 +141,7 @@ class a_star(Node):
         if rc == 0:
             print("✅ MQTT 연결 성공")
             client.subscribe(self.mqtt_topic)
+            client.subscribe(self.mqtt_patrol_topic)
         else:
             print(f"❌ MQTT 연결 실패 (코드: {rc})")
 
@@ -149,6 +149,7 @@ class a_star(Node):
         try:
             topic = msg.topic
             payload = msg.payload.decode("utf-8")
+            print(topic)
             # 요청 받은 경로를 움직이는 경우
             if topic == self.mqtt_topic:
                 goal_x, goal_y = map(float, payload.split(","))
@@ -166,6 +167,7 @@ class a_star(Node):
 
             # 순찰 명령을 받은 경우
             elif topic == self.mqtt_patrol_topic:
+                print(f"📌 순찰 명령 수신: {patrol_path}")
                 self.is_patrol_command = True
                 goal_x, goal_y = patrol_path[self.patrol_idx]
                 # 좌표를 맵 좌표계로 변환
@@ -182,7 +184,7 @@ class a_star(Node):
         if self.is_patrol_command == False: 
             pass
         else:
-            if (self.pose_x - patrol_path[self.patrol_idx][0], self.pose_y - patrol_path[self.patrol_idx][1]) < 0.2:
+            if math.hypot(self.pose_x - patrol_path[self.patrol_idx][0], self.pose_y - patrol_path[self.patrol_idx][1]) < 0.2:
                 if self.patrol_idx == len(patrol_path):
                     self.patrol_idx = 0
                     self.is_patrol_command = False
