@@ -219,8 +219,8 @@ class a_star(Node):
         safety_penalty = 0
     
         # 벽 근처에 있을 경우 패널티 추가 (4칸)
-        for dx in range(-4, 5):
-            for dy in range(-4, 5):
+        for dx in range(-2, 3):
+            for dy in range(-2, 3):
                 nx, ny = a[0] + dx, a[1] + dy
                 #print(self.rows,'rows')
                 if 0 <= nx < self.rows and 0 <= ny < self.cols:
@@ -246,7 +246,7 @@ class a_star(Node):
                 cost = dCost[i]
                 
                 # 벽 근처 가중치 추가 (4칸 안전 마진 적용)
-                min_distance = 4  
+                min_distance = 2  
                 for dx in range(-min_distance, min_distance + 1):
                     for dy in range(-min_distance, min_distance + 1):
                         if 0 <= nx + dx < self.rows and 0 <= ny + dy < self.cols:
