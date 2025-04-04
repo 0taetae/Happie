@@ -6,7 +6,7 @@ import openai
 from dotenv import load_dotenv
 import os
 from hospital_google_search import google_search
-from tavily_search import tavily_search
+from tavily_search import tavily_search, optimize_query
 import re
 
 # load .env
@@ -132,20 +132,25 @@ def chat():
         #외부 검색
         external_search= []
     
+        # 최적화된 검색어 생ㅇ성
+        optimized_query = optimize_query(user_input)
+        logging.info("최적화된 검색어: ", optimized_query)
+
         # Google 검색 결과 추가
-        google_results = google_search(user_input)
+        google_results = google_search("site:samsunghospital.com " , optimized_query)
         if google_results:
             logging.info("Google 검색 결과 추가")
             external_search.extend(google_results)  # 기존 검색 결과에 추가
             print("🔎 Google 검색 결과를 추가했습니다.")
         
-        tavily_search_answer = tavily_search(user_input)
-        if tavily_search_answer:
-            logging.info("tavily 검색 결과 추가")
-            external_search.extend(tavily_search_answer)
+        # tavily_search_answer = tavily_search(optimized_query)
+        # if tavily_search_answer:
+        #     logging.info("tavily 검색 결과 추가")
+        #     external_search.extend(tavily_search_answer)
 
         # 검색 결과를 처리하여 응답 생성
         print(search_results)
+        print("외부 검색 결과: " , external_search)
         response = generate_response(user_input, search_results, external_search)
 
 
