@@ -222,14 +222,13 @@ class Mapper(Node):
         self.mqtt_client = mqtt.Client()
         self.mqtt_broker = MQTT_CONFIG["BROKER"]
         self.mqtt_port = MQTT_CONFIG["PORT"]
-        self.mqtt_topic_position = "robot/map_position"
-        self.mqtt_topic_destination = "robot/destination"
+        self.mqtt_topic = "robot/map_position"
+        #self.mqtt_topic_destination = "robot/destination"
 
         self.mqtt_client.username_pw_set(MQTT_CONFIG["USERNAME"], MQTT_CONFIG["PASSWORD"])
         self.mqtt_client.loop_start()
         # MQTT 브로커에 연결
         self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
-        self.mqtt_client.subscribe(self.mqtt_topic_destination)  # 목적지 좌표 수신
         self.mqtt_client.loop_start()  # 비동기 처리 시작
 
         self.map_pub = self.create_publisher(OccupancyGrid, '/map', 1)
@@ -274,6 +273,7 @@ class Mapper(Node):
         pose_x = msg.range_min  # 실제 x 좌표 (meters)
         pose_y = msg.scan_time  # 실제 y 좌표 (meters)
         heading = msg.time_increment  # 로봇의 방향 (radians)
+        print(pose_x,pose_y,'실제 위치')
         
         # [2] 거리 데이터를 기반으로 LIDAR 스캔 변환
         distance = np.array(msg.ranges)
@@ -313,7 +313,7 @@ class Mapper(Node):
         # MQTT로 위치 데이터 전송
         mqtt_payload = f"{map_x:.0f},{map_y:.0f}"
         try:
-            self.mqtt_client.publish(self.mqtt_topic_position, mqtt_payload)
+            self.mqtt_client.publish(self.mqtt_topic, mqtt_payload)
             print(f"MQTT 발행: {mqtt_payload}")
         except Exception as e:
             print(f"MQTT 발행 실패: {e}")
