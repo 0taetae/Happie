@@ -19,14 +19,15 @@ public class OrderService {
 
     // 맵 좌표
     private static final Map<String, double[]> PLACE_COORDINATES = Map.of(
-            "501호실", new double[] {36.58, -52.52},
-            "502호실", new double[] {36.65, -47.51},
-            "503호실", new double[] {36.55, -42.56},
-            "간호사실", new double[] {55.37, -50.85},
-            "휠체어 보관실", new double[] {53.21, -56.75},
-            "링거폴대 보관실", new double[] {53.38, -60.21},
-            "로봇방", new double[] {44.93, -42.44}
+        "501호실", new double[] {-52.60654067993164, -38.33089828491211},
+        "502호실", new double[] {-47.468528747558594, -38.27075958251953},
+        "503호실", new double[] {-42.64277267456055, -38.69271469116211},
+        "간호사실", new double[] {-50.82450485229492, -54.83995056152344},
+        "휠체어 보관실", new double[] {-56.482933044433594, -52.840431213378906},
+        "링거폴대 보관실", new double[] {-59.81382751464844, -52.48174285888672},
+        "로봇방", new double[] {-42.52598571777344, -46.45439147949219}
     );
+
 
     @Transactional
     public OrderResponseDto createOrder(OrderRequestDto orderRequestDto) {
