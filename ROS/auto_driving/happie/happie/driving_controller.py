@@ -95,20 +95,7 @@ class Controller(Node):
             self.turtlebot_stop()
             self.get_logger().info("finish =========")
             self.is_to_move = False
-<<<<<<< HEAD
             self.current_goal_idx = 0
-=======
-            #move_order_msg = Bool()
-            #move_order_msg.data = False
-            self.current_goal_idx = 0
-            #self.move_order_pub.publish(move_order_msg)
-
-            #vel_msg = Twist()
-            #vel_msg.linear.x = 0.0
-            #vel_msg.angular.z = 0.0
-            #self.pub.publish(vel_msg)
-            #self.cmd_publisher.publish(stop_msg)
->>>>>>> 7627d6a354910e00ef5abb1259f7c156ee604e2a
             # rclpy.shutdown()
 
             self.mqtt_client.publish(self.mqtt_topic, "arrived")
@@ -117,11 +104,6 @@ class Controller(Node):
         if self.is_to_move == False: return 
 
         vel_msg = Twist()
-<<<<<<< HEAD
-=======
-        print(f"현재 위치: ({round(self.pose_x, 3)}, {round(self.pose_y, 3)})")
-        print(f'목표 위치===: ({round(self.goal.x, 3)}, {round(self.goal.y, 3)})')
->>>>>>> 7627d6a354910e00ef5abb1259f7c156ee604e2a
         # 현재 목표까지의 거리 계산
         distance = math.sqrt((self.goal.x - self.pose_x) ** 2 + (self.goal.y - self.pose_y) ** 2)
         print(distance,'distance')

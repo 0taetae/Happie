@@ -17,11 +17,7 @@ import matplotlib
 matplotlib.use('Agg')  # GUI 비활성화 (필수)
 import matplotlib.pyplot as plt
 
-<<<<<<< HEAD
 from .config import params_map, PKG_PATH, MQTT_CONFIG, patrol_path
-=======
-from .config import params_map, PKG_PATH, MQTT_CONFIG
->>>>>>> 7627d6a354910e00ef5abb1259f7c156ee604e2a
 import paho.mqtt.client as mqtt
 
 
@@ -147,7 +143,6 @@ class a_star(Node):
         self.map_pose_x = 0
         self.map_pose_y = 0
 
-<<<<<<< HEAD
         # 순찰 경로 인덱스
         self.patrol_idx = 0
         self.is_patrol_command = False
@@ -215,13 +210,6 @@ class a_star(Node):
             else: 
                 pass 
 
-=======
-        #self.is_order = False
-
-    # def heuristic(self, a, b):
-    #     # 맨해튼 거리 (거리 계산 방법을 변경할 수 있음)
-    #     return abs(a[0] - b[0]) + abs(a[1] - b[1])
->>>>>>> 7627d6a354910e00ef5abb1259f7c156ee604e2a
 
     # MQTT 연결 시 실행될 콜백 함수
     def on_connect(self, client, userdata, flags, rc):
