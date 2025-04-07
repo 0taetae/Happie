@@ -5,10 +5,12 @@ from geometry_msgs.msg import Twist, Point
 from nav_msgs.msg import Path
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Bool
+from geometry_msgs.msg import Point
 import time
 
 from .config import params_map, PKG_PATH, MQTT_CONFIG
 import paho.mqtt.client as mqtt
+from std_msgs.msg import Int32
 
 class Controller(Node):
     def __init__(self):
@@ -16,9 +18,11 @@ class Controller(Node):
         self.pub = self.create_publisher(Twist, '/cmd_vel', 10)
         self.scan_sub = self.create_subscription(LaserScan, '/scan', self.scan_callback, 1)
         self.a_star_global_path_sub = self.create_subscription(Path, '/a_star_global_path', self.global_path_callback, 1)
+        self.object_detected_sub = self.create_subscription(Int32, '/object_detected', self.object_callback, 1)
         #self.move_order_sub = self.create_subscription(Bool, '/move_order', self.move_order_callback, 1)
         #self.move_order_pub = self.create_publisher(Bool, '/move_order', 1)
         #self.cmd_publisher = self.create_publisher(Twist, 'cmd_vel', 10)
+        self.path_request_pub = self.create_publisher(Point, '/request_new_path', 1) # 장애물 감지 시 새 경로 요청
         self.cmd_msg = Twist()
 
         # 현재 위치 및 방향
@@ -34,11 +38,15 @@ class Controller(Node):
 
         # a_star를 통해 생성한 global_path
         self.global_path = [(-1.0,-1.0)]
+        
         self.current_goal_idx = 0
 
         # 목표 지점 설정
         self.goal = Point()
         self.set_new_goal()
+        self.object_detected = False
+        self.path_requested = False
+        self.object_angle = 0
 
         # MQTT 설정 
         self.mqtt_client = mqtt.Client()
@@ -83,7 +91,42 @@ class Controller(Node):
         print("경로 받기 성공")
         self.current_goal_idx = 0
         self.is_to_move = True
-            
+    
+    # def object_callback(self, msg):
+    #     if msg.data:  # 장애물 감지됨
+    #         self.object_detected = True
+    #         print("🚨 장애물 감지! 이동 중단 및 경로 재설정")
+    #     else:
+    #         self.object_detected = False
+
+    def object_callback(self, msg):
+        if msg.data:  # 장애물 감지됨
+            if not self.object_detected: 
+                print("🚨 장애물 처음 감지! 이동 중단 및 경로 재설정 준비")
+            self.object_detected = True
+            self.object_angle = msg.data + self.heading
+        else:
+            if self.object_detected:
+                print("✅ 장애물 해제됨, 이동 재개 가능")
+            self.object_detected = False
+            self.path_requested = False  # 장애물이 사라졌으니 다시 경로 재요청 가능
+
+    # 장애물 감지 시 새로운 경로를 요청하고 목적지 좌표를 전달
+    def request_new_path(self):
+        
+        print(f"📢 새로운 경로 요청! 목적지: ({self.global_path[-1][0]}, {self.global_path[-1][1]})")
+
+        # 메시지 생성 (목적지 좌표 포함)
+        path_request_msg = Point()
+        path_request_msg.x = self.global_path[-1][0]
+        path_request_msg.y = self.global_path[-1][1]
+        path_request_msg.z = self.object_angle
+
+        # A* 노드에 경로 요청
+        self.path_request_pub.publish(path_request_msg)
+
+        # 이동 중지
+        self.is_to_move = False 
 
     def set_new_goal(self):
         print(self.current_goal_idx, ' 인덱스')
@@ -111,6 +154,15 @@ class Controller(Node):
 
     def move_to_destination(self):
         if self.is_to_move == False: return 
+
+        # 🚨 장애물이 감지되면 이동을 멈추고 새로운 경로 요청
+        if self.object_detected:
+            if not self.path_requested:
+                print("🚨 장애물 감지! 최단 경로 재계산 요청")
+                self.turtlebot_stop() 
+                self.request_new_path()
+                self.path_requested = True  # 한 번만 요청하도록 설정
+            return
 
         vel_msg = Twist()
         print(f"현재 위치: ({round(self.pose_x, 3)}, {round(self.pose_y, 3)})")

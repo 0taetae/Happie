@@ -17,6 +17,8 @@ import matplotlib.pyplot as plt
 from .config import params_map, PKG_PATH, MQTT_CONFIG
 import paho.mqtt.client as mqtt
 
+#from custom_msgs.srv import SetPose
+
 
 # a_star 노드는  OccupancyGrid map을 받아 grid map 기반 최단경로 탐색 알고리즘을 통해 로봇이 목적지까지 가는 경로를 생성하는 노드입니다.
 
@@ -83,6 +85,10 @@ class a_star(Node):
         self.global_path_pub = self.create_publisher(Path, 'a_star_global_path', 10)
         #self.move_order_pub = self.create_publisher(Bool, '/move_order', 1)
 
+        #self.srv = self.create_service(SetPose, 'request_path', self.handle_request_path)
+
+        self.path_request_sub = self.create_subscription(Point, '/request_new_path', self.path_request_callback,10)
+
         # self.map_msg = OccupancyGrid()
         # self.odom_msg = Odometry()
         # self.is_map = False
@@ -94,7 +100,7 @@ class a_star(Node):
         self.mqtt_client = mqtt.Client()
         self.mqtt_broker = MQTT_CONFIG["BROKER"]
         self.mqtt_port = MQTT_CONFIG["PORT"]
-        self.mqtt_topic = "robot/goal"
+        self.mqtt_topic = "robot/destination"
 
         self.mqtt_client.on_connect = self.on_connect
         self.mqtt_client.on_message = self.on_message
@@ -213,6 +219,36 @@ class a_star(Node):
         except Exception as e:
             print(f"❌ 목표 좌표 처리 오류: {e}")
 
+    # 최단 경로 재계산 요청을 처리
+    def path_request_callback(self, msg):
+        try:
+            new_goal_x = msg.x
+            new_goal_y = msg.y
+            print(f"🔄 새로운 경로 요청: ({new_goal_x}, {new_goal_y})")
+
+            # MQTT에서 받은 좌표를 맵 좌표계로 변환
+            goal_map_x = (new_goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION']
+            goal_map_y = (new_goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1] / 2) / params_map['MAP_RESOLUTION']
+
+            goal_map_x = int(goal_map_x)
+            goal_map_y = int(goal_map_y)
+
+            print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
+            # 현재 위치를 기준으로 새로운 경로 찾기
+            start = (int(self.map_pose_y), int(self.map_pose_x))
+            goal = (goal_map_y, goal_map_x)
+
+            path, real_path = self.a_star(start, goal)
+
+            if path:
+                print(f"✅ 새로운 경로 탐색 성공! 경로 길이: {len(path)}")
+                self.publish_global_path(real_path)
+            else:
+                print("⚠️ 새로운 경로를 찾을 수 없음.")
+
+        except Exception as e:
+            print(f"❌ 새로운 경로 요청 처리 오류: {e}")
+    
     def heuristic(self, a, b):
         #print("heuristic!!")
         base_heuristic = abs(a[0] - b[0]) + abs(a[1] - b[1])  # 맨해튼 거리
@@ -329,82 +365,7 @@ class a_star(Node):
         self.get_logger().info("Published global path.")
 
 
-    def goal_callback(self, msg):
-        if msg.header.frame_id == 'map':
-            goal_x = msg.pose.position.x
-            goal_y = msg.pose.position.y
-            print(f"목표 위치 (실제 좌표): x={goal_x:.2f}, y={goal_y:.2f}")
-            
-            # 위치 변환
-            goal_map_x = (goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION']
-            goal_map_y = (goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1] / 2) / params_map['MAP_RESOLUTION']
-            
-            goal_map_x = int(goal_map_x) 
-            goal_map_y = int(goal_map_y)
-
-            # 맵 좌표 인덱스 변환 후 정수화
-            map_x = int(goal_map_x)
-            map_y = int(goal_map_y)
-            
-            print(f"맵 좌표계 인덱스: map_x={map_x}, map_y={map_y}")
-            
-            # 파일 경로 설정
-            back_folder = '..'  # 상위 폴더 지정
-            pkg_path = PKG_PATH
-            folder_name = 'data'
-            file_name = 'update_map.txt'
-            full_path = os.path.join(pkg_path, back_folder, folder_name, file_name)
-
-            # 데이터 읽기
-            with open(full_path, 'r') as file:
-                data = file.read().split()
-
-            # 그리드 크기 계산
-            grid_size = int(params_map['MAP_SIZE'][0] / params_map['MAP_RESOLUTION'])
-            print(f"그리드 사이즈: {grid_size} x {grid_size}")
-
-            # 데이터 크기 불일치 확인
-            if len(data) != grid_size * grid_size:
-                print("⚠ 데이터 크기가 맞지 않습니다! 파일 데이터 개수와 그리드 크기가 일치하는지 확인하세요.")
-                return
-
-            # 1차원 배열을 NxM 크기의 2차원 배열로 변환
-            # data_array = np.array(data, dtype=int).flatten().reshape(grid_size, grid_size)
-            data_array = np.array(data, dtype=int).reshape(grid_size, grid_size)
-
-            # 맵 좌표 인덱스 범위 초과 방지
-            if not (0 <= map_x < data_array.shape[0] and 0 <= map_y < data_array.shape[1]):
-                print(f"⚠ 오류: map_x={map_x}, map_y={map_y}가 data_array 범위를 초과합니다.")
-                return
-
-            self.grid = data_array
-            self.rows, self.cols = data_array.shape
-
-            # A* 경로 탐색 수행
-            start = (int(self.map_pose_y), int(self.map_pose_x))
-            goal = (map_y, map_x)
-            path, real_path = self.a_star(start, goal)
-            print(real_path)
-            
-            if path:
-                for p in path:
-                    data_array[p[0]][p[1]] = 50  # 경로 표시
-            else:
-                print("경로를 찾을 수 없습니다.")
-            
-            # 만든 path를 publish
-            self.publish_global_path(real_path)
-
-            # 시각화
-            fig, ax = plt.subplots()
-            cax = ax.imshow(data_array, cmap='gray', interpolation='nearest')
-            if path:
-                for p in path:
-                    ax.plot(p[1], p[0], color='red', marker='o', markersize=2)
-            plt.colorbar(cax)
-            plt.title("A* Pathfinding with Red Path")
-            plt.show()
-
+    
 
     def grid_cell_to_pose(self, grid_cell):
         ## 로직 5. map의 grid cell을 위치(x,y)로 변환
