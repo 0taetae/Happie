@@ -16,9 +16,6 @@ class Controller(Node):
         self.pub = self.create_publisher(Twist, '/cmd_vel', 10)
         self.scan_sub = self.create_subscription(LaserScan, '/scan', self.scan_callback, 1)
         self.a_star_global_path_sub = self.create_subscription(Path, '/a_star_global_path', self.global_path_callback, 1)
-        #self.move_order_sub = self.create_subscription(Bool, '/move_order', self.move_order_callback, 1)
-        #self.move_order_pub = self.create_publisher(Bool, '/move_order', 1)
-        #self.cmd_publisher = self.create_publisher(Twist, 'cmd_vel', 10)
         self.cmd_msg = Twist()
 
         # 현재 위치 및 방향

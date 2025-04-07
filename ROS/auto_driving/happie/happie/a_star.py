@@ -49,7 +49,7 @@ def convert_path_to_ros(path, map_center, map_resolution):
         # PoseStamped 메시지 생성
         pose = PoseStamped()
         pose.header.frame_id = "map"
-        pose.header.stamp = rospy.Time.now()
+        pose.header.stamp = rclpy.clock.Clock().now().to_msg()
         pose.pose.position.x = real_x
         pose.pose.position.y = real_y
         pose.pose.position.z = 0.0  # 2D 경로이므로 z=0
@@ -80,11 +80,8 @@ class a_star(Node):
         super().__init__('a_Star')
         # 로직 1. publisher, subscriber 만들기
         self.map_sub = self.create_subscription(OccupancyGrid, 'map', self.map_callback, 1)
-        # self.odom_sub = self.create_subscription(Odometry, 'odom', self.odom_callback, 1)
         self.subscription = self.create_subscription(LaserScan,'/scan',self.scan_callback,10)
-        #self.goal_sub = self.create_subscription(PoseStamped, 'goal_pose', self.goal_callback, 1)
         self.global_path_pub = self.create_publisher(Path, 'a_star_global_path', 10)
-        #self.move_order_pub = self.create_publisher(Bool, '/move_order', 1)
 
         # 이동 타이머 설정
         self.timer = self.create_timer(0.1, self.check_command)
@@ -98,17 +95,6 @@ class a_star(Node):
         # 순찰 명령을 받을 mqtt_topic
         self.mqtt_patrol_topic = "robot/patrol"
 
-
-        self.mqtt_client.on_connect = self.on_connect
-        self.mqtt_client.on_message = self.on_message
-        self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
-        self.mqtt_client.loop_start()
-
-        # MQTT 설정 
-        self.mqtt_client = mqtt.Client()
-        self.mqtt_broker = MQTT_CONFIG["BROKER"]
-        self.mqtt_port = MQTT_CONFIG["PORT"]
-        self.mqtt_topic = "robot/goal"
 
         self.mqtt_client.on_connect = self.on_connect
         self.mqtt_client.on_message = self.on_message
@@ -176,8 +162,15 @@ class a_star(Node):
                 print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
                 self.path_finding(goal_map_x, goal_map_y)
 
-            # 순찰 명령을 받은 경우
+            # mqtt에 patrol_topic으로 명령이 온 경우
             elif topic == self.mqtt_patrol_topic:
+                print(payload)
+                # 순찰종료 명령을 받은 경우
+                if payload.strip().lower() != 'go':
+                    print(f"📌 순찰종료 명령 수신: {patrol_path}")
+                    self.is_patrol_command = False
+                    return
+                # 순찰 명령을 받은 경우
                 print(f"📌 순찰 명령 수신: {patrol_path}")
                 self.is_patrol_command = True
                 goal_x, goal_y = patrol_path[self.patrol_idx]
@@ -200,7 +193,8 @@ class a_star(Node):
                     self.patrol_idx = 0
                     self.is_patrol_command = False
                 else:
-                    self.patrol_idx += 1
+                    if self.patrol_idx == len(patrol_path): self.patrol_idx = 0
+                    else: self.patrol_idx += 1
                     goal_x, goal_y = patrol_path[self.patrol_idx]
                     # 좌표를 맵 좌표계로 변환
                     goal_map_x = int((goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION'])
@@ -210,84 +204,6 @@ class a_star(Node):
             else: 
                 pass 
 
-
-    # MQTT 연결 시 실행될 콜백 함수
-    def on_connect(self, client, userdata, flags, rc):
-        if rc == 0:
-            print("✅ MQTT 연결 성공")
-            client.subscribe(self.mqtt_topic)
-        else:
-            print(f"❌ MQTT 연결 실패 (코드: {rc})")
-
-    def on_message(self, client, userdata, msg):
-        try:
-            payload = msg.payload.decode("utf-8")
-            goal_x, goal_y = map(float, payload.split(","))
-            print(f"📌 MQTT 목표 좌표 수신: x={goal_x}, y={goal_y}")
-
-            # MQTT에서 받은 좌표를 맵 좌표계로 변환
-            goal_map_x = (goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION']
-            goal_map_y = (goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1] / 2) / params_map['MAP_RESOLUTION']
-
-            goal_map_x = int(goal_map_x) 
-            goal_map_y = int(goal_map_y)
-
-            print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
-
-            # 맵 데이터 로드
-            back_folder = '..'  # 상위 폴더 지정
-            pkg_path = PKG_PATH
-            folder_name = 'data'
-            file_name = 'update_map.txt'
-            full_path = os.path.join(pkg_path, back_folder, folder_name, file_name)
-
-            # 데이터 읽기
-            with open(full_path, 'r') as file:
-                data = file.read().split()
-
-            # 그리드 크기 계산
-            grid_size = int(params_map['MAP_SIZE'][0] / params_map['MAP_RESOLUTION'])
-            print(f"그리드 사이즈: {grid_size} x {grid_size}")
-
-            # 데이터 크기 불일치 확인
-            if len(data) != grid_size * grid_size:
-                print("⚠ 데이터 크기가 맞지 않습니다! 파일 데이터 개수와 그리드 크기가 일치하는지 확인하세요.")
-                return
-
-            # 1차원 배열을 NxM 크기의 2차원 배열로 변환
-            # data_array = np.array(data, dtype=int).flatten().reshape(grid_size, grid_size)
-            data_array = np.array(data, dtype=int).reshape(grid_size, grid_size)
-
-            # 맵 좌표 인덱스 범위 초과 방지
-            if not (0 <= goal_map_x < data_array.shape[0] and 0 <= goal_map_y < data_array.shape[1]):
-                print(f"⚠ 오류: goal_map_x={goal_map_x}, goal_map_y={goal_map_y}가 data_array 범위를 초과합니다.")
-                return
-
-            self.grid = data_array
-            self.rows, self.cols = data_array.shape
-
-            # A* 실행
-            start = (int(self.map_pose_y), int(self.map_pose_x))
-            print(start)
-            goal = (goal_map_y, goal_map_x)
-
-            path, real_path = self.a_star(start, goal)
-            print(real_path)
-            print("끝!!!")
-            if path:
-                print(f"✅ 경로 탐색 성공! 경로 길이: {len(path)}")
-                #move_order_msg = Bool()
-                #move_order_msg.data = True
-                #self.move_order_pub.publish(move_order_msg)
-
-                self.publish_global_path(real_path)
-                
-
-            else:
-                print("⚠️ 경로를 찾을 수 없음.")
-
-        except Exception as e:
-            print(f"❌ 목표 좌표 처리 오류: {e}")
 
     def heuristic(self, a, b):
         #print("heuristic!!")
@@ -489,10 +405,6 @@ class a_star(Node):
 
         # 이미지 열기
         os.startfile(save_path)
-
-    def odom_callback(self, msg):
-        self.is_odom = True
-        self.odom_msg = msg
 
     def map_callback(self, msg):
         self.is_map = True
