@@ -24,7 +24,7 @@ class Controller(Node):
         self.heading = 0.0  # LaserScan에서 계산
 
         # 이동 타이머 설정
-        self.timer = self.create_timer(0.1, self.move_to_destination)
+        self.timer = self.create_timer(0.3, self.move_to_destination)
 
         self.is_to_move = False
         #self.is_order = False
@@ -126,7 +126,7 @@ class Controller(Node):
         # 🔹 heading이 목표와 5도 이상 차이나면 회전
         if abs(angle_diff) > 5:
             print("heading이 목표와 5도 이상 차이나면 회전")
-            kp_angular = 0.02  # 회전 속도 조절 계수 (값을 더 키워도 됨)
+            kp_angular = 0.01  # 회전 속도 조절 계수 (값을 더 키워도 됨)
             max_angular_speed = 1.0  # 최대 회전 속도 제한
 
             # 회전 속도를 angle_diff에 비례하도록 조정 (단, 최대 속도 제한)
@@ -139,7 +139,7 @@ class Controller(Node):
             print("heading 차이가 5도 이하라면 직진")
             # 🔹 heading 차이가 5도 이하라면 직진
             kp_linear = 1  # 이동 속도 조절 계수
-            vel_msg.linear.x = min(kp_linear * distance, 0.7)  # 최대 속도 0.5
+            vel_msg.linear.x = min(kp_linear * distance, 1)  # 최대 속도 0.5
             vel_msg.angular.z = 0.0  # 직진 시 회전 없음
 
         # 디버깅 출력

@@ -129,6 +129,8 @@ class a_star(Node):
         self.map_pose_x = 0
         self.map_pose_y = 0
 
+        self.goal = (-50, -50)
+
         # 순찰 경로 인덱스
         self.patrol_idx = 0
         self.is_patrol_command = False
@@ -256,6 +258,8 @@ class a_star(Node):
         # 좌표 정수 변환
         start = (int(round(start[0])), int(round(start[1])))
         goal = (int(round(goal[0])), int(round(goal[1])))
+        self.goal = goal
+
         print(start)
         print(goal)
 
