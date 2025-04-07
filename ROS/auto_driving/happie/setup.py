@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'my_node = happie.my_node:main',
+            'driving_controller = happie.driving_controller:main',
             'controller = happie.controller:main',
             'talker = happie.publisher_member_function:main',
             'listener = happie.subscriber_member_function:main',
@@ -36,7 +37,7 @@ setup(
             'a_star = happie.a_star:main',
             'a_star_local_path = happie.a_star_local_path:main',
             'ex_calib = happie.ex_calib:main',
-            'human_detector = happie.human_detector:main',
+            'object_detector = happie.object_detector:main',
             'seg_binarizer = happie.seg_binarizer:main',
             'run_mapping = happie.run_mapping:main',
             'run_localization = happie.run_localization:main',

@@ -117,20 +117,20 @@ class loadMap(Node):
         image_bytes = image_io.read()
 
         # base64 인코딩
-        #image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+        image_base64 = base64.b64encode(image_bytes).decode('utf-8')
 
         # 디버깅: base64 디코딩 후 다시 이미지 변환
-        #decoded_bytes = base64.b64decode(image_base64)
-        #decoded_image = Image.open(io.BytesIO(decoded_bytes))
+        decoded_bytes = base64.b64decode(image_base64)
+        decoded_image = Image.open(io.BytesIO(decoded_bytes))
 
         # 디코딩된 이미지 저장 (디버깅용)
-        #decoded_image_path = "map_decoded.png"
-        #decoded_image.save(decoded_image_path)
-        #print(f"디코딩된 이미지 저장 완료: {decoded_image_path}")
+        decoded_image_path = "map_decoded.png"
+        decoded_image.save(decoded_image_path)
+        print(f"디코딩된 이미지 저장 완료: {decoded_image_path}")
 
         # 이미지 직접 보기 (옵션)
-        #image.show(title="원본 맵 이미지")
-        #decoded_image.show(title="디코딩된 맵 이미지")
+        image.show(title="원본 맵 이미지")
+        decoded_image.show(title="디코딩된 맵 이미지")
 
         return image_bytes
 

@@ -75,13 +75,6 @@ def translationMtx(x, y, z):
 
 # Coordinate transform from lidar to camera
 def transformMTX_lidar2cam(params_lidar, params_cam):
-    """
-    transformMTX_lidar2cam 내 좌표 변환행렬 로직 순서
-    1. params에서 라이다와 카메라 센서들의 자세, 위치 정보를 뽑기.
-    2. 라이다에서 카메라 위치까지 변환하는 translation 행렬을 정의
-    3. 카메라의 자세로 맞춰주는 rotation 행렬을 정의.
-    4. 위의 두 행렬을 가지고 최종 라이다-카메라 변환 행렬을 정의.
-    """
 
     # 로직 1. params에서 라이다와 카메라 센서들의 자세, 위치 정보를 뽑기.
     lidar_yaw, lidar_pitch, lidar_roll = np.radians([params_lidar["YAW"], params_lidar["PITCH"], params_lidar["ROLL"]])
@@ -100,49 +93,7 @@ def transformMTX_lidar2cam(params_lidar, params_cam):
     RT = np.matmul(Rmtx, Tmtx)
     return RT
 
-    """
-    테스트
-
-    params_lidar = {
-        "X": 0, # meter
-        "Y": 0,
-        "Z": 0.6,
-        "YAW": 0, # deg
-        "PITCH": 0,
-        "ROLL": 0
-    }
-
-
-    params_cam = {
-        "WIDTH": 640, # image width
-        "HEIGHT": 480, # image height
-        "FOV": 90, # Field of view
-        "X": 0., # meter
-        "Y": 0,
-        "Z":  1.0,
-        "YAW": 0, # deg
-        "PITCH": 0.0,
-        "ROLL": 0
-    }
-
-    이면
-
-    R_T = 
-    [[ 6.12323400e-17 -1.00000000e+00  0.00000000e+00  0.00000000e+00]
-    [ 6.12323400e-17  3.74939946e-33 -1.00000000e+00  4.00000000e-01]
-    [ 1.00000000e+00  6.12323400e-17  6.12323400e-17 -2.44929360e-17]
-    [ 0.00000000e+00  0.00000000e+00  0.00000000e+00  1.00000000e+00]]
-
-    """
-
 def project2img_mtx(params_cam):
-    """
-    project2img_mtx 내 projection 행렬 계산 로직 순서
-    1. params에서 카메라의 width, height, fov를 가져와서 focal length를 계산.
-    2. 카메라의 파라메터로 이미지 프레임 센터를 계산.
-    3. Projection 행렬을 계산 
-
-    """
 
     # 로직 1. params에서 카메라의 width, height, fov를 가져와서 focal length를 계산.
     fov = np.radians(params_cam["FOV"])

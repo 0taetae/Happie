@@ -9,6 +9,7 @@ from squaternion import Quaternion
 from nav_msgs.msg import Odometry, Path, OccupancyGrid, MapMetaData
 from math import pi, cos, sin, sqrt
 import tf2_ros
+import heapq
 import os
 import happie.utils as utils
 import numpy as np
@@ -17,6 +18,9 @@ import time
 
 from .config import params_map, PKG_PATH, MQTT_CONFIG
 import paho.mqtt.client as mqtt
+
+import matplotlib.pyplot as plt
+from std_msgs.msg import Bool
 
 # mapping node의 전체 로직 순서
 # 1. publisher, subscriber, msg 생성
@@ -99,7 +103,7 @@ class Mapping:
 
         self.T_r_l = np.array([[0,-1,0],[1,0,0],[0,0,1]])
         # 🔥 기존 맵 파일이 있으면 로드
-        map_path = os.path.join(PKG_PATH, '..', 'data', 'map.txt')
+        map_path = os.path.join(PKG_PATH, '..', 'data', 'update_map.txt')
         if os.path.exists(map_path):
             print(f"기존 맵 {map_path} 불러오기...")
             
@@ -155,11 +159,11 @@ class Mapping:
             avail_y = line_iter[:, 1].astype(np.int32)
 
             ## Empty
-            self.map[avail_y[:-1], avail_x[:-1]] += self.occu_down
+            self.map[avail_y[:-1], avail_x[:-1]] -= self.occu_down
             self.map[avail_y[:-1], avail_x[:-1]] = np.clip(self.map[avail_y[:-1], avail_x[:-1]], 0, 1)
 
             ## Occupied
-            self.map[avail_y[-1], avail_x[-1]] -= self.occu_up
+            self.map[avail_y[-1], avail_x[-1]] += self.occu_up
             self.map[avail_y[-1], avail_x[-1]] = np.clip(self.map[avail_y[-1], avail_x[-1]], 0, 1)
                 
         self.show_pose_and_points(pose, laser_global) 
@@ -212,15 +216,17 @@ class Mapper(Node):
         
         # 로직 1 : publisher, subscriber, msg 생성
         self.subscription = self.create_subscription(LaserScan,'/scan',self.scan_callback,10)
+        # self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
 
         # MQTT 설정
         self.mqtt_client = mqtt.Client()
         self.mqtt_broker = MQTT_CONFIG["BROKER"]
         self.mqtt_port = MQTT_CONFIG["PORT"]
         self.mqtt_topic = "robot/map_position"
+        #self.mqtt_topic_destination = "robot/destination"
 
         self.mqtt_client.username_pw_set(MQTT_CONFIG["USERNAME"], MQTT_CONFIG["PASSWORD"])
-
+        self.mqtt_client.loop_start()
         # MQTT 브로커에 연결
         self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
         self.mqtt_client.loop_start()  # 비동기 처리 시작
@@ -232,6 +238,12 @@ class Mapper(Node):
         self.map_size=int(params_map["MAP_SIZE"][0]\
             /params_map["MAP_RESOLUTION"]*params_map["MAP_SIZE"][1]/params_map["MAP_RESOLUTION"])
         
+                
+        self.map_pose_x = 0
+        self.map_pose_y = 0
+
+        #self.destination_x = 0.0
+        #self.destination_y = 0.0
 
         m = MapMetaData()
         m.resolution = params_map["MAP_RESOLUTION"]
@@ -253,17 +265,38 @@ class Mapper(Node):
         # 로직 2 : mapping 클래스 생성
         self.mapping = Mapping(params_map)
 
-    
-    def scan_callback(self, msg):
-        print("scan_callback start!!!")
-        # 로직 4 : laser scan 메시지 안의 ground truth pose 받기
-        pose_x = msg.range_min
-        pose_y = msg.scan_time
-        heading = msg.time_increment
-        
-        # 로직 5 : lidar scan 결과 수신
-        distance = np.array(msg.ranges)  # LaserScan의 거리 데이터 (길이 360의 배열)
 
+    def scan_callback(self, msg):
+        # print("scan_callback start!!!")
+    
+        # [1] 현재 위치 (pose_x, pose_y, heading) 가져오기
+        pose_x = msg.range_min  # 실제 x 좌표 (meters)
+        pose_y = msg.scan_time  # 실제 y 좌표 (meters)
+        heading = msg.time_increment  # 로봇의 방향 (radians)
+        print(pose_x,pose_y,'실제 위치')
+        
+        # [2] 거리 데이터를 기반으로 LIDAR 스캔 변환
+        distance = np.array(msg.ranges)
+        angles = np.linspace(0, 2 * np.pi, len(distance), endpoint=False)
+        x = distance * np.cos(angles)
+        y = distance * np.sin(angles)
+        laser = np.vstack((x, y))  
+    
+        # [3] 현재 위치를 Grid Map 좌표계로 변환
+        MAP_RESOLUTION = params_map["MAP_RESOLUTION"]
+        MAP_CENTER = params_map["MAP_CENTER"]
+        MAP_SIZE = params_map["MAP_SIZE"]
+    
+        map_x = (pose_x - MAP_CENTER[0] + MAP_SIZE[0]/2) / MAP_RESOLUTION
+        map_y = (pose_y - MAP_CENTER[1] + MAP_SIZE[1]/2) / MAP_RESOLUTION
+        self.map_pose_x = map_x
+        self.map_pose_y = map_y
+
+        # pose = np.array([[pose_x], [pose_y], [heading]])
+        # self.mapping.update(pose, laser)
+    
+    
+        # [5] 맵 퍼블리시
         # 각도 계산 (1도씩 증가하므로, 각도를 라디안으로 변환)
         angles = np.linspace(0, 2 * np.pi, len(distance), endpoint=False)  # 360개의 각도 생성 (0에서 2π까지)
 
@@ -290,24 +323,29 @@ class Mapper(Node):
         self.mapping.update(pose, laser)
 
         # [4] 로그 출력 (현재 위치 확인)
-        print(f"현재 위치 (실제 좌표): x={pose_x:.2f}, y={pose_y:.2f}, heading={heading:.2f} rad")
-        print(f"맵 좌표계 인덱스: map_x={map_x:.0f}, map_y={map_y:.0f}")
+        #print(f"현재 위치 (실제 좌표): x={pose_x:.2f}, y={pose_y:.2f}, heading={heading:.2f} rad")
+        #print(f"맵 좌표계 인덱스: map_x={map_x:.0f}, map_y={map_y:.0f}")
         
         np_map_data = self.mapping.map.reshape(-1)
         list_map_data = [100 - int(value * 100) for value in np_map_data]
         list_map_data = [max(0, min(100, v)) for v in list_map_data]
-
-        # 로직 11 : 업데이트 중인 map publish
-
-        self.map_msg.header.stamp =rclpy.clock.Clock().now().to_msg()
-        # self.map_msg.data = (self.mapping.map.flatten() * 100).astype(np.int32).tolist()
+    
+        self.map_msg.header.stamp = rclpy.clock.Clock().now().to_msg()
         self.map_msg.data = np.clip((self.mapping.map.flatten() * 100), -128, 127).astype(np.int32).tolist()
         self.map_pub.publish(self.map_msg)
-
+    
+        # [6] 10초마다 맵 저장
         current_time = time.time()
-        if current_time - self.last_save_time > 10:  # 10초마다 저장
-            save_map(self, 'map.txt')
+        if current_time - self.last_save_time > 10:
+            save_map(self, 'update_map.txt')
             self.last_save_time = current_time
+
+    # def odom_callback(self, msg):
+    #     """ Odometry 데이터를 받아 현재 방향 (yaw) 업데이트 """
+    #     orientation_q = msg.pose.pose.orientation
+    #     quat = Quaternion(orientation_q.w, orientation_q.x, orientation_q.y, orientation_q.z)
+    #     _, _, self.yaw = quat.to_euler()
+    #     print('odometry info =========', msg.pose.x, msg.pose.y, round(self.yaw, 3))
 
 
 def save_map(node, file_path):
@@ -328,16 +366,6 @@ def save_map(node, file_path):
     print("map 데이터 저장 완료")
     f.write(data) 
     f.close()
-
-    # # node.map_msg.data가 1D 배열이므로 2D 배열로 변환 (예: 맵 크기 지정)
-    # map_width = int(params_map['MAP_SIZE'][0]/params_map['MAP_RESOLUTION'])
-    # map_height = int(params_map['MAP_SIZE'][1]/params_map['MAP_RESOLUTION'])
-    
-    # # 1D 데이터를 2D 배열로 변환
-    # map_data = np.array(node.map_msg.data).reshape(int(map_height), int(map_width))
-
-    # # 회전된 맵을 1D 배열로 다시 변환
-    # map_data_flat = map_data.flatten()
 
 
 def main(args=None):    
