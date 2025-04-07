@@ -1,0 +1,4 @@
+train: C:/Users/SSAFY/Desktop/project/mobility-smarthome-skeleton/yolov5/data/images/train
+val: C:/Users/SSAFY/Desktop/project/mobility-smarthome-skeleton/yolov5/data/images/val
+nc: 6 # 클래스 개수
+names: ["fall", "intravenous", "wheelchair", "sitting", "chair", "plant"] # 클래스 이름
