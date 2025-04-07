@@ -10,8 +10,10 @@ import base64
 import time
 import boto3
 from datetime import datetime
+from .config import YOLOV5_DIR, MODEL_PATH
 from . import config
 import os
+from std_msgs.msg import Bool
 
 # S3 설정
 S3_BUCKET = config.S3_BUCKET
@@ -43,10 +45,11 @@ class FallDetectionNode(Node):
         )
 
         self.last_sent_time = 0
+        self.prev_fall_state = False
 
         CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-        yolov5_dir = r'C:\Users\SSAFY\Desktop\project\mobility-smarthome-skeleton\yolov5'
-        model_path = r'C:\Users\SSAFY\Desktop\project\mobility-smarthome-skeleton\yolov5\runs\train\exp13\weights\best.pt'
+        yolov5_dir = YOLOV5_DIR
+        model_path = MODEL_PATH
 
         self.model = torch.hub.load(
             yolov5_dir,
@@ -55,6 +58,7 @@ class FallDetectionNode(Node):
             source='local'
         )
         self.model.conf = 0.7
+        self.fall_pub = self.create_publisher(Bool,'/fall_detected',1) # 낙상감지 
 
         # MQTT 설정
         self.mqtt_client = mqtt.Client()
@@ -85,6 +89,11 @@ class FallDetectionNode(Node):
                             (int(xyxy[0]), int(xyxy[1]) - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
 
+        if fall_detected != self.prev_fall_state:
+            self.fall_pub.publish(Bool(data=fall_detected))
+            self.prev_fall_state = fall_detected
+            self.get_logger().info(f"fall_detected status publish: {fall_detected}")
+        
         current_time = time.time()
 
         if fall_detected and (current_time - self.last_sent_time > 30):
@@ -113,6 +122,7 @@ class FallDetectionNode(Node):
                 self.get_logger().info("image sent to MQTT broker")
 
                 self.last_sent_time = current_time
+                
             except Exception as e:
                 self.get_logger().error(f"Failed to upload image: {e}")
 

@@ -19,10 +19,8 @@ class Controller(Node):
         self.scan_sub = self.create_subscription(LaserScan, '/scan', self.scan_callback, 1)
         self.a_star_global_path_sub = self.create_subscription(Path, '/a_star_global_path', self.global_path_callback, 1)
         self.object_detected_sub = self.create_subscription(Int32, '/object_detected', self.object_callback, 1)
-        #self.move_order_sub = self.create_subscription(Bool, '/move_order', self.move_order_callback, 1)
-        #self.move_order_pub = self.create_publisher(Bool, '/move_order', 1)
-        #self.cmd_publisher = self.create_publisher(Twist, 'cmd_vel', 10)
         self.path_request_pub = self.create_publisher(Point, '/request_new_path', 1) # 장애물 감지 시 새 경로 요청
+        self.fall_sub = self.create_subscription(Bool,'/fall_detected',self.fall_callback, 1) # 낙상 감지 
         self.cmd_msg = Twist()
 
         # 현재 위치 및 방향
@@ -34,6 +32,7 @@ class Controller(Node):
         self.timer = self.create_timer(0.3, self.move_to_destination)
 
         self.is_to_move = False
+        self.fall_detected = False
         #self.is_order = False
 
         # a_star를 통해 생성한 global_path
@@ -52,24 +51,23 @@ class Controller(Node):
         self.mqtt_client = mqtt.Client()
         self.mqtt_broker = MQTT_CONFIG["BROKER"]
         self.mqtt_port = MQTT_CONFIG["PORT"]
-        self.mqtt_topic = "robot/log"
+        self.mqtt_topic_log = "robot/log"
+        self.mqtt_topic_fall_check = "robot/fall_check" # 낙상 확인 후 재이동 
 
         #self.mqtt_client.on_connect = self.on_connect
-        #self.mqtt_client.on_message = self.on_message
+        self.mqtt_client.on_message = self.on_message
         self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
         self.mqtt_client.loop_start()
     
-    #def move_order_callback(self, msg):
-        # 중복 처리 방지
-        # if self.is_order == msg.data:
-        #     return
+    def on_message(self, client, userdata, msg):
+        payload = msg.payload.decode()
+        print(f"📨 MQTT 메시지 수신: {payload}")
 
-        # self.is_order = msg.data
-        # if msg.data:
-        #     self.get_logger().info("Received move_order: True")
-        # else:
-        #     self.get_logger().info("Received move_order: False")
-        #     self.is_to_move = False  # 명시적으로 멈춤
+        if payload == "check":
+            if self.fall_detected:
+                print("✅ 낙상 해제 신호 수신 → 이동 재개")
+                self.fall_detected = False
+                self.is_to_move = True
     
     def scan_callback(self, msg):
         # LaserScan 데이터를 받아 현재 위치와 heading 업데이트 
@@ -82,6 +80,15 @@ class Controller(Node):
         print(f"현재 위치: ({round(self.pose_x, 3)}, {round(self.pose_y, 3)})")
         #print(f"현재 heading: {round(self.heading, 2)}°")
 
+    def fall_callback(self,msg):
+        self.fall_detected = msg.data
+        if self.fall_detected:
+            print("🛑 낙상 감지됨 → 이동 정지")
+            self.is_to_move = False
+            self.turtlebot_stop()
+        else:
+            print("✅ 낙상 해제")
+
     def global_path_callback(self, msg):
         #if self.is_order:
         path = [(pose.pose.position.x, pose.pose.position.y) for pose in msg.poses]
@@ -92,13 +99,7 @@ class Controller(Node):
         print("경로 받기 성공")
         self.current_goal_idx = 0
         self.is_to_move = True
-    
-    # def object_callback(self, msg):
-    #     if msg.data:  # 장애물 감지됨
-    #         self.object_detected = True
-    #         print("🚨 장애물 감지! 이동 중단 및 경로 재설정")
-    #     else:
-    #         self.object_detected = False
+        self.mqtt_client.publish(self.mqtt_topic_log, "moving")
 
     def object_callback(self, msg):
         if msg.data:  # 장애물 감지됨
@@ -142,13 +143,17 @@ class Controller(Node):
             self.current_goal_idx = 0
             # rclpy.shutdown()
 
-            self.mqtt_client.publish(self.mqtt_topic, "arrived")
+            self.mqtt_client.publish(self.mqtt_topic_log, "arrived")
 
     def move_to_destination(self):
         vel_msg = Twist()
-        if self.is_to_move == False: 
-            vel_msg.angular.z = 0.0
+        
+        # 낙상감지 시 이동 멈춤 
+        if not self.is_to_move or self.fall_detected:
             vel_msg.linear.x = 0.0
+            vel_msg.angular.z = 0.0
+            self.pub.publish(vel_msg)
+            return
         # 🚨 장애물이 감지되면 이동을 멈추고 새로운 경로 요청
         else:
             if self.object_detected:
