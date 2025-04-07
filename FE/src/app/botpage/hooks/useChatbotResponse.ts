@@ -1,11 +1,16 @@
 // hooks/useChatbotResponse.ts
 import { useCallback } from "react";
-import { mqttClient } from "@/lib/mqttClient";
+import { mqttClient, mqttClientId } from "@/lib/mqttClient";
 
 export const sendMessage = (data: string) => {
-  mqttClient.publish("user/chatbot/request", data);
-  console.log("📤 MQTT 메시지 전송:", data);
+  const message = JSON.stringify({
+    user_id: mqttClientId, // 여기서 clientId 넣어줌!
+    payload: data,
+  });
+  mqttClient.publish("user/chatbot/request", message);
+  console.log("📤 MQTT 메시지 전송:", message);
 };
+
 
 type ChatbotResponseProps = {
   setQuestion: (q: string) => void;
@@ -27,7 +32,12 @@ export function useChatbotResponse({
       const msg = message.toString().trim();
       console.log("📩 수신된 메시지 원본:", msg);
 
-      if (topic === "chatbot/response") {
+      if (topic.startsWith("chatbot/") && topic.endsWith("/response")) {
+        const parsed = JSON.parse(msg);
+
+        // 👉 내 clientId랑 다르면 무시
+        if (parsed.user_id !== mqttClientId) return;
+        
         try {
           const parsed = JSON.parse(msg);
           setQuestion(parsed.request || "");

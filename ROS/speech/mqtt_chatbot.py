@@ -45,28 +45,34 @@ class MQTTChatbot:
 
     def on_message(self, client, userdata, msg):
         """MQTT 메시지 수신 이벤트"""
-        # 기존 타이머 취소
-        if self.history_reset_timer:
-            self.history_reset_timer.cancel()
-
-        print(f"📩 수신한 메시지 (topic: {msg.topic}), 크기: {len(msg.payload)} bytes")
 
         try:
-            # 메시지 크기가 작으면 텍스트로 간주
-            if len(msg.payload) < 1024:
-                try:
-                    transcribed_text = msg.payload.decode('utf-8')
-                    print("📄 텍스트 데이터 수신:", transcribed_text)
-                except UnicodeDecodeError:
-                    print("⚠️ UTF-8 해석 실패, 데이터 형식 확인 필요.")
-                    return
+            # 메시지 디코딩 및 JSON 파싱
+            message = json.loads(msg.payload.decode('utf-8'))
+            user_id = message.get("user_id", "")
+            raw_payload = message.get("payload", "")
+
+            if not user_id:
+                print("⚠️ user_id가 없습니다.")
+                return
+
+            # 기존 타이머 취소 (유저별 타이머가 필요한 경우에는 dict로 관리 필요)
+            if self.history_reset_timer:
+                self.history_reset_timer.cancel()
+
+            print(f"📩 수신한 메시지 from user_id: {user_id}, 크기: {len(raw_payload)} bytes")
+
+            # 텍스트 or 오디오 분기
+            if len(raw_payload) < 1024:
+                transcribed_text = raw_payload
+                print("📄 텍스트 데이터 수신:", transcribed_text)
             else:
-                # 바이너리 음성 데이터 처리
-                transcribed_text = self.process_audio(msg.payload)
+                transcribed_text = self.process_audio(raw_payload.encode('utf-8'))
 
             if not transcribed_text:
                 return
 
+            # 내부 검색
             search_results = search_hospital_info(transcribed_text)
 
             #외부 검색
@@ -112,20 +118,21 @@ class MQTTChatbot:
 
                 response_text += " 안내를 시작할까요?"
 
-
-            # ✅ 최종 메시지 데이터
+            # 최종 응답 생성
             message_data = {
+                "user_id": user_id,
                 "request": transcribed_text,
                 "response": response_text,
                 "facility": facility_name,
                 "image": image_url
             }
 
+            topic_response = f"chatbot/{user_id}/response"
             message_json = json.dumps(message_data, ensure_ascii=False)
-            client.publish(self.TOPIC_PUBLISH, message_json)
-            print("✅ 응답이 MQTT 브로커에 발행되었습니다.")
+            client.publish(topic_response, message_json)
+            print(f"✅ 응답이 {topic_response} 토픽으로 발행되었습니다.")
 
-            # 새로운 타이머 시작
+            # 타이머 재시작
             self.history_reset_timer = threading.Timer(self.TIMEOUT_SECONDS, self.reset_history)
             self.history_reset_timer.start()
 
