@@ -38,15 +38,15 @@ export default function QuestionButton({ text, color = "amber", selected, onSele
   return (
     <AnimatePresence>
       {visible && (
-        <motion.button onClick={handleClick} initial={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.1, y: -30 }} transition={{ duration: 0.4, ease: "easeInOut" }} className={`relative w-full text-left p-8 mb-4 rounded-xl border shadow-md min-h-[180px] transition-all duration-200 font-[600] flex flex-col justify-start ${colorClassMap[color]}`}>
+        <motion.button onClick={handleClick} initial={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.1, y: -30 }} transition={{ duration: 0.4, ease: "easeInOut" }} className={`relative w-full text-left p-8 mb-3 rounded-xl border shadow-md min-h-[250px] transition-all duration-200 font-[600] flex flex-col justify-start ${colorClassMap[color]}`}>
           {/* 핀 아이콘 */}
           <div className="absolute -top-2 left-4 text-xl z-20">📌</div>
 
           {/* 메모지 줄 배경 */}
-          <div className="absolute inset-0 bg-repeat-y bg-[linear-gradient(to_bottom,transparent_28px,rgba(0,0,0,0.07)_29px)]" style={{ backgroundSize: "100% 32px", zIndex: 0 }} />
+          <div className="absolute inset-0 bg-repeat-y bg-[linear-gradient(to_bottom,transparent_37px,rgba(0,0,0,0.07)_38px)]" style={{ backgroundSize: "100% 41px", zIndex: 0 }} />
 
           {/* 질문 텍스트 */}
-          <span className="relative z-10 block text-gray-800 whitespace-pre-line text-xl leading-relaxed font-semibold">{text}</span>
+          <span className="relative z-10 block text-gray-800 whitespace-pre-line text-3xl leading-relaxed font-semibold">{text}</span>
         </motion.button>
       )}
     </AnimatePresence>
