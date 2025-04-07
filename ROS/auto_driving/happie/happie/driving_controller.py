@@ -58,6 +58,7 @@ class Controller(Node):
         #self.mqtt_client.on_message = self.on_message
         self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
         self.mqtt_client.loop_start()
+
     
     #def move_order_callback(self, msg):
         # 중복 처리 방지
@@ -77,10 +78,9 @@ class Controller(Node):
         self.pose_y = msg.scan_time 
         self.ranges = np.array(msg.ranges)
         # print(self.ranges)
-        # heading 값 계산 (예제, 실제 데이터에서 계산 필요)
         self.heading = (msg.time_increment + 360) % 360
-        print(f"현재 위치: ({round(self.pose_x, 3)}, {round(self.pose_y, 3)})")
-        #print(f"현재 heading: {round(self.heading, 2)}°")
+        # print(f"현재 위치: ({round(self.pose_x, 3)}, {round(self.pose_y, 3)})")
+
 
     def global_path_callback(self, msg):
         #if self.is_order:
@@ -88,22 +88,16 @@ class Controller(Node):
         self.global_path = path
         self.goal.x = path[0][0]
         self.goal.y = path[0][1]
-        print(self.global_path)
+        # print(self.global_path)
         print("경로 받기 성공")
         self.current_goal_idx = 0
         self.is_to_move = True
-    
-    # def object_callback(self, msg):
-    #     if msg.data:  # 장애물 감지됨
-    #         self.object_detected = True
-    #         print("🚨 장애물 감지! 이동 중단 및 경로 재설정")
-    #     else:
-    #         self.object_detected = False
 
     def object_callback(self, msg):
         if msg.data:  # 장애물 감지됨
             if not self.object_detected: 
                 print("🚨 장애물 처음 감지! 이동 중단 및 경로 재설정 준비")
+
             self.object_detected = True
             self.object_angle = msg.data + self.heading
         else:
@@ -145,19 +139,22 @@ class Controller(Node):
             self.mqtt_client.publish(self.mqtt_topic, "arrived")
 
     def move_to_destination(self):
+        print(self.object_detected, 'object_detected')
+        print(self.object_detected, 'object_detected')
+        print(self.path_requested, 'path_requested')
+        print(self.is_to_move, 'is_to_move')
         vel_msg = Twist()
         if self.is_to_move == False: 
             vel_msg.angular.z = 0.0
             vel_msg.linear.x = 0.0
         # 🚨 장애물이 감지되면 이동을 멈추고 새로운 경로 요청
         else:
-            if self.object_detected:
-                if not self.path_requested:
-                    print("🚨 장애물 감지! 최단 경로 재계산 요청")
-                    self.turtlebot_stop() 
-                    self.request_new_path()
-                    self.path_requested = True  # 한 번만 요청하도록 설정
-                return
+            if self.object_detected and (not self.path_requested):
+                print("🚨 장애물 감지! 최단 경로 재계산 요청")
+                self.turtlebot_stop() 
+                self.request_new_path()
+                self.path_requested = True  # 한 번만 요청하도록 설정
+                return 
             else:
                 # 현재 목표까지의 거리 계산
                 distance = math.sqrt((self.goal.x - self.pose_x) ** 2 + (self.goal.y - self.pose_y) ** 2)
@@ -196,8 +193,7 @@ class Controller(Node):
                 else:
                     print("heading 차이가 5도 이하라면 직진")
                     # 🔹 heading 차이가 5도 이하라면 직진
-                    kp_linear = 1  # 이동 속도 조절 계수
-                    vel_msg.linear.x = min(kp_linear * distance, 1)  # 최대 속도 0.5
+                    vel_msg.linear.x = max(0.2, min(distance, 1.5))  # 최대 속도 1.5
                     vel_msg.angular.z = 0.0  # 직진 시 회전 없음
 
         self.pub.publish(vel_msg)
