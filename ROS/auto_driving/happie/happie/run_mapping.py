@@ -337,7 +337,7 @@ class Mapper(Node):
         # [6] 10초마다 맵 저장
         current_time = time.time()
         if current_time - self.last_save_time > 10:
-            save_map(self, 'map.txt')
+            save_map(self, 'update_map.txt')
             self.last_save_time = current_time
 
     # def odom_callback(self, msg):

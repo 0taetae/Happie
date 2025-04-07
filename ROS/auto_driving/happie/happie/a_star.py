@@ -20,6 +20,8 @@ import matplotlib.pyplot as plt
 from .config import params_map, PKG_PATH, MQTT_CONFIG, patrol_path
 import paho.mqtt.client as mqtt
 
+#from custom_msgs.srv import SetPose
+
 
 # a_star 노드는  OccupancyGrid map을 받아 grid map 기반 최단경로 탐색 알고리즘을 통해 로봇이 목적지까지 가는 경로를 생성하는 노드입니다.
 
@@ -83,6 +85,16 @@ class a_star(Node):
         self.subscription = self.create_subscription(LaserScan,'/scan',self.scan_callback,10)
         self.global_path_pub = self.create_publisher(Path, 'a_star_global_path', 10)
 
+        #self.srv = self.create_service(SetPose, 'request_path', self.handle_request_path)
+
+        self.path_request_sub = self.create_subscription(Point, '/request_new_path', self.path_request_callback,10)
+
+        # self.map_msg = OccupancyGrid()
+        # self.odom_msg = Odometry()
+        # self.is_map = False
+        # self.is_odom = False
+        # self.is_found_path = False
+        # self.is_grid_update = False
         # 이동 타이머 설정
         self.timer = self.create_timer(0.1, self.check_command)
 
@@ -185,6 +197,36 @@ class a_star(Node):
         except Exception as e:
             print(f"❌ 목표 좌표 처리 오류: {e}")
 
+    # 최단 경로 재계산 요청을 처리
+    def path_request_callback(self, msg):
+        try:
+            new_goal_x = msg.x
+            new_goal_y = msg.y
+            print(f"🔄 새로운 경로 요청: ({new_goal_x}, {new_goal_y})")
+
+            # MQTT에서 받은 좌표를 맵 좌표계로 변환
+            goal_map_x = (new_goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION']
+            goal_map_y = (new_goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1] / 2) / params_map['MAP_RESOLUTION']
+
+            goal_map_x = int(goal_map_x)
+            goal_map_y = int(goal_map_y)
+
+            print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
+            # 현재 위치를 기준으로 새로운 경로 찾기
+            start = (int(self.map_pose_y), int(self.map_pose_x))
+            goal = (goal_map_y, goal_map_x)
+
+            path, real_path = self.a_star(start, goal)
+
+            if path:
+                print(f"✅ 새로운 경로 탐색 성공! 경로 길이: {len(path)}")
+                self.publish_global_path(real_path)
+            else:
+                print("⚠️ 새로운 경로를 찾을 수 없음.")
+
+        except Exception as e:
+            print(f"❌ 새로운 경로 요청 처리 오류: {e}")
+    
 
     def check_command(self):
         if self.is_patrol_command == False: 
@@ -205,7 +247,6 @@ class a_star(Node):
                     self.path_finding(goal_map_x, goal_map_y)
             else: 
                 pass 
-
 
     def heuristic(self, a, b):
         #print("heuristic!!")
