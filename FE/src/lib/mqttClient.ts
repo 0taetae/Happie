@@ -7,7 +7,8 @@ const options = {
   clientId: `nextjs_mqtt_${Math.random().toString(16).substr(2, 8)}`,
   reconnectPeriod: 10000000,
   clean: true,
-};
+} ;
+export const mqttClientId = options.clientId;
 
 export const mqttClient = mqtt.connect(brokerUrl, options);
 
@@ -18,7 +19,7 @@ mqttClient.on("connect", () => {
   const topics = [
     "user/chatbot/request",
     "fall_detection",
-    "chatbot/response",
+    "chatbot/+/response",
     "map/data",
     "robot/map_position",
   ];
