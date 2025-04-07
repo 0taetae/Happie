@@ -5,6 +5,7 @@ from geometry_msgs.msg import Twist, Point
 from nav_msgs.msg import Path
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Bool
+import numpy as np
 import time
 
 from .config import params_map, PKG_PATH, MQTT_CONFIG
@@ -64,7 +65,8 @@ class Controller(Node):
         # LaserScan 데이터를 받아 현재 위치와 heading 업데이트 
         self.pose_x = msg.range_min
         self.pose_y = msg.scan_time 
-
+        self.ranges = np.array(msg.ranges)
+        print(self.ranges)
         # heading 값 계산 (예제, 실제 데이터에서 계산 필요)
         self.heading = (msg.time_increment + 360) % 360
         print(f"현재 위치: ({round(self.pose_x, 3)}, {round(self.pose_y, 3)})")
@@ -98,51 +100,51 @@ class Controller(Node):
             self.mqtt_client.publish(self.mqtt_topic, "arrived")
 
     def move_to_destination(self):
-        if self.is_to_move == False: return 
-
         vel_msg = Twist()
-        # 현재 목표까지의 거리 계산
-        distance = math.sqrt((self.goal.x - self.pose_x) ** 2 + (self.goal.y - self.pose_y) ** 2)
-        print(distance,'distance')
-        # 목표 지점 도착 여부 확인
-        if distance < 0.1:
-            # self.get_logger().info(f"목표 지점 {self.current_goal_idx} 도착. 잠시 정지합니다.")
-            print(f"목표 지점 {self.current_goal_idx} 도착. 잠시 정지합니다.")
-            print(self.is_to_move)
-            # 목표 지점 도착 후 1초 정지
-            self.turtlebot_stop()
-            self.current_goal_idx += 1
-            self.set_new_goal()
-            
-            return
-
-        # 목표 heading 계산
-        target_heading = math.degrees(math.atan2(-(self.goal.x - self.pose_x), self.goal.y - self.pose_y))
-        target_heading = (target_heading + 360) % 360  # 0~360도로 변환
-
-        # 현재 heading과 목표 heading 비교 (최단 회전 경로 고려)
-        angle_diff = (target_heading - self.heading + 540) % 360 - 180
-
-        # 🔹 heading이 목표와 5도 이상 차이나면 회전
-        if abs(angle_diff) > 5:
-            print("heading이 목표와 5도 이상 차이나면 회전")
-            kp_angular = 0.01  # 회전 속도 조절 계수 (값을 더 키워도 됨)
-            max_angular_speed = 1.0  # 최대 회전 속도 제한
-
-            # 회전 속도를 angle_diff에 비례하도록 조정 (단, 최대 속도 제한)
-            vel_msg.angular.z = -max(min(kp_angular * angle_diff, max_angular_speed), -max_angular_speed)
-            vel_msg.linear.x = 0.0  # 회전 중 직진 금지
-            # print(f'현재 heading: {self.heading}')
-            # print(f'현재 각속도: {vel_msg.angular.z}')
-
+        if self.is_to_move == False: 
+            vel_msg.angular.z = 0.0
+            vel_msg.linear.x = 0.0
         else:
-            print("heading 차이가 5도 이하라면 직진")
-            # 🔹 heading 차이가 5도 이하라면 직진
-            kp_linear = 1  # 이동 속도 조절 계수
-            vel_msg.linear.x = min(kp_linear * distance, 1)  # 최대 속도 0.5
-            vel_msg.angular.z = 0.0  # 직진 시 회전 없음
+            # 현재 목표까지의 거리 계산
+            distance = math.sqrt((self.goal.x - self.pose_x) ** 2 + (self.goal.y - self.pose_y) ** 2)
+            print(distance,'distance')
+            # 목표 지점 도착 여부 확인
+            if distance < 0.1:
+                # self.get_logger().info(f"목표 지점 {self.current_goal_idx} 도착. 잠시 정지합니다.")
+                print(f"목표 지점 {self.current_goal_idx} 도착. 잠시 정지합니다.")
+                print(self.is_to_move)
+                # 목표 지점 도착 후 1초 정지
+                self.turtlebot_stop()
+                self.current_goal_idx += 1
+                self.set_new_goal()
 
-        # 디버깅 출력
+                return
+
+            # 목표 heading 계산
+            target_heading = math.degrees(math.atan2(-(self.goal.x - self.pose_x), self.goal.y - self.pose_y))
+            target_heading = (target_heading + 360) % 360  # 0~360도로 변환
+
+            # 현재 heading과 목표 heading 비교 (최단 회전 경로 고려)
+            angle_diff = (target_heading - self.heading + 540) % 360 - 180
+
+            # 🔹 heading이 목표와 5도 이상 차이나면 회전
+            if abs(angle_diff) > 5:
+                print("heading이 목표와 5도 이상 차이나면 회전")
+                kp_angular = 0.01  # 회전 속도 조절 계수 (값을 더 키워도 됨)
+                max_angular_speed = 1.0  # 최대 회전 속도 제한
+
+                # 회전 속도를 angle_diff에 비례하도록 조정 (단, 최대 속도 제한)
+                vel_msg.angular.z = -max(min(kp_angular * angle_diff, max_angular_speed), -max_angular_speed)
+                vel_msg.linear.x = 0.0  # 회전 중 직진 금지
+                # print(f'현재 heading: {self.heading}')
+                # print(f'현재 각속도: {vel_msg.angular.z}')
+
+            else:
+                print("heading 차이가 5도 이하라면 직진")
+                # 🔹 heading 차이가 5도 이하라면 직진
+                kp_linear = 1  # 이동 속도 조절 계수
+                vel_msg.linear.x = min(kp_linear * distance, 1)  # 최대 속도 0.5
+                vel_msg.angular.z = 0.0  # 직진 시 회전 없음
 
         self.pub.publish(vel_msg)
 
