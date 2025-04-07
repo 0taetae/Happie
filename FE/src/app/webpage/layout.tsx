@@ -63,26 +63,27 @@ export default function WebPageLayout({ children }: { children: React.ReactNode 
   }
 
   return (
-    <div className="flex flex-col h-screen">
-      <header className="bg-blue-200 flex justify-between items-center h-16 shadow-md">
+    <div className="flex flex-col h-screen font-bmjua">
+      <header className="bg-blue-200 flex justify-between items-center h-24 shadow-md">
         {/* 👈 왼쪽: 로고 + 텍스트 */}
         <Link href="/" className="flex items-center px-12">
           <img
             src="/images/logo.png"
             alt="하피 로고"
-            className="w-16 h-16 object-contain" // ✅ 크기 줄임
+            className="w-24 h-24 object-contain" // ✅ 크기 줄임
           />
-          <span className="ml-2 text-white text-3xl font-bold">HAPPIE</span>
+          <span className="ml-2 text-white text-5xl">HAPPIE</span>
         </Link>
 
         {/* 👉 오른쪽 텍스트 */}
         <Link href="/botpage" className="flex items-center">
-          <div className="text-white text-2xl px-16 font-bold">한살차이</div>
+          <div className="text-white text-4xl px-16">한살차이</div>
         </Link>
       </header>
 
       {/* ⚙️ 콘텐츠 */}
-      <div className="flex flex-grow overflow-hidden bg-white px-10">
+      <div className="flex flex-grow overflow-hidden h-full bg-white px-10 py-3" style={{ height: 'calc(100vh - 6rem)' }}>
+      <div className="flex h-full">
         {/* ✅ Sidebar에 refreshTrigger 전달 */}
         <Sidebar refreshTrigger={refreshTrigger} />
 
@@ -98,6 +99,7 @@ export default function WebPageLayout({ children }: { children: React.ReactNode 
 
       {/* 낙상 경고 모달 */}
       {showWarning && <Warning imageUrl={warningImage} onClose={() => setShowWarning(false)} />}
+    </div>
     </div>
   );
 }
