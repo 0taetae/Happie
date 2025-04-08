@@ -202,6 +202,21 @@ body {
 .wavy-text span:nth-child(19) { animation-delay: 1.8s; }
 .wavy-text span:nth-child(20) { animation-delay: 1.9s; }
 
+@keyframes blink {
+  0%, 100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(0.1);
+  }
+}
+
+.eye {
+  animation: blink 0.3s ease-in-out infinite;
+  animation-delay: 3s;
+  transform-origin: center;
+}
+
 
 @font-face {
   font-family: 'Godo';

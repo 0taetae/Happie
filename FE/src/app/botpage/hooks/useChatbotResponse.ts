@@ -18,6 +18,7 @@ type ChatbotResponseProps = {
   setStage: (s: "idle" | "recording" | "loading" | "answering") => void;
   setShowWarning: (show: boolean) => void;
   setFacility?: (f: string | null) => void;
+  setNavigationImage?: (url: string | null) => void;
 };
 
 export function useChatbotResponse({
@@ -26,6 +27,7 @@ export function useChatbotResponse({
   setStage,
   setShowWarning,
   setFacility,
+  setNavigationImage,
 }: ChatbotResponseProps) {
   const handleChatResponse = useCallback(
     (topic: string, message: Uint8Array | string) => {
@@ -43,6 +45,7 @@ export function useChatbotResponse({
           setQuestion(parsed.request || "");
           setAnswer(parsed.response || msg);
           if (parsed.facility) setFacility?.(parsed.facility);
+          if (parsed.image) setNavigationImage?.(parsed.image); // ✅ 여기서 저장
         } catch (e) {
           console.warn("❌ 파싱 실패:", e);
           setQuestion("");
@@ -55,7 +58,7 @@ export function useChatbotResponse({
         setShowWarning(true);
       }
     },
-    [setQuestion, setAnswer, setStage, setShowWarning, setFacility]
+    [setQuestion, setAnswer, setStage, setShowWarning, setFacility, setNavigationImage]
   );
 
   return { handleChatResponse };
