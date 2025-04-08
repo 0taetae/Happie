@@ -15,5 +15,5 @@ public class FallDetection {
     private Integer id;
 
     @Column
-    private boolean detected;
+    private boolean detected = false;
 }
