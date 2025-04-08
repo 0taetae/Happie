@@ -50,21 +50,17 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-white">
       {/* 왼쪽 화면 (WEB) */}
-      <div
-        className="w-1/2 flex items-center justify-center bg-blue-300 text-white text-2xl font-bold cursor-pointer-custom hover:bg-blue-400 transition"
-        onClick={() => setIsLoginOpen(true)}
-      >
+      <div className="w-1/2 flex flex-col items-center justify-center text-pink-400 text-6xl font-bold cursor-pointer-custom transition-all duration-300 hover:shadow-[0_0_60px_0_rgba(251,113,133,0.5)]" onClick={() => setIsLoginOpen(true)}>
+        <img src="/images/webpage.gif" alt="WEB GIF" style={{ width: "400px", height: "400px" }} className="mb-4 object-contain" />
         WEB
-      </div>
+      </div>                                                                                                 
 
       {/* 오른쪽 화면 (BOT) */}
-      <div
-        className="w-1/2 flex items-center justify-center bg-green-400 text-white text-2xl font-bold cursor-pointer-custom hover:bg-green-500 transition"
-        onClick={() => router.push("/botpage")}
-      >
-        BOT
+      <div className="w-1/2 flex flex-col items-center justify-center text-green-600 text-6xl font-bold cursor-pointer-custom transition-all duration-300 hover:shadow-[0_0_60px_0_rgba(34,197,94,0.5)]" onClick={() => router.push("/botpage")}>
+        <img src="/images/botpage.gif" alt="BOT GIF" style={{ width: "400px", height: "400px" }} className="mb-4 object-contain" />
+        ROBOT
       </div>
 
       {/* 로그인 모달 */}
@@ -89,16 +85,10 @@ export default function Home() {
             />
 
             <div className="flex justify-end space-x-2">
-              <button
-                className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition"
-                onClick={() => setIsLoginOpen(false)}
-              >
+              <button className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition" onClick={() => setIsLoginOpen(false)}>
                 취소
               </button>
-              <button
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700 transition"
-                onClick={handleLogin}
-              >
+              <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700 transition" onClick={handleLogin}>
                 확인
               </button>
             </div>
