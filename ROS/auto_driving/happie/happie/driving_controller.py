@@ -19,9 +19,6 @@ class Controller(Node):
         self.scan_sub = self.create_subscription(LaserScan, '/scan', self.scan_callback, 1)
         self.a_star_global_path_sub = self.create_subscription(Path, '/a_star_global_path', self.global_path_callback, 1)
         self.object_detected_sub = self.create_subscription(Int32, '/object_detected', self.object_callback, 1)
-        #self.move_order_sub = self.create_subscription(Bool, '/move_order', self.move_order_callback, 1)
-        #self.move_order_pub = self.create_publisher(Bool, '/move_order', 1)
-        #self.cmd_publisher = self.create_publisher(Twist, 'cmd_vel', 10)
         self.path_request_pub = self.create_publisher(Point, '/request_new_path', 1) # 장애물 감지 시 새 경로 요청
         self.cmd_msg = Twist()
 
@@ -29,6 +26,12 @@ class Controller(Node):
         self.pose_x = 0.0
         self.pose_y = 0.0
         self.heading = 0.0  # LaserScan에서 계산
+
+        # 배터리 잔량
+        self.is_charging = False
+        self.prior_pose = 0.0
+        self.present_pose = 0.0
+        self.battery = 14.0
 
         # 이동 타이머 설정
         self.timer = self.create_timer(0.3, self.move_to_destination)
@@ -46,7 +49,7 @@ class Controller(Node):
         self.set_new_goal()
         self.object_detected = False
         self.path_requested = False
-        self.object_angle = 0
+        self.object_angle = 0.0
 
         # MQTT 설정 
         self.mqtt_client = mqtt.Client()
@@ -59,27 +62,37 @@ class Controller(Node):
         self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
         self.mqtt_client.loop_start()
 
-    
-    #def move_order_callback(self, msg):
-        # 중복 처리 방지
-        # if self.is_order == msg.data:
-        #     return
 
-        # self.is_order = msg.data
-        # if msg.data:
-        #     self.get_logger().info("Received move_order: True")
-        # else:
-        #     self.get_logger().info("Received move_order: False")
-        #     self.is_to_move = False  # 명시적으로 멈춤
-    
     def scan_callback(self, msg):
+        # 매 초당, 대기전력 0.1 사용
+        self.battery -= 0.1
+        self.battery = max(self.battery, 0.0)
+        # 위치 초기값 설정
+        if self.prior_pose == 0.0:
+            self.prior_pose = (msg.range_min, msg.scan_time)
+            self.present_pose = (msg.range_min, msg.scan_time)
+        # 위치 업데이트
+        else:
+            self.prior_pose, self.present_pose = self.present_pose, (msg.range_min, msg.scan_time)
+        # 이동거리 측정        
+        moved_dist = math.hypot((self.prior_pose[0] - self.present_pose[0]), (self.prior_pose[1] - self.present_pose[1]))
+        self.battery -= moved_dist/3
+
         # LaserScan 데이터를 받아 현재 위치와 heading 업데이트 
         self.pose_x = msg.range_min
         self.pose_y = msg.scan_time 
         self.ranges = np.array(msg.ranges)
-        # print(self.ranges)
+
         self.heading = (msg.time_increment + 360) % 360
-        # print(f"현재 위치: ({round(self.pose_x, 3)}, {round(self.pose_y, 3)})")
+        left = sum(self.ranges[:20])
+        right = sum(self.ranges[340:])
+        front = sum(self.ranges[:10])+sum(self.ranges[350:])
+        pivot = min(front, right, left)
+        if pivot < 30:
+            print(pivot, 'pivot')
+            if front == pivot: print('정면 장애물 감지')
+            elif right == pivot: print('우측면 장애물 감지')
+            elif left == pivot: print('좌측면 장애물 감지')
 
 
     def global_path_callback(self, msg):
@@ -96,7 +109,7 @@ class Controller(Node):
     def object_callback(self, msg):
         if msg.data:  # 장애물 감지됨
             if not self.object_detected: 
-                print("🚨 장애물 처음 감지! 이동 중단 및 경로 재설정 준비")
+                print("🚨 장애물 감지! 이동 중단 및 경로 재설정 준비")
 
             self.object_detected = True
             self.object_angle = msg.data + self.heading
@@ -107,15 +120,20 @@ class Controller(Node):
             self.path_requested = False  # 장애물이 사라졌으니 다시 경로 재요청 가능
 
     # 장애물 감지 시 새로운 경로를 요청하고 목적지 좌표를 전달
-    def request_new_path(self):
-        
-        print(f"📢 새로운 경로 요청! 목적지: ({self.global_path[-1][0]}, {self.global_path[-1][1]})")
+    def request_new_path(self, type):
 
         # 메시지 생성 (목적지 좌표 포함)
         path_request_msg = Point()
-        path_request_msg.x = self.global_path[-1][0]
-        path_request_msg.y = self.global_path[-1][1]
-        path_request_msg.z = self.object_angle
+        # 충전소 보내기
+        if type == 'charge':
+            path_request_msg.x = -42.44
+            path_request_msg.y = -45.60
+            path_request_msg.z = self.object_angle
+        else:
+            print(f"📢 새로운 경로 요청! 목적지: ({self.global_path[-1][0]}, {self.global_path[-1][1]})")
+            path_request_msg.x = self.global_path[-1][0]
+            path_request_msg.y = self.global_path[-1][1]
+            path_request_msg.z = self.object_angle
 
         # A* 노드에 경로 요청
         self.path_request_pub.publish(path_request_msg)
@@ -139,10 +157,22 @@ class Controller(Node):
             self.mqtt_client.publish(self.mqtt_topic, "arrived")
 
     def move_to_destination(self):
-        print(self.object_detected, 'object_detected')
-        print(self.object_detected, 'object_detected')
-        print(self.path_requested, 'path_requested')
-        print(self.is_to_move, 'is_to_move')
+        print(f'배터리 잔량 {self.battery}%')
+        if self.path_requested == False:
+            if self.battery < 10.0 and self.is_charging == False:
+                self.turtlebot_stop() 
+                self.request_new_path('charge')
+                self.path_requested = True  # 한 번만 요청하도록 설정
+                return
+            if self.is_charging:
+                if math.hypot(self.pose_x - -42.44, self.pose_y - 45.6) < 5:
+                    # 배터리 충전
+                    self.battery += 1.0
+                    self.battery = min(self.battery, 100.0)
+                    #  배터리가 충전 중이면서, 배터리 잔량이 50% 미만인 경우, 다른 명령 수행 불가능
+                    if self.battery < 50.0:
+                        return
+                
         vel_msg = Twist()
         if self.is_to_move == False: 
             vel_msg.angular.z = 0.0
@@ -158,12 +188,10 @@ class Controller(Node):
             else:
                 # 현재 목표까지의 거리 계산
                 distance = math.sqrt((self.goal.x - self.pose_x) ** 2 + (self.goal.y - self.pose_y) ** 2)
-                print(distance,'distance')
                 # 목표 지점 도착 여부 확인
                 if distance < 0.1:
                     # self.get_logger().info(f"목표 지점 {self.current_goal_idx} 도착. 잠시 정지합니다.")
                     print(f"목표 지점 {self.current_goal_idx} 도착. 잠시 정지합니다.")
-                    print(self.is_to_move)
                     # 목표 지점 도착 후 1초 정지
                     self.turtlebot_stop()
                     self.current_goal_idx += 1
