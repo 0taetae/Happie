@@ -115,6 +115,12 @@ public class OrderService {
     public String sendDestination() {
         String robot = "robot1";
 
+        boolean inProgressExists = orderRepository.existsByRobotAndState(robot, "진행 중");
+
+        if (inProgressExists) {
+            return "진행 중인 명령이 있어 전송할 수 없습니다.";
+        }
+
         Order order = orderRepository.findFirstByRobotAndStateOrderByIdAsc(robot, "대기")
                 .orElseThrow(() -> new IllegalArgumentException("robot1의 대기 중인 명령이 없습니다."));
 
