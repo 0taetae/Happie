@@ -18,7 +18,6 @@ class Controller(Node):
         self.pub = self.create_publisher(Twist, '/cmd_vel', 10)
         self.scan_sub = self.create_subscription(LaserScan, '/scan', self.scan_callback, 1)
         self.a_star_global_path_sub = self.create_subscription(Path, '/a_star_global_path', self.global_path_callback, 1)
-        self.object_detected_sub = self.create_subscription(Int32, '/object_detected', self.object_callback, 1)
         self.order_id_sub = self.create_subscription(Int32, '/order_id', self.order_id_callback, 1)
         #self.move_order_sub = self.create_subscription(Bool, '/move_order', self.move_order_callback, 1)
         #self.move_order_pub = self.create_publisher(Bool, '/move_order', 1)
@@ -130,19 +129,6 @@ class Controller(Node):
         self.is_to_move = True
         self.path_requested = False
 
-
-    # def object_callback(self, msg):
-    #     if msg.data:  # 장애물 감지됨
-    #         if not self.object_detected: 
-    #             print("🚨 장애물 감지! 이동 중단 및 경로 재설정 준비")
-
-    #         self.object_detected = True
-    #         self.object_angle = msg.data + self.heading
-    #     else:
-    #         if self.object_detected:
-    #             print("✅ 장애물 해제됨, 이동 재개 가능")
-    #         self.object_detected = False
-    #         self.path_requested = False  # 장애물이 사라졌으니 다시 경로 재요청 가능
 
     # 장애물 감지 시 새로운 경로를 요청하고 목적지 좌표를 전달
     def request_new_path(self, type='', new_goal = (-1, -1)):
