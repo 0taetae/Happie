@@ -20,4 +20,14 @@ public class AutoDispatcher {
             System.err.println("AutoDispatcher Error: " + e.getMessage());
         }
     }
+
+    @Scheduled(fixedRate = 5000)
+    public void autoSendOrder() {
+        try {
+            String result = orderService.autoDriving();
+            System.out.println("AutoDispatcher: " + result);
+        } catch (Exception e) {
+            System.err.println("AutoDispatcher Error: " + e.getMessage());
+        }
+    }
 }
