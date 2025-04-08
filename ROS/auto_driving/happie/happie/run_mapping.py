@@ -274,18 +274,28 @@ class Mapper(Node):
 
     def image_callback(self, msg):
         try:
-            encoded_image = base64.b64encode(msg.data).decode('utf-8')
-            self.mqtt_client.publish(self.mqtt_topic_image, encoded_image)
-            self.get_logger().info("이미지 MQTT 전송 완료")
-            # base64 디코딩 후 다시 이미지 변환
-            #decoded_bytes = base64.b64decode(encoded_image)
-            #decoded_image = Image.open(io.BytesIO(decoded_bytes))
-            #decoded_cv_image = cv2.cvtColor(np.array(decoded_image), cv2.COLOR_RGB2BGR)
+            # 1. ROS 이미지 데이터를 numpy 배열로 변환
+            np_arr = np.frombuffer(msg.data, np.uint8)
+            cv_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)  # OpenCV 이미지로 디코딩
 
-            #cv2.imshow("Decoded Image", decoded_cv_image)
+            # 2. 다운스케일 처리 (예: 50% 크기로 축소)
+            scale_percent = 50  # 축소 비율 (%)
+            width = int(cv_image.shape[1] * scale_percent / 100)
+            height = int(cv_image.shape[0] * scale_percent / 100)
+            resized_image = cv2.resize(cv_image, (width, height), interpolation=cv2.INTER_AREA)
+
+            # 3. 이미지를 PIL로 변환하여 base64 인코딩
+            pil_image = Image.fromarray(cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB))
+            buffer = io.BytesIO()
+            pil_image.save(buffer, format='JPEG')  # JPEG로 저장
+            encoded_image = base64.b64encode(buffer.getvalue()).decode('utf-8')
+
+            # 4. MQTT로 전송
+            self.mqtt_client.publish(self.mqtt_topic_image, encoded_image)
+            print("다운스케일된 이미지 MQTT 전송 완료")
 
         except Exception as e:
-            self.get_logger().error(f"이미지 MQTT 전송 실패: {e}")
+            print(f"이미지 MQTT 전송 실패: {e}")
     
     def scan_callback(self, msg):
         # print("scan_callback start!!!")
