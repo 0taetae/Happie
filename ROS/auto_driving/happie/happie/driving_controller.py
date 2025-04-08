@@ -18,7 +18,7 @@ class Controller(Node):
         self.pub = self.create_publisher(Twist, '/cmd_vel', 10)
         self.scan_sub = self.create_subscription(LaserScan, '/scan', self.scan_callback, 1)
         self.a_star_global_path_sub = self.create_subscription(Path, '/a_star_global_path', self.global_path_callback, 1)
-        self.object_detected_sub = self.create_subscription(Int32, '/object_detected', self.object_callback, 1)
+        # self.object_detected_sub = self.create_subscription(Int32, '/object_detected', self.object_callback, 1)
         self.path_request_pub = self.create_publisher(Point, '/request_new_path', 1) # 장애물 감지 시 새 경로 요청
         self.cmd_msg = Twist()
 
@@ -31,7 +31,7 @@ class Controller(Node):
         self.is_charging = False
         self.prior_pose = 0.0
         self.present_pose = 0.0
-        self.battery = 14.0
+        self.battery = 100.0
 
         # 이동 타이머 설정
         self.timer = self.create_timer(0.3, self.move_to_destination)
@@ -40,7 +40,7 @@ class Controller(Node):
         #self.is_order = False
 
         # a_star를 통해 생성한 global_path
-        self.global_path = [(-1.0,-1.0)]
+        self.global_path = [(-51.0,-51.0)]
         
         self.current_goal_idx = 0
 
@@ -64,8 +64,8 @@ class Controller(Node):
 
 
     def scan_callback(self, msg):
-        # 매 초당, 대기전력 0.1 사용
-        self.battery -= 0.1
+        # 매 초당, 대기전력 0.01 사용
+        self.battery -= 0.01
         self.battery = max(self.battery, 0.0)
         # 위치 초기값 설정
         if self.prior_pose == 0.0:
@@ -83,20 +83,34 @@ class Controller(Node):
         self.pose_y = msg.scan_time 
         self.ranges = np.array(msg.ranges)
 
+        # print([round(val, 2) for val in msg.ranges])
+
         self.heading = (msg.time_increment + 360) % 360
-        left = sum(self.ranges[:20])
-        right = sum(self.ranges[340:])
-        front = sum(self.ranges[:10])+sum(self.ranges[350:])
+        left = [val for val in self.ranges[:20] if val < 2.0]
+        right = [val for val in self.ranges[339:359] if val < 2.0]
+        front = [val for val in  self.ranges[:10] if val < 2.0] + [val for val in self.ranges[349:359] if val < 2.0]
+        left = sum(left) / len(left) if len(left) else 100
+        right = sum(right) / len(right) if len(right) else 100
+        front = sum(front) / len(front) if len(front) else 100
         pivot = min(front, right, left)
-        if pivot < 30:
-            print(pivot, 'pivot')
-            if front == pivot: print('정면 장애물 감지')
-            elif right == pivot: print('우측면 장애물 감지')
-            elif left == pivot: print('좌측면 장애물 감지')
+
+
+        if pivot < 0.8:
+            if self.object_detected == False:
+                self.object_detected = True
+                print(pivot, 'pivot')
+                if front == pivot: print('정면 장애물 감지')
+                elif right == pivot: print('우측면 장애물 감지')
+                elif left == pivot: print('좌측면 장애물 감지')
+
+                self.turtlebot_stop() 
+                self.request_new_path()
+                self.path_requested = True  # 한 번만 요청하도록 설정
+        else:
+            self.object_detected = False
 
 
     def global_path_callback(self, msg):
-        #if self.is_order:
         path = [(pose.pose.position.x, pose.pose.position.y) for pose in msg.poses]
         self.global_path = path
         self.goal.x = path[0][0]
@@ -105,23 +119,24 @@ class Controller(Node):
         print("경로 받기 성공")
         self.current_goal_idx = 0
         self.is_to_move = True
+        self.path_requested = False
 
-    def object_callback(self, msg):
-        if msg.data:  # 장애물 감지됨
-            if not self.object_detected: 
-                print("🚨 장애물 감지! 이동 중단 및 경로 재설정 준비")
 
-            self.object_detected = True
-            self.object_angle = msg.data + self.heading
-        else:
-            if self.object_detected:
-                print("✅ 장애물 해제됨, 이동 재개 가능")
-            self.object_detected = False
-            self.path_requested = False  # 장애물이 사라졌으니 다시 경로 재요청 가능
+    # def object_callback(self, msg):
+    #     if msg.data:  # 장애물 감지됨
+    #         if not self.object_detected: 
+    #             print("🚨 장애물 감지! 이동 중단 및 경로 재설정 준비")
+
+    #         self.object_detected = True
+    #         self.object_angle = msg.data + self.heading
+    #     else:
+    #         if self.object_detected:
+    #             print("✅ 장애물 해제됨, 이동 재개 가능")
+    #         self.object_detected = False
+    #         self.path_requested = False  # 장애물이 사라졌으니 다시 경로 재요청 가능
 
     # 장애물 감지 시 새로운 경로를 요청하고 목적지 좌표를 전달
-    def request_new_path(self, type):
-
+    def request_new_path(self, type='', new_goal = (-1, -1)):
         # 메시지 생성 (목적지 좌표 포함)
         path_request_msg = Point()
         # 충전소 보내기
@@ -129,6 +144,9 @@ class Controller(Node):
             path_request_msg.x = -42.44
             path_request_msg.y = -45.60
             path_request_msg.z = self.object_angle
+        
+        elif type == 'new_goal':
+            pass
         else:
             print(f"📢 새로운 경로 요청! 목적지: ({self.global_path[-1][0]}, {self.global_path[-1][1]})")
             path_request_msg.x = self.global_path[-1][0]
@@ -157,8 +175,9 @@ class Controller(Node):
             self.mqtt_client.publish(self.mqtt_topic, "arrived")
 
     def move_to_destination(self):
-        print(f'배터리 잔량 {self.battery}%')
-        if self.path_requested == False:
+        print(f'배터리 잔량 {round(self.battery, 2)}%')
+        # if self.path_requested == False:
+        if self.path_requested == 1:
             if self.battery < 10.0 and self.is_charging == False:
                 self.turtlebot_stop() 
                 self.request_new_path('charge')
@@ -179,11 +198,7 @@ class Controller(Node):
             vel_msg.linear.x = 0.0
         # 🚨 장애물이 감지되면 이동을 멈추고 새로운 경로 요청
         else:
-            if self.object_detected and (not self.path_requested):
-                print("🚨 장애물 감지! 최단 경로 재계산 요청")
-                self.turtlebot_stop() 
-                self.request_new_path()
-                self.path_requested = True  # 한 번만 요청하도록 설정
+            if self.object_detected and (self.path_requested):
                 return 
             else:
                 # 현재 목표까지의 거리 계산
@@ -205,18 +220,18 @@ class Controller(Node):
 
                 # 현재 heading과 목표 heading 비교 (최단 회전 경로 고려)
                 angle_diff = (target_heading - self.heading + 540) % 360 - 180
-
+                print(target_heading, self.heading)
                 # 🔹 heading이 목표와 5도 이상 차이나면 회전
-                if abs(angle_diff) > 5:
+                if abs(angle_diff) > 10:
                     print("heading이 목표와 5도 이상 차이나면 회전")
                     kp_angular = 0.01  # 회전 속도 조절 계수 (값을 더 키워도 됨)
-                    max_angular_speed = 1.0  # 최대 회전 속도 제한
+                    max_angular_speed = 0.2  # 최대 회전 속도 제한
 
-                    # 회전 속도를 angle_diff에 비례하도록 조정 (단, 최대 속도 제한)
+                    # # 회전 속도를 angle_diff에 비례하도록 조정 (단, 최대 속도 제한)
                     vel_msg.angular.z = -max(min(kp_angular * angle_diff, max_angular_speed), -max_angular_speed)
                     vel_msg.linear.x = 0.0  # 회전 중 직진 금지
-                    # print(f'현재 heading: {self.heading}')
-                    # print(f'현재 각속도: {vel_msg.angular.z}')
+            
+                    # =======================================================================
 
                 else:
                     print("heading 차이가 5도 이하라면 직진")

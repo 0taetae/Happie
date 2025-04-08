@@ -463,7 +463,7 @@ class a_star(Node):
         print(f"📷 시각화 이미지 저장 완료: {save_path}")
 
         # 이미지 열기
-        os.startfile(save_path)
+        # os.startfile(save_path)
 
     def map_callback(self, msg):
         self.is_map = True
