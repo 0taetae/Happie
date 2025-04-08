@@ -1,6 +1,5 @@
 package com.ssafy.happie.dto;
 
-import com.ssafy.happie.entity.Order;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

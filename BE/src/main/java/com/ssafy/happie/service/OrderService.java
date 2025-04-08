@@ -1,5 +1,6 @@
 package com.ssafy.happie.service;
 
+import com.ssafy.happie.config.MqttPublisher;
 import com.ssafy.happie.dto.OrderRequestDto;
 import com.ssafy.happie.dto.OrderResponseDto;
 import com.ssafy.happie.entity.Order;
@@ -17,23 +18,26 @@ import java.util.stream.Collectors;
 public class OrderService {
     private final OrderRepository orderRepository;
 
+    private final MqttPublisher mqttPublisher;
+
     // 맵 좌표
-    private static final Map<String, String[]> PLACE_COORDINATES = Map.of(
-            "501호실", new String[] {"36.58", "-52.52"},
-            "502호실", new String[] {"36.65", "-47.51"},
-            "503호실", new String[] {"36.55", "-42.56"},
-            "간호사실", new String[] {"55.37", "-50.85"},
-            "휠체어 보관실", new String[] {"53.21", "-56.75"},
-            "링거폴대 보관실", new String[] {"53.38", "-60.21"},
-            "로봇방", new String[] {"44.93", "-42.44"}
+    private static final Map<String, double[]> PLACE_COORDINATES = Map.of(
+        "501호실", new double[] {-52.60654067993164, -38.33089828491211},
+        "502호실", new double[] {-47.468528747558594, -38.27075958251953},
+        "503호실", new double[] {-42.64277267456055, -38.69271469116211},
+        "간호사실", new double[] {-50.82450485229492, -54.83995056152344},
+        "휠체어 보관실", new double[] {-56.482933044433594, -52.840431213378906},
+        "링거폴대 보관실", new double[] {-59.81382751464844, -52.48174285888672},
+        "로봇방", new double[] {-42.52598571777344, -46.45439147949219}
     );
+
 
     @Transactional
     public OrderResponseDto createOrder(OrderRequestDto orderRequestDto) {
         String place = orderRequestDto.getPlace();
 
         // 장소에 따른 좌표를 가져옴
-        String[] coordinates = PLACE_COORDINATES.getOrDefault(place, new String[]{"0", "0"}); // 기본값은 0,0
+        double[] coordinates = PLACE_COORDINATES.getOrDefault(place, new double[]{0, 0}); // 기본값은 0,0
 
         Order order = new Order(
                 orderRequestDto.getRobot(),
@@ -105,5 +109,55 @@ public class OrderService {
                 .todo(order.getTodo())
                 .state(order.getState())
                 .build();
+    }
+
+    @Transactional
+    public String sendDestination() {
+        String robot = "robot1";
+
+        boolean inProgressExists = orderRepository.existsByRobotAndState(robot, "진행 중");
+
+        if (inProgressExists) {
+            return "진행 중인 명령이 있어 전송할 수 없습니다.";
+        }
+
+        Order order = orderRepository.findFirstByRobotAndStateOrderByIdAsc(robot, "대기")
+                .orElseThrow(() -> new IllegalArgumentException("robot1의 대기 중인 명령이 없습니다."));
+
+        // MQTT 메시지 전송
+        mqttPublisher.sendLocation(order.getId(), order.getX(), order.getY());
+
+        // 상태를 '진행 중'으로 변경
+        order.setState("진행 중");
+
+        return String.format("MQTT 전송 완료 id = %d, x = %.6f, y = %.6f", order.getId(), order.getX(), order.getY());
+    }
+
+    @Transactional
+    public void robotLog(int id, String status) {
+        if (id == -1 || !"arrived".equalsIgnoreCase(status)) {
+            System.out.println("처리하지 않는 로그: id=" + id + ", status=" + status);
+            return;
+        }
+
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("해당 ID의 명령이 없습니다."));
+
+        order.setState("완료");
+        System.out.printf("명령 상태 변경 완료: id = %d, state = 완료", id);
+    }
+
+    @Transactional
+    public String autoDriving() {
+        String robot = "robot1";
+
+        boolean notFinishedExists = orderRepository.existsByRobotAndStateNot(robot, "완료");
+
+        if (notFinishedExists) {
+            return "완료되지 않은 명령 존재";
+        }
+
+        mqttPublisher.sendLocation(-1, 0.000000, 0.000000);
+        return "전체 순회 명령 전송 완료";
     }
 }

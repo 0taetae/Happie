@@ -11,11 +11,11 @@ export default function OrderButton({ onOrderSuccess }: { onOrderSuccess?: () =>
   const [selectedTask, setSelectedTask] = useState("");
 
   const taskOptionsByLocation: Record<string, string[]> = {
-    "병실 1": ["링거 전달하기", "휠체어 전달하기", "방문하기"],
-    "병실 2": ["링거 전달하기", "휠체어 전달하기", "방문하기"],
-    "병실 3": ["링거 전달하기", "휠체어 전달하기", "방문하기"],
-    "데스크": ["출동하기"],
-    "전체": ["운행하기", "청소하기"],
+    "501호실": ["링거 전달하기", "휠체어 전달하기", "방문하기"],
+    "502호실": ["링거 전달하기", "휠체어 전달하기", "방문하기"],
+    "503호실": ["링거 전달하기", "휠체어 전달하기", "방문하기"],
+    "간호사실": ["출동하기"],
+    "병동": ["운행하기", "청소하기"],
   };
 
   const resetSelections = () => {
@@ -82,7 +82,7 @@ export default function OrderButton({ onOrderSuccess }: { onOrderSuccess?: () =>
   return (
     <div>
       <button
-        className="px-6 py-2 bg-green-500 text-white font-bold rounded-lg shadow-lg hover:bg-green-700 transition"
+        className="px-6 py-2 bg-green-500 text-white text-xl rounded-lg shadow-lg hover:bg-green-700 transition"
         onClick={() => {
           setIsOpen(true);
           resetSelections();
@@ -100,15 +100,15 @@ export default function OrderButton({ onOrderSuccess }: { onOrderSuccess?: () =>
           }}
         >
           <div
-            className="cursor-default-custom bg-white p-6 rounded-lg shadow-lg w-[400px] relative transition-all duration-300 ease-out transform scale-100 opacity-100 animate-fadeInModal"
+            className="cursor-default-custom bg-white p-14 rounded-lg shadow-lg w-[600px] relative transition-all duration-300 ease-out transform scale-100 opacity-100 animate-fadeInModal"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-bold mb-4">로봇 및 명령 선택</h2>
+            <h2 className="text-center text-cyan-600 text-4xl mb-8">로봇 및 명령 선택</h2>
 
             {/* 로봇 선택 */}
-            <label className="cursor-default-custom block mb-2 font-semibold">로봇 선택</label>
+            <label className="cursor-default-custom text-3xl block mb-2">로봇 선택</label>
             <select
-              className="cursor-default-custom w-full p-2 border rounded mb-4"
+              className="cursor-default-custom w-full p-2 text-xl border rounded mb-8"
               value={selectedRobot}
               onChange={(e) => setSelectedRobot(e.target.value)}
             >
@@ -119,9 +119,9 @@ export default function OrderButton({ onOrderSuccess }: { onOrderSuccess?: () =>
             </select>
 
             {/* 장소 선택 */}
-            <label className="cursor-default-custom block mb-2 font-semibold">장소 선택</label>
+            <label className="cursor-default-custom text-3xl block mb-2">장소 선택</label>
             <select
-              className="cursor-default-custom w-full p-2 border rounded mb-4"
+              className="cursor-default-custom w-full p-2 text-xl border rounded mb-8"
               value={selectedLocation}
               onChange={(e) => {
                 const selected = e.target.value;
@@ -140,9 +140,9 @@ export default function OrderButton({ onOrderSuccess }: { onOrderSuccess?: () =>
             </select>
 
             {/* 할 일 선택 */}
-            <label className="cursor-default-custom block mb-2 font-semibold">할 일 선택</label>
+            <label className="cursor-default-custom text-3xl block mb-2">할 일 선택</label>
             <select
-              className="cursor-default-custom w-full p-2 border rounded mb-4"
+              className="cursor-default-custom w-full p-2 text-xl border rounded mb-8"
               value={selectedTask}
               onChange={(e) => setSelectedTask(e.target.value)}
               disabled={!selectedLocation}
@@ -159,7 +159,7 @@ export default function OrderButton({ onOrderSuccess }: { onOrderSuccess?: () =>
             {/* 버튼 그룹 */}
             <div className="flex justify-end space-x-2">
               <button
-                className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition"
+                className="px-4 py-2 text-xl bg-gray-400 text-white rounded hover:bg-gray-500 transition"
                 onClick={() => {
                   setIsOpen(false);
                   resetSelections();
@@ -168,7 +168,7 @@ export default function OrderButton({ onOrderSuccess }: { onOrderSuccess?: () =>
                 취소
               </button>
               <button
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700 transition"
+                className="px-4 py-2 text-xl bg-blue-500 text-white rounded hover:bg-blue-700 transition"
                 onClick={handleConfirm}
               >
                 확인

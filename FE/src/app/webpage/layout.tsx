@@ -8,6 +8,7 @@ import Sidebar from "./components/Sidebar";
 import Map from "./components/Map";
 import Warning from "./components/Warning";
 import { mqttClient } from "@/lib/mqttClient";
+import Link from "next/link";
 
 export default function WebPageLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -16,7 +17,6 @@ export default function WebPageLayout({ children }: { children: React.ReactNode 
   const [showWarning, setShowWarning] = useState(false);
   const [warningImage, setWarningImage] = useState("");
 
-  // ✅ RobotList 갱신 트리거 상태
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
@@ -46,7 +46,7 @@ export default function WebPageLayout({ children }: { children: React.ReactNode 
         console.log("📩 낙상 감지 수신:", message.toString());
         try {
           const data = JSON.parse(message.toString());
-          setWarningImage(data.image_url); // 🔹 이미지 URL 저장
+          setWarningImage(data.image_url);
           setShowWarning(true);
         } catch (err) {
           console.error("❌ JSON 파싱 오류:", err);
@@ -62,29 +62,48 @@ export default function WebPageLayout({ children }: { children: React.ReactNode 
   }
 
   return (
-    <div className="flex flex-col h-screen">
-      <header className="bg-blue-200 flex justify-between p-4 text-lg font-bold shadow-md">
-        <div className="text-white">🏥 하피 (happie)</div>
-        <div className="text-white">한살차이</div>
+    <div className="flex flex-col h-screen font-bmjua bg-white">
+      {/* ✅ 일반 흐름의 header (고정 X) */}
+      <header className="h-20 bg-blue-200 shadow-md flex justify-between items-center">
+        {/* 👈 왼쪽: 로고 + 텍스트 */}
+        <Link href="/" className="flex items-center px-12">
+          <img
+            src="/images/logo.png"
+            alt="하피 로고"
+            className="w-20 h-20 object-contain"
+          />
+          <span
+  className="ml-2 text-white text-5xl"
+  style={{ textShadow: "1px 1px 2px black" }}
+>
+  HAPPIE
+</span>
+        </Link>
+
+        {/* 👉 오른쪽 텍스트 */}
+        <Link href="/botpage" className="flex items-center">
+          <div className="text-white text-4xl px-16" style={{ textShadow: "0.5px 0.5px 1px green" }}>한살차이</div>
+        </Link>
       </header>
 
-      {/* ⚙️ 콘텐츠 */}
-      <div className="flex flex-grow overflow-hidden">
-        {/* ✅ Sidebar에 refreshTrigger 전달 */}
-        <Sidebar refreshTrigger={refreshTrigger} />
+      {/* ✅ 본문 콘텐츠 영역: 사이드바 + 메인 */}
+      <div className="flex flex-row flex-grow h-full overflow-hidden">
+        {/* 🔹 Sidebar */}
+        <div className="w-96 h-full pl-6 bg-white border-r-2 border-gray-200/60 overflow-y-auto">
+          <Sidebar refreshTrigger={refreshTrigger} />
+        </div>
 
-        {/* 콘텐츠 전체 영역 */}
-        <div className="flex flex-col flex-grow bg-white relative">
-          {/* 📍 지도 - ✅ setRefreshTrigger 함수 전달 */}
+        {/* 🔸 Main 콘텐츠 */}
+        <div className="flex flex-col flex-grow h-full p-4 bg-white relative overflow-y-auto">
           <Map onOrderSuccess={() => setRefreshTrigger((prev) => prev + 1)} />
-
-          {/* 📄 기타 콘텐츠 */}
           <div className="mt-6">{children}</div>
         </div>
       </div>
 
-      {/* 낙상 경고 모달 */}
-      {showWarning && <Warning imageUrl={warningImage} onClose={() => setShowWarning(false)} />}
+      {/* ⚠️ 낙상 감지 경고 */}
+      {showWarning && (
+        <Warning imageUrl={warningImage} onClose={() => setShowWarning(false)} />
+      )}
     </div>
   );
 }

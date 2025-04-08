@@ -1,6 +1,6 @@
+// hooks/useAudioRecorder.ts
 import { useRef } from "react";
-import { mqttClient } from "@/lib/mqttClient";
-//녹음만 담당하는 훅
+
 export function useAudioRecorder(onRecordingComplete: (blob: Blob) => void) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -9,7 +9,6 @@ export function useAudioRecorder(onRecordingComplete: (blob: Blob) => void) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
-
       audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = (event: BlobEvent) => {
@@ -17,24 +16,13 @@ export function useAudioRecorder(onRecordingComplete: (blob: Blob) => void) {
       };
 
       mediaRecorder.onstop = () => {
-        console.log("🛑 녹음 종료");
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-      
-        // MQTT 전송
-        audioBlob.arrayBuffer().then((buffer) => {
-          const base64Data = Buffer.from(buffer).toString("base64");
-          mqttClient.publish("user/chatbot/request", base64Data);
-          console.log("📤 음성 데이터 MQTT 전송 완료!");
-        });
-      
-        onRecordingComplete(audioBlob);
+        onRecordingComplete(audioBlob); // 전송은 외부에서!
       };
-      
 
       mediaRecorderRef.current = mediaRecorder;
-
-      console.log("🎤 녹음 시작!");
       mediaRecorder.start();
+      console.log("🎤 녹음 시작");
 
       setTimeout(() => {
         mediaRecorder.stop();
