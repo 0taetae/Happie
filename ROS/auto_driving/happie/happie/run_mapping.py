@@ -21,6 +21,11 @@ import paho.mqtt.client as mqtt
 
 import matplotlib.pyplot as plt
 from std_msgs.msg import Bool
+from sensor_msgs.msg import CompressedImage
+
+from PIL import Image 
+import io
+import base64  
 
 # mapping node의 전체 로직 순서
 # 1. publisher, subscriber, msg 생성
@@ -217,16 +222,18 @@ class Mapper(Node):
         # 로직 1 : publisher, subscriber, msg 생성
         self.subscription = self.create_subscription(LaserScan,'/scan',self.scan_callback,10)
         # self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
+        self.image_sub = self.create_subscription(CompressedImage,'/image_jpeg/compressed',self.image_callback,1)
 
         # MQTT 설정
         self.mqtt_client = mqtt.Client()
         self.mqtt_broker = MQTT_CONFIG["BROKER"]
         self.mqtt_port = MQTT_CONFIG["PORT"]
-        self.mqtt_topic = "robot/map_position"
+        self.mqtt_topic_position = "robot/map_position"
+        self.mqtt_topic_image = "robot/image"
         #self.mqtt_topic_destination = "robot/destination"
 
         self.mqtt_client.username_pw_set(MQTT_CONFIG["USERNAME"], MQTT_CONFIG["PASSWORD"])
-        self.mqtt_client.loop_start()
+        #self.mqtt_client.loop_start()
         # MQTT 브로커에 연결
         self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
         self.mqtt_client.loop_start()  # 비동기 처리 시작
@@ -265,7 +272,21 @@ class Mapper(Node):
         # 로직 2 : mapping 클래스 생성
         self.mapping = Mapping(params_map)
 
+    def image_callback(self, msg):
+        try:
+            encoded_image = base64.b64encode(msg.data).decode('utf-8')
+            self.mqtt_client.publish(self.mqtt_topic_image, encoded_image)
+            self.get_logger().info("이미지 MQTT 전송 완료")
+            # base64 디코딩 후 다시 이미지 변환
+            #decoded_bytes = base64.b64decode(encoded_image)
+            #decoded_image = Image.open(io.BytesIO(decoded_bytes))
+            #decoded_cv_image = cv2.cvtColor(np.array(decoded_image), cv2.COLOR_RGB2BGR)
 
+            #cv2.imshow("Decoded Image", decoded_cv_image)
+
+        except Exception as e:
+            self.get_logger().error(f"이미지 MQTT 전송 실패: {e}")
+    
     def scan_callback(self, msg):
         # print("scan_callback start!!!")
     
@@ -313,7 +334,7 @@ class Mapper(Node):
         # MQTT로 위치 데이터 전송
         mqtt_payload = f"{map_x:.0f},{map_y:.0f}"
         try:
-            self.mqtt_client.publish(self.mqtt_topic, mqtt_payload)
+            self.mqtt_client.publish(self.mqtt_topic_position, mqtt_payload)
             print(f"MQTT 발행: {mqtt_payload}")
         except Exception as e:
             print(f"MQTT 발행 실패: {e}")

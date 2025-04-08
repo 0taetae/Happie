@@ -48,4 +48,10 @@ public class OrderController {
     public OrderResponseDto inProgressOrder(@PathVariable String robot) {
         return orderService.inProgressOrder(robot);
     }
+
+//    @PostMapping("/send-destination")
+//    @Operation(summary = "대기 중인 명령 하나 MQTT 전송", description = "특정 로봇의 가장 오래된 대기 명령을 /robot/destination 토픽으로 전송")
+//    public String sendDestination() {
+//        return orderService.sendDestination();
+//    }
 }

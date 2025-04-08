@@ -1,5 +1,6 @@
 package com.ssafy.happie.service;
 
+import com.ssafy.happie.config.MqttPublisher;
 import com.ssafy.happie.dto.OrderRequestDto;
 import com.ssafy.happie.dto.OrderResponseDto;
 import com.ssafy.happie.entity.Order;
@@ -16,6 +17,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrderService {
     private final OrderRepository orderRepository;
+
+    private final MqttPublisher mqttPublisher;
 
     // 맵 좌표
     private static final Map<String, double[]> PLACE_COORDINATES = Map.of(
@@ -106,5 +109,32 @@ public class OrderService {
                 .todo(order.getTodo())
                 .state(order.getState())
                 .build();
+    }
+
+    @Transactional
+    public String sendDestination() {
+        String robot = "robot1";
+
+        boolean inProgressExists = orderRepository.existsByRobotAndState(robot, "진행 중");
+
+        if (inProgressExists) {
+            return "진행 중인 명령이 있어 전송할 수 없습니다.";
+        }
+
+        Order order = orderRepository.findFirstByRobotAndStateOrderByIdAsc(robot, "대기")
+                .orElseThrow(() -> new IllegalArgumentException("robot1의 대기 중인 명령이 없습니다."));
+
+        // 좌표 유효성 검사
+        if (order.getX() == 0 || order.getY() == 0) {
+            return String.format("유효하지 않은 좌표입니다. (id = %d)", order.getId());
+        }
+
+        // MQTT 메시지 전송
+        mqttPublisher.sendLocation(order.getId(), order.getX(), order.getY());
+
+        // 상태를 '진행 중'으로 변경
+        order.setState("진행 중");
+
+        return String.format("MQTT 전송 완료 id = %d, x = %.6f, y = %.6f", order.getId(), order.getX(), order.getY());
     }
 }

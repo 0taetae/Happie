@@ -21,8 +21,7 @@ class loadMap(Node):
         super().__init__('load_map')
         self.map_pub = self.create_publisher(OccupancyGrid, 'map', 1)
         
-        time_period = 1  
-        self.timer = self.create_timer(time_period, self.timer_callback)
+        self.timer = self.create_timer(10, self.timer_callback)
 
         # MQTT 설정
         self.mqtt_client = mqtt.Client()

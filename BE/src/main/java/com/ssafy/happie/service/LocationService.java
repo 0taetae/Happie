@@ -24,9 +24,9 @@ public class LocationService {
                     double x = location.getX();
                     double y = location.getY();
 
-                    mqttPublisher.sendLocation(x, y);
+                    mqttPublisher.sendLocation(-1, x, y);
 
-                    return new LocationResponseDto(x, y);
+                    return new LocationResponseDto(-1, x, y);
                 })
                 .orElseThrow(() -> new IllegalArgumentException("해당 시설명을 찾을 수 없습니다: " + name));
     }

@@ -23,8 +23,9 @@ public class MqttPublisher {
         mqttClient.connect(options);
     }
 
-    public void sendLocation(double x, double y) {
-        String payload = String.format("{\"x\": %.2f, \"y\": %.2f}", x, y);
+    public void sendLocation(int id, double x, double y) {
+        String payload = String.format("{\"id\": %d, \"x\": %.6f, \"y\": %.6f}", id, x, y);
+
         try {
             MqttMessage message = new MqttMessage(payload.getBytes());
             message.setQos(1);
