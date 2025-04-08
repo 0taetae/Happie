@@ -51,8 +51,9 @@ class Controller(Node):
         self.goal = Point()
         self.set_new_goal()
         self.object_detected = False
+        self.object_detected_cnt = 0
         self.path_requested = False
-        self.object_angle = 0
+        self.object_angle = 0.0
         self.order_id = None
 
         # MQTT 설정 
@@ -99,7 +100,7 @@ class Controller(Node):
         pivot = min(front, right, left)
 
 
-        if pivot < 0.8:
+        if pivot < 0.8 and self.object_detected_cnt < 0:
             if self.object_detected == False:
                 self.object_detected = True
                 print(pivot, 'pivot')
@@ -110,6 +111,7 @@ class Controller(Node):
                 self.turtlebot_stop() 
                 self.request_new_path()
                 self.path_requested = True  # 한 번만 요청하도록 설정
+                self.object_detected_cnt = 50
         else:
             self.object_detected = False
 
@@ -176,6 +178,7 @@ class Controller(Node):
 
     def move_to_destination(self):
         print(f'배터리 잔량 {round(self.battery, 2)}%')
+        self.object_detected_cnt -= 1
         # if self.path_requested == False:
         if self.path_requested == 1:
             if self.battery < 10.0 and self.is_charging == False:
