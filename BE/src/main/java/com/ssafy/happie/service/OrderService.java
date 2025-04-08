@@ -124,11 +124,6 @@ public class OrderService {
         Order order = orderRepository.findFirstByRobotAndStateOrderByIdAsc(robot, "대기")
                 .orElseThrow(() -> new IllegalArgumentException("robot1의 대기 중인 명령이 없습니다."));
 
-        // 좌표 유효성 검사
-//        if (order.getX() == 0 || order.getY() == 0) {
-//            return String.format("유효하지 않은 좌표입니다. (id = %d)", order.getId());
-//        }
-
         // MQTT 메시지 전송
         mqttPublisher.sendLocation(order.getId(), order.getX(), order.getY());
 
@@ -150,5 +145,19 @@ public class OrderService {
 
         order.setState("완료");
         System.out.printf("명령 상태 변경 완료: id = %d, state = 완료", id);
+    }
+
+    @Transactional
+    public String autoDriving() {
+        String robot = "robot1";
+
+        boolean notFinishedExists = orderRepository.existsByRobotAndStateNot(robot, "완료");
+
+        if (notFinishedExists) {
+            return "완료되지 않은 명령 존재";
+        }
+
+        mqttPublisher.sendLocation(-1, 0.000000, 0.000000);
+        return "전체 순회 명령 전송 완료";
     }
 }

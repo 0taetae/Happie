@@ -16,4 +16,6 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     Optional<Order> findFirstByRobotAndStateOrderByIdAsc(String robot, String state);
 
     boolean existsByRobotAndState(String robot, String state);
+
+    boolean existsByRobotAndStateNot(String robot, String state);
 }
