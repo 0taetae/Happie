@@ -145,6 +145,9 @@ public class OrderService {
 
         order.setState("완료");
         System.out.printf("명령 상태 변경 완료: id = %d, state = 완료", id);
+
+        //길 안내 완료시 프론트한테 완료 신호 보내기
+        mqttPublisher.sendNavComplete(order.getPlace(), order.getState(), order.getTodo());
     }
 
     @Transactional
