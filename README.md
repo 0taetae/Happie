@@ -70,4 +70,4 @@
 
 # Chatper6. 팀 구성
 
-![image](/uploads/3387e093c5adbfd0d0eee3c5cd772269/image.png){width=494 height=164}
+![image](/uploads/3387e093c5adbfd0d0eee3c5cd772269/image.png){width=794 height=464}
