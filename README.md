@@ -64,6 +64,10 @@
 
 ## 5-4. 아키텍처 구조
 
+![최종_구조도](/uploads/691d1df4fb784a89f963ad0ee9f8c180/최종_구조도.png)
+
 ## 5-5. API 및 MQTT 통신 설계
 
 # Chatper6. 팀 구성
+
+![image](/uploads/3387e093c5adbfd0d0eee3c5cd772269/image.png){width=494 height=164}
