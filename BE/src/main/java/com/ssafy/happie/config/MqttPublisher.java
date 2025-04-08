@@ -36,6 +36,26 @@ public class MqttPublisher {
         }
     }
 
+    public void sendEquipment(int id, String equip, double x, double y){
+        System.out.println("id" + id + ", equip: "+ equip + ", x: "+ x + ", y: " + y);
+
+        try{
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("id", id);
+            jsonObject.put("equip", equip);
+            jsonObject.put("x", x);
+            jsonObject.put("y", y);
+
+            MqttMessage message = new MqttMessage(jsonObject.toString().getBytes());
+            message.setQos(1);
+
+            mqttClient.publish("robot/move/equipment", message);
+            System.out.println("메시지 전송 완료:" + jsonObject.toString());
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void sendNavComplete(String where, String status, String todo){
         try{
             System.out.println("where: " + where);

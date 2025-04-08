@@ -124,12 +124,16 @@ public class OrderService {
         Order order = orderRepository.findFirstByRobotAndStateOrderByIdAsc(robot, "대기")
                 .orElseThrow(() -> new IllegalArgumentException("robot1의 대기 중인 명령이 없습니다."));
 
-        // MQTT 메시지 전송
-        mqttPublisher.sendLocation(order.getId(), order.getX(), order.getY());
+        if(order.getTodo().contains("전달")){
+            order.setState("진행 중");
+            mqttPublisher.sendEquipment(order.getId(), order.getTodo().split(" ")[0], order.getX(), order.getY());
+            return String.format("MQTT 전송 완료 (기자재) id = %d,x = %.6f, y = %.6f", order.getId(), order.getX(), order.getY());
+        }
 
+        // MQTT 메시지 전송
         // 상태를 '진행 중'으로 변경
         order.setState("진행 중");
-
+        mqttPublisher.sendLocation(order.getId(), order.getX(), order.getY());
         return String.format("MQTT 전송 완료 id = %d, x = %.6f, y = %.6f", order.getId(), order.getX(), order.getY());
     }
 
