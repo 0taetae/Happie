@@ -110,7 +110,7 @@ export default function BotLayout() {
             <img src="/images/ear.png" alt="귀 기울이는 중" className="w-[150px] h-[150px] animate-scalePulse" />
           </div>
           <div className="flex flex-col items-center justify-center text-center bg-white w-[400px] h-[100px] p-4 rounded-xl shadow-md">
-            <p className="text-2xl text-gray-700 flex items-center">
+            <p className="text-3xl text-gray-700 flex items-center">
               하피가 귀 기울이고 있어요 <DotAnimation />
             </p>
           </div>
@@ -121,7 +121,7 @@ export default function BotLayout() {
       {stage === "loading" && (
         <div className="flex items-center bg-white w-[400px] h-[100px] p-4 rounded-xl shadow-md">
           <img src="/images/voice-loading1.gif" alt="로딩 중" className="w-16 h-16 mr-4 ml-6" />
-          <p className="text-2xl text-gray-800 flex items-center">
+          <p className="text-3xl text-gray-800 flex items-center">
             흠.. 그게 말이죠 <DotAnimation />
           </p>
         </div>
@@ -160,14 +160,14 @@ export default function BotLayout() {
                       showCancelButton: true,
                       confirmButtonText: "네, 시작할게요!",
                       cancelButtonText: "취소",
-                      reverseButtons: true,
+                      reverseButtons: false,
                     });
 
                     if (result.isConfirmed) {
                       setStage("navigating"); // ✅ 이전에 받은 image 사용
                     }
                   }}
-                  className="w-20 h-10 bg-green-200 hover:bg-green-300 rounded-xl text-gray-800 shadow-md transition-all"
+                  className="w-20 h-10 bg-green-300 text-xl hover:bg-green-400 hover:scale-110 rounded-xl text-gray-800 shadow-md transition-all"
                 >
                   예
                 </button>
@@ -179,7 +179,7 @@ export default function BotLayout() {
                     setTypedAnswer("");
                     setIsTypingDone(false);
                   }}
-                  className="w-20 h-10 bg-red-200 hover:bg-red-300 rounded-xl text-gray-800 shadow-md transition-all"
+                  className="w-20 h-10 bg-red-300 text-xl hover:bg-red-400 hover:scale-110 rounded-xl text-gray-800 shadow-md transition-all"
                 >
                   아니오
                 </button>
@@ -198,7 +198,7 @@ export default function BotLayout() {
                     setTypedAnswer("");
                     setIsTypingDone(false);
                   }}
-                  className="w-20 h-10 bg-indigo-500 text-white hover:bg-indigo-700 rounded-xl shadow-md transition-all"
+                  className="w-20 h-10 bg-indigo-500 text-xl text-white hover:bg-indigo-700 hover:scale-110 rounded-xl shadow-md transition-all"
                 >
                   홈으로
                 </button>
@@ -214,7 +214,7 @@ export default function BotLayout() {
           <img src={navigationImage} alt="안내 중" className="rounded-xl w-full max-h-[600px] object-contain mb-4" />
           <p className="text-xl text-gray-800 font-semibold flex items-center">
             <div className="text-7xl text-emerald-700 wavy-text flex gap-2">
-              {"저만 믿고 따라오세요!".split("").map((char, idx) => (
+              {"하피를 따라오세요!".split("").map((char, idx) => (
                 <span key={idx}>{char}</span>
               ))}
             </div>
