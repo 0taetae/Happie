@@ -103,7 +103,7 @@ export default function OrderButton({ onOrderSuccess }: { onOrderSuccess?: () =>
             className="cursor-default-custom bg-white p-14 rounded-lg shadow-lg w-[600px] relative transition-all duration-300 ease-out transform scale-100 opacity-100 animate-fadeInModal"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-center text-4xl mb-8">로봇 및 명령 선택</h2>
+            <h2 className="text-center text-cyan-600 text-4xl mb-8">로봇 및 명령 선택</h2>
 
             {/* 로봇 선택 */}
             <label className="cursor-default-custom text-3xl block mb-2">로봇 선택</label>
