@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef } from "react";
+import { mqttClient } from "@/lib/mqttClient"; // ✅ MQTT 클라이언트 import
 
 interface WarningProps {
   onClose: () => void;
@@ -30,17 +31,24 @@ export default function Warning({ onClose }: WarningProps) {
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
-        audioRef.current = null; // 🔁 명확히 초기화
+        audioRef.current = null;
       }
     };
   }, []);
 
   const handleClose = () => {
+    // 🔈 사운드 중지
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
-      audioRef.current = null; // 🔁 명확히 초기화
+      audioRef.current = null;
     }
+
+    // ✅ MQTT 메시지 전송
+    mqttClient.publish("robot/fall_check", "check");
+    console.log("📤 MQTT 전송: robot/fall_check → check");
+
+    // ⛔️ 모달 닫기
     onClose();
   };
 
@@ -59,7 +67,7 @@ export default function Warning({ onClose }: WarningProps) {
 
         <button
           onClick={handleClose}
-          className="bg-red-500 text-white px-6 py-3 md:px-10 rounded-md hover:bg-red-600 transition font-semibold mt-4 w-full max-w-xs"
+          className="bg-red-500 text-white text-3xl px-6 py-3 md:px-10 rounded-md hover:bg-red-600 transition font-semibold mt-4 w-full max-w-xs"
         >
           확인했습니다
         </button>

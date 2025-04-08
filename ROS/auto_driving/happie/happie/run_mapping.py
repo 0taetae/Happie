@@ -21,6 +21,7 @@ import paho.mqtt.client as mqtt
 
 import matplotlib.pyplot as plt
 from std_msgs.msg import Bool
+from sensor_msgs.msg import CompressedImage
 
 # mapping node의 전체 로직 순서
 # 1. publisher, subscriber, msg 생성
@@ -217,16 +218,18 @@ class Mapper(Node):
         # 로직 1 : publisher, subscriber, msg 생성
         self.subscription = self.create_subscription(LaserScan,'/scan',self.scan_callback,10)
         # self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
+        self.image_sub = self.create_subscription(CompressedImage,'/image_jpeg/compressed',self.image_callback,1)
 
         # MQTT 설정
         self.mqtt_client = mqtt.Client()
         self.mqtt_broker = MQTT_CONFIG["BROKER"]
         self.mqtt_port = MQTT_CONFIG["PORT"]
-        self.mqtt_topic = "robot/map_position"
+        self.mqtt_topic_destination = "robot/destination"
+        self.mqtt_topic_img = "robot/image"
         #self.mqtt_topic_destination = "robot/destination"
 
         self.mqtt_client.username_pw_set(MQTT_CONFIG["USERNAME"], MQTT_CONFIG["PASSWORD"])
-        self.mqtt_client.loop_start()
+        #self.mqtt_client.loop_start()
         # MQTT 브로커에 연결
         self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
         self.mqtt_client.loop_start()  # 비동기 처리 시작
@@ -265,7 +268,14 @@ class Mapper(Node):
         # 로직 2 : mapping 클래스 생성
         self.mapping = Mapping(params_map)
 
-
+    def image_callback(self, msg):
+        try:
+            encoded_image = base64.b64encode(msg.data).decode('utf-8')
+            self.mqtt_client.publish(self.mqtt_topic_image, encoded_image)
+            self.get_logger().info("이미지 MQTT 전송 완료")
+        except Exception as e:
+            self.get_logger().error(f"이미지 MQTT 전송 실패: {e}")
+    
     def scan_callback(self, msg):
         # print("scan_callback start!!!")
     
@@ -313,7 +323,7 @@ class Mapper(Node):
         # MQTT로 위치 데이터 전송
         mqtt_payload = f"{map_x:.0f},{map_y:.0f}"
         try:
-            self.mqtt_client.publish(self.mqtt_topic, mqtt_payload)
+            self.mqtt_client.publish(self.mqtt_topic_destination, mqtt_payload)
             print(f"MQTT 발행: {mqtt_payload}")
         except Exception as e:
             print(f"MQTT 발행 실패: {e}")

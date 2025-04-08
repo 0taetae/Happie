@@ -42,7 +42,7 @@ export default function VoiceButton({
     <button
       ref={buttonRef}
       onClick={handleClick}
-      className={`w-${size} h-${size} rounded-full flex items-center justify-center hover:scale-105 transition rotate-[-45deg]`}
+      className={`w-${size} h-${size} rounded-full flex items-center justify-center hover:scale-105 transition`}
     >
       <img src="/images/mic.png" alt="음성 질문" className={`w-${size} h-${size}`} />
     </button>
