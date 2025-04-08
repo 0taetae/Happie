@@ -12,7 +12,8 @@ import heapq
 from collections import deque
 from std_msgs.msg import String
 from std_msgs.msg import Bool
-
+import json
+from std_msgs.msg import Int32
 import matplotlib
 matplotlib.use('Agg')  # GUI 비활성화 (필수)
 import matplotlib.pyplot as plt
@@ -84,6 +85,7 @@ class a_star(Node):
         self.map_sub = self.create_subscription(OccupancyGrid, 'map', self.map_callback, 1)
         self.subscription = self.create_subscription(LaserScan,'/scan',self.scan_callback,10)
         self.global_path_pub = self.create_publisher(Path, 'a_star_global_path', 10)
+        self.order_id_pub = self.create_publisher(Int32, '/order_id', 1)
 
         #self.srv = self.create_service(SetPose, 'request_path', self.handle_request_path)
 
@@ -163,8 +165,16 @@ class a_star(Node):
             print(topic)
             # 요청 받은 경로를 움직이는 경우
             if topic == self.mqtt_topic:
-                goal_x, goal_y = map(float, payload.split(","))
-                print(f"📌 MQTT 목표 좌표 수신: x={goal_x}, y={goal_y}")
+                data = json.loads(payload)
+                goal_x = float(data["x"])
+                goal_y = float(data["y"])
+                order_id = int(data["id"])
+                print(f"🎯 목표 위치 수신: x={goal_x}, y={goal_y} (ID: {order_id})")
+
+                id_msg = Int32()
+                id_msg.data = order_id
+                self.order_id_pub.publish(id_msg)
+                print(f"🚀 /order_id 퍼블리시 완료: {order_id}")
 
                 # MQTT에서 받은 좌표를 맵 좌표계로 변환
                 goal_map_x = (goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION']

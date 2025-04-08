@@ -19,6 +19,7 @@ class Controller(Node):
         self.scan_sub = self.create_subscription(LaserScan, '/scan', self.scan_callback, 1)
         self.a_star_global_path_sub = self.create_subscription(Path, '/a_star_global_path', self.global_path_callback, 1)
         self.object_detected_sub = self.create_subscription(Int32, '/object_detected', self.object_callback, 1)
+        self.order_id_sub = self.create_subscription(Int32, '/order_id', self.order_id_callback, 1)
         #self.move_order_sub = self.create_subscription(Bool, '/move_order', self.move_order_callback, 1)
         #self.move_order_pub = self.create_publisher(Bool, '/move_order', 1)
         #self.cmd_publisher = self.create_publisher(Twist, 'cmd_vel', 10)
@@ -47,6 +48,7 @@ class Controller(Node):
         self.object_detected = False
         self.path_requested = False
         self.object_angle = 0
+        self.order_id = None
 
         # MQTT 설정 
         self.mqtt_client = mqtt.Client()
@@ -81,6 +83,10 @@ class Controller(Node):
         self.heading = (msg.time_increment + 360) % 360
         print(f"현재 위치: ({round(self.pose_x, 3)}, {round(self.pose_y, 3)})")
         #print(f"현재 heading: {round(self.heading, 2)}°")
+
+    def order_id_callback(self, msg):
+        self.order_id = msg.data
+        print(f"명령 ID 수신: {self.order_id}")
 
     def global_path_callback(self, msg):
         #if self.is_order:
@@ -142,7 +148,12 @@ class Controller(Node):
             self.current_goal_idx = 0
             # rclpy.shutdown()
 
-            self.mqtt_client.publish(self.mqtt_topic, "arrived")
+            payload = {
+                "id": self.order_id if self.order_id is not None else -1,
+                "status": "arrived"
+            }
+            self.mqtt_client.publish(self.mqtt_topic, json.dumps(payload))
+            self.order_id = None
 
     def move_to_destination(self):
         vel_msg = Twist()
