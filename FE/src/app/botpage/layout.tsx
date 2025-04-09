@@ -125,7 +125,13 @@ export default function BotLayout() {
       {stage === "recording" && (
         <>
           <div className="absolute top-[calc(50%-7.5rem)] left-[calc(50%+20rem)] z-20 animate-slideInFromRight">
-            <img src="/images/ear.png" alt="귀 기울이는 중" className="w-[150px] h-[150px] animate-scalePulse" />
+            <img src="/images/cat.gif" alt="귀 기울이는 중" className="w-[350px] h-[350px] animate-scalePulse" />
+          </div>
+          {/* 왼쪽 고양이 - transform 분리 */}
+          <div className="absolute top-[calc(50%-7.5rem)] right-[calc(50%+20rem)] z-20 animate-slideInFromLeft">
+            <div className="transform scale-x-[-1]">
+              <img src="/images/cat.gif" alt="귀 기울이는 중" className="w-[350px] h-[350px] animate-scalePulse" />
+            </div>
           </div>
           <div className="flex flex-col items-center justify-center text-center bg-white w-[400px] h-[100px] p-4 rounded-xl shadow-md">
             <p className="text-3xl text-gray-700 flex items-center">
