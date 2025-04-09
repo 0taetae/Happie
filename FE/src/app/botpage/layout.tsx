@@ -24,6 +24,7 @@ export default function BotLayout() {
   const [showWarning, setShowWarning] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<string | null>(null);
   const [navigationImage, setNavigationImage] = useState<string | null>(null);
+  const [navigationDone, setNavigationDone] = useState(false); // ✅ 안내 종료 메시지 제어용
 
   const questionList = ["원무수납처 \n어디야?", "소아진정실은 \n뭐하는 곳이야?", "501호실이 \n어디있어?"].map((text, idx) => ({
     text,
@@ -41,6 +42,23 @@ export default function BotLayout() {
 
   const onMqttMessage = useCallback(
     (topic: string, message: Buffer) => {
+      // ✅ 안내 완료 메시지 수신 시 처리
+      if (topic === "robot/log") {
+        setNavigationDone(true); // 종료 메시지 보여주기
+
+        // ✅ 3초 후 홈 화면으로 자동 전환
+        setTimeout(() => {
+          setStage("idle");
+          setAnswer("");
+          setTypedAnswer("");
+          setIsTypingDone(false);
+          setNavigationImage(null);
+          setFacility(null);
+          setNavigationDone(false); // 다시 숨기기
+        }, 3000);
+        return;
+      }
+
       handleChatResponse(topic, message);
     },
     [handleChatResponse]
@@ -107,7 +125,13 @@ export default function BotLayout() {
       {stage === "recording" && (
         <>
           <div className="absolute top-[calc(50%-7.5rem)] left-[calc(50%+20rem)] z-20 animate-slideInFromRight">
-            <img src="/images/ear.png" alt="귀 기울이는 중" className="w-[150px] h-[150px] animate-scalePulse" />
+            <img src="/images/cat.gif" alt="귀 기울이는 중" className="w-[350px] h-[350px] animate-scalePulse" />
+          </div>
+          {/* 왼쪽 고양이 - transform 분리 */}
+          <div className="absolute top-[calc(50%-7.5rem)] right-[calc(50%+20rem)] z-20 animate-slideInFromLeft">
+            <div className="transform scale-x-[-1]">
+              <img src="/images/cat.gif" alt="귀 기울이는 중" className="w-[350px] h-[350px] animate-scalePulse" />
+            </div>
           </div>
           <div className="flex flex-col items-center justify-center text-center bg-white w-[400px] h-[100px] p-4 rounded-xl shadow-md">
             <p className="text-3xl text-gray-700 flex items-center">
@@ -208,7 +232,6 @@ export default function BotLayout() {
         </div>
       )}
 
-      {/* ✅ 안내 중 화면 */}
       {stage === "navigating" && navigationImage && (
         <div className="flex flex-col items-center justify-center bg-white w-full h-full flex-grow gap-10">
           <img src={navigationImage} alt="안내 중" className="rounded-xl w-full max-h-[600px] object-contain mb-4" />
@@ -219,6 +242,9 @@ export default function BotLayout() {
               ))}
             </div>
           </p>
+
+          {/* ✅ 안내 종료 메시지 */}
+          {navigationDone && <p className="text-2xl text-gray-500 animate-fadeIn transition-opacity duration-500">안내가 종료되었습니다.</p>}
         </div>
       )}
 
