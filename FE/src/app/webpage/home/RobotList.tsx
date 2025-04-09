@@ -77,15 +77,15 @@ export default function RobotList({ refreshTrigger }: { refreshTrigger: number }
   };
 
   return (
-    <div className="flex flex-col overflow-y-auto h-full gap-2">
+    <div className="flex flex-col h-full overflow-y-auto gap-3"> {/* 💡 핵심: h-full + overflow */}
       {[1, 2, 3].map((num) => (
-        <div key={num} className="bg-gray-100 p-3 mb-2 rounded-lg shadow-md">
+        <div key={num} className="bg-gray-100 p-3 rounded-lg shadow-md">
           <div className="flex items-center space-x-3">
             <span className="text-2xl">🤖</span>
             <p className="text-2xl text-blue-600">로봇{num}</p>
           </div>
           <p className="text-lg text-gray-600">
-  ⭐
+            ⭐
             {inProgress[num]?.todo ? (
               /(충전 중|수리 중)$/.test(inProgress[num].todo) ? (
                 inProgress[num].todo
@@ -96,12 +96,18 @@ export default function RobotList({ refreshTrigger }: { refreshTrigger: number }
               "노는 중.."
             )}
           </p>
-
-
-          <button className="mt-2 px-3 py-1 text-ml bg-gray-200 rounded-md shadow-sm hover:bg-gray-300 transition" onClick={() => setOpenRobot(openRobot === num ? null : num)}>
-            {openRobot === num ? "닫기" : robotTasks[num]?.length > 0 ? `대기 명령 ${robotTasks[num].length}개` : "대기 명령 없음"}
+  
+          <button
+            className="mt-2 px-3 py-1 text-ml bg-gray-200 rounded-md shadow-sm hover:bg-gray-300 transition"
+            onClick={() => setOpenRobot(openRobot === num ? null : num)}
+          >
+            {openRobot === num
+              ? "닫기"
+              : robotTasks[num]?.length > 0
+              ? `대기 명령 ${robotTasks[num].length}개`
+              : "대기 명령 없음"}
           </button>
-
+  
           <div
             className={`transition-all duration-300 ease-in-out overflow-hidden mt-2 
               bg-yellow-100 shadow-md rounded-lg text-ml 
@@ -113,7 +119,10 @@ export default function RobotList({ refreshTrigger }: { refreshTrigger: number }
                   <p className="mb-1 text-lg">📌 대기 명령</p>
                   <ul className="space-y-1">
                     {robotTasks[num].map((task, index) => (
-                      <li key={task.id} className="px-2 py-1 border-b-2 border-gray-400 flex justify-between items-center">
+                      <li
+                        key={task.id}
+                        className="px-2 py-1 border-b-2 border-gray-400 flex justify-between items-center"
+                      >
                         <span>
                           {index + 1}. [{task.place}] {task.todo}하기
                         </span>
@@ -121,7 +130,6 @@ export default function RobotList({ refreshTrigger }: { refreshTrigger: number }
                           onClick={() => {
                             Swal.fire({
                               title: "정말 삭제하시겠습니까?",
-                              // text: "삭제된 명령은 복구할 수 없습니다.",
                               icon: "warning",
                               showCancelButton: true,
                               confirmButtonColor: "#d33",
@@ -154,15 +162,21 @@ export default function RobotList({ refreshTrigger }: { refreshTrigger: number }
               )}
             </div>
           </div>
-
+  
           <div className="mt-3 flex items-center space-x-2">
             <div className="flex-1 h-2 bg-gray-200 rounded">
-              <div className={`h-full rounded ${progressBar[num].color}`} style={{ width: `${progressBar[num].percent}%` }}></div>
+              <div
+                className={`h-full rounded ${progressBar[num].color}`}
+                style={{ width: `${progressBar[num].percent}%` }}
+              ></div>
             </div>
-            <p className="text-sm w-10 text-right">{progressBar[num].percent}%</p>
+            <p className="text-sm w-10 text-right">
+              {progressBar[num].percent}%
+            </p>
           </div>
         </div>
       ))}
     </div>
   );
+  
 }

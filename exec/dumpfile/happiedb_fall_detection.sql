@@ -16,28 +16,27 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `floor_image`
+-- Table structure for table `fall_detection`
 --
 
-DROP TABLE IF EXISTS `floor_image`;
+DROP TABLE IF EXISTS `fall_detection`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `floor_image` (
+CREATE TABLE `fall_detection` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `image` varchar(125) NOT NULL,
-  `facility_name` varchar(125) NOT NULL,
+  `detected` bit(1) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `floor_image`
+-- Dumping data for table `fall_detection`
 --
 
-LOCK TABLES `floor_image` WRITE;
-/*!40000 ALTER TABLE `floor_image` DISABLE KEYS */;
-INSERT INTO `floor_image` VALUES (1,'https://ssafy-pro-bucket.s3.us-east-1.amazonaws.com/501.gif','501호실'),(2,'https://ssafy-pro-bucket.s3.us-east-1.amazonaws.com/502.gif','502호실'),(3,'https://ssafy-pro-bucket.s3.us-east-1.amazonaws.com/503.gif','503호실'),(4,'https://ssafy-pro-bucket.s3.us-east-1.amazonaws.com/desk.gif','간호사실');
-/*!40000 ALTER TABLE `floor_image` ENABLE KEYS */;
+LOCK TABLES `fall_detection` WRITE;
+/*!40000 ALTER TABLE `fall_detection` DISABLE KEYS */;
+INSERT INTO `fall_detection` VALUES (1,_binary '\0');
+/*!40000 ALTER TABLE `fall_detection` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -49,4 +48,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-04-09 10:15:43
+-- Dump completed on 2025-04-09 10:15:44
