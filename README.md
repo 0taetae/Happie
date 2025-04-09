@@ -49,6 +49,12 @@
 
 RAG(Retrieval-Augmented Generation)란 외부 지식을 검색하고, 그 결과를 바탕으로 답변을 생성하는 방식이다. 특정 병원 배경의 대화가 중심으로, 정보의 정확성과 다양한 병원에서의 맞춤 정보 제공의 확장성을 기대하며 이 방법론을 사용한다. 엑셀 데이터를 OpenAI의 text embedding ada 002 임베딩 모델을 활용해 벡터화하여 ChromaDB에 사전에 저장 후, 이를 활용한다. LangChain을 활용해 효율적인 RAG 구조를 구성하며 사용자의 질문에 따른 응답을 제공한다.
 
+1. 사용자 질문 이해
+2. ChatGPT 3.5 turbo 활용 프롬프트 템플릿 기반 검색 질의 분석
+3. RAG 기반 외부 정보 검색
+4. ChatGPT 3.5 turbo 활용 프롬프트 템프릿 기반 응답 생성 및 정제 (대화 유도, 오류 대응)
+5. 응답 산출
+
 ![image](/uploads/137fcb518a6f8acbe327c328bb1cb0bc/image.png){width=497 height=219}
 
 ### 기술 스택
