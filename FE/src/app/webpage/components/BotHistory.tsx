@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import DotAnimation from "./DotAnimation";
 
 interface HistoryEntry {
   id: number;
@@ -38,17 +39,19 @@ export default function BotHistory({ botId }: { botId: number }) {
   }, [botId]);
 
   return (
-    <div className="flex flex-col w-full bg-white rounded-lg shadow-md h-full">
-      <div className="px-1 overflow-y-auto h-full">
+    <div className="flex flex-col w-full bg-white rounded-lg h-full">
+      <div className="overflow-y-auto h-full">
 
         <ul className="space-y-2">
           {loading ? (
-            <li className="text-gray-400 text-xl text-center py-6">⌛ 불러오는 중...</li>
+            <li className="text-gray-400 text-xl text-center py-6">⌛ 불러오는 중<span className="ml-1">
+                                          <DotAnimation />
+                                        </span></li>
           ) : history.length > 0 ? (
             history.map((entry) => (
               <li
                 key={entry.id}
-                className="bg-gray-100 p-3 rounded flex justify-between shadow-sm"
+                className="bg-gray-100 p-2 rounded flex justify-between shadow-sm"
               >
                 <span className="flex-1 text-xl break-words">
                   🔹 {entry.place}에 {entry.todo} 완료

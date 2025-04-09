@@ -12,7 +12,8 @@ import heapq
 from collections import deque
 from std_msgs.msg import String
 from std_msgs.msg import Bool
-
+import json
+from std_msgs.msg import Int32
 import matplotlib
 matplotlib.use('Agg')  # GUI 비활성화 (필수)
 import matplotlib.pyplot as plt
@@ -82,8 +83,9 @@ class a_star(Node):
         super().__init__('a_Star')
         # 로직 1. publisher, subscriber 만들기
         self.map_sub = self.create_subscription(OccupancyGrid, 'map', self.map_callback, 1)
-        self.subscription = self.create_subscription(LaserScan,'/scan',self.scan_callback,10)
+        self.subscription = self.create_subscription(LaserScan,'/scan',self.scan_callback,1)
         self.global_path_pub = self.create_publisher(Path, 'a_star_global_path', 10)
+        self.order_id_pub = self.create_publisher(Int32, '/order_id', 1)
 
         #self.srv = self.create_service(SetPose, 'request_path', self.handle_request_path)
 
@@ -97,15 +99,17 @@ class a_star(Node):
         # self.is_grid_update = False
         # 이동 타이머 설정
         self.timer = self.create_timer(0.1, self.check_command)
-
+        self.order_id = None
         # MQTT 설정 
         self.mqtt_client = mqtt.Client()
         self.mqtt_broker = MQTT_CONFIG["BROKER"]
         self.mqtt_port = MQTT_CONFIG["PORT"]
         # 목표 경로로 이동 mqtt_topic
         self.mqtt_topic = "robot/destination"
+        self.mqtt_topic_log = "robot/log"
+        
         # 순찰 명령을 받을 mqtt_topic
-        self.mqtt_patrol_topic = "robot/patrol"
+        #self.mqtt_patrol_topic = "robot/patrol"
 
 
         self.mqtt_client.on_connect = self.on_connect
@@ -152,20 +156,50 @@ class a_star(Node):
         if rc == 0:
             print("✅ MQTT 연결 성공")
             client.subscribe(self.mqtt_topic)
-            client.subscribe(self.mqtt_patrol_topic)
+            #client.subscribe(self.mqtt_patrol_topic)
         else:
             print(f"❌ MQTT 연결 실패 (코드: {rc})")
 
     def on_message(self, client, userdata, msg):
         try:
-            topic = msg.topic
+            #topic = msg.topic
             payload = msg.payload.decode("utf-8")
-            print(topic)
-            # 요청 받은 경로를 움직이는 경우
-            if topic == self.mqtt_topic:
-                goal_x, goal_y = map(float, payload.split(","))
-                print(f"📌 MQTT 목표 좌표 수신: x={goal_x}, y={goal_y}")
+            data = json.loads(payload)
+            print(data)
+            goal_x = float(data["x"])
+            goal_y = float(data["y"])
+            print("goal")
+            self.order_id = int(data["id"])
+            print(f"🎯 목표 위치 수신: x={goal_x}, y={goal_y} (ID: {self.order_id})")
 
+            #id_msg = Int32()
+            #id_msg.data = order_id
+            #self.order_id_pub.publish(id_msg)
+            #print(f"🚀 /order_id 퍼블리시 완료: {order_id}")
+
+            # 전체순찰의 경우 
+            if goal_x == 0.0 and goal_y == 0.0:
+                print("📌 전체 순찰 명령")
+                #print(payload)
+                # 순찰종료 명령을 받은 경우
+                # if payload.strip().lower() != 'go':
+                #     print(f"📌 순찰종료 명령 수신: {patrol_path}")
+                #     self.is_patrol_command = False
+                #     return
+                # 순찰 명령을 받은 경우
+                #print(f"📌 순찰 명령 수신: {patrol_path}")
+                self.is_patrol_command = True
+                goal_x, goal_y = patrol_path[self.patrol_idx]
+                # 좌표를 맵 좌표계로 변환
+                goal_map_x = int((goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION'])
+                goal_map_y = int((goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1] / 2) / params_map['MAP_RESOLUTION'])
+                print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
+                self.path_finding(goal_map_x, goal_map_y)
+
+            # 목적지로 이동의 경우 
+            else:
+                print("📌 목적지 이동 명령")
+                self.is_patrol_command = False
                 # MQTT에서 받은 좌표를 맵 좌표계로 변환
                 goal_map_x = (goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION']
                 goal_map_y = (goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1] / 2) / params_map['MAP_RESOLUTION']
@@ -173,24 +207,6 @@ class a_star(Node):
                 goal_map_x = int(goal_map_x) 
                 goal_map_y = int(goal_map_y)
 
-                print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
-                self.path_finding(goal_map_x, goal_map_y)
-
-            # mqtt에 patrol_topic으로 명령이 온 경우
-            elif topic == self.mqtt_patrol_topic:
-                print(payload)
-                # 순찰종료 명령을 받은 경우
-                if payload.strip().lower() != 'go':
-                    print(f"📌 순찰종료 명령 수신: {patrol_path}")
-                    self.is_patrol_command = False
-                    return
-                # 순찰 명령을 받은 경우
-                print(f"📌 순찰 명령 수신: {patrol_path}")
-                self.is_patrol_command = True
-                goal_x, goal_y = patrol_path[self.patrol_idx]
-                # 좌표를 맵 좌표계로 변환
-                goal_map_x = int((goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION'])
-                goal_map_y = int((goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1] / 2) / params_map['MAP_RESOLUTION'])
                 print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
                 self.path_finding(goal_map_x, goal_map_y)
 
@@ -202,7 +218,6 @@ class a_star(Node):
         try:
             new_goal_x = msg.x
             new_goal_y = msg.y
-            print(f"🔄 새로운 경로 요청: ({new_goal_x}, {new_goal_y})")
 
             # MQTT에서 받은 좌표를 맵 좌표계로 변환
             goal_map_x = (new_goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION']
@@ -213,16 +228,8 @@ class a_star(Node):
 
             print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
             # 현재 위치를 기준으로 새로운 경로 찾기
-            start = (int(self.map_pose_y), int(self.map_pose_x))
-            goal = (goal_map_y, goal_map_x)
 
-            path, real_path = self.a_star(start, goal)
-
-            if path:
-                print(f"✅ 새로운 경로 탐색 성공! 경로 길이: {len(path)}")
-                self.publish_global_path(real_path)
-            else:
-                print("⚠️ 새로운 경로를 찾을 수 없음.")
+            self.path_finding(goal_map_x, goal_map_y)
 
         except Exception as e:
             print(f"❌ 새로운 경로 요청 처리 오류: {e}")
@@ -236,6 +243,12 @@ class a_star(Node):
                 if self.patrol_idx == len(patrol_path):
                     self.patrol_idx = 0
                     self.is_patrol_command = False
+                    payload = {
+                        "id": self.order_id if self.order_id is not None else -1,
+                        "status": "arrived"
+                    }
+                    self.mqtt_client.publish(self.mqtt_topic_log, json.dumps(payload))
+                    self.order_id = None
                 else:
                     if self.patrol_idx == len(patrol_path): self.patrol_idx = 0
                     else: self.patrol_idx += 1
@@ -243,7 +256,6 @@ class a_star(Node):
                     # 좌표를 맵 좌표계로 변환
                     goal_map_x = int((goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION'])
                     goal_map_y = int((goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1] / 2) / params_map['MAP_RESOLUTION'])
-                    print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
                     self.path_finding(goal_map_x, goal_map_y)
             else: 
                 pass 
@@ -408,7 +420,6 @@ class a_star(Node):
 
         # A* 실행
         start = (int(self.map_pose_y), int(self.map_pose_x))
-        print(start)
         goal = (goal_map_y, goal_map_x)
 
         path, real_path = self.a_star(start, goal)
@@ -416,7 +427,7 @@ class a_star(Node):
         print("끝!!!")
         if path:
             print(f"✅ 경로 탐색 성공! 경로 길이: {len(path)}")
-            self.publish_global_path(real_path)
+            self.publish_global_path(real_path[::5])
             for p in path:
                 data_array[p[0]][p[1]] = 50  # 경로 표시
         else:
@@ -449,7 +460,7 @@ class a_star(Node):
         print(f"📷 시각화 이미지 저장 완료: {save_path}")
 
         # 이미지 열기
-        os.startfile(save_path)
+        # os.startfile(save_path)
 
     def map_callback(self, msg):
         self.is_map = True

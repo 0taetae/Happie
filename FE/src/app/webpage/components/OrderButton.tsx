@@ -103,7 +103,7 @@ export default function OrderButton({ onOrderSuccess }: { onOrderSuccess?: () =>
             className="cursor-default-custom bg-white p-14 rounded-lg shadow-lg w-[600px] relative transition-all duration-300 ease-out transform scale-100 opacity-100 animate-fadeInModal"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-center text-4xl mb-8">로봇 및 명령 선택</h2>
+            <h2 className="text-center text-cyan-600 text-4xl mb-8">로봇 및 명령 선택</h2>
 
             {/* 로봇 선택 */}
             <label className="cursor-default-custom text-3xl block mb-2">로봇 선택</label>
@@ -159,6 +159,12 @@ export default function OrderButton({ onOrderSuccess }: { onOrderSuccess?: () =>
             {/* 버튼 그룹 */}
             <div className="flex justify-end space-x-2">
               <button
+                className="px-4 py-2 text-xl bg-cyan-600 text-white rounded hover:bg-cyan-700 transition"
+                onClick={handleConfirm}
+              >
+                확인
+              </button>
+              <button
                 className="px-4 py-2 text-xl bg-gray-400 text-white rounded hover:bg-gray-500 transition"
                 onClick={() => {
                   setIsOpen(false);
@@ -166,12 +172,6 @@ export default function OrderButton({ onOrderSuccess }: { onOrderSuccess?: () =>
                 }}
               >
                 취소
-              </button>
-              <button
-                className="px-4 py-2 text-xl bg-blue-500 text-white rounded hover:bg-blue-700 transition"
-                onClick={handleConfirm}
-              >
-                확인
               </button>
             </div>
           </div>

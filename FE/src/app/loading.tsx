@@ -21,7 +21,7 @@ export default function Loading() {
         width={500}
         height={500}
       />
-      <p className="mt-4 text-gray-700 font-semibold text-lg">
+      <p className="mt-4 text-4xl text-gray-700">
         하피가 준비중입니다{dots}
       </p>
     </div>
