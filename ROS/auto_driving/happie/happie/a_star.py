@@ -265,7 +265,7 @@ class a_star(Node):
                     self.is_patrol_command = False
                     payload = {
                         "id": self.order_id if self.order_id is not None else -1,
-                        "status": "arrived"
+                        "status": "finish"
                     }
                     self.mqtt_client.publish(self.mqtt_topic_log, json.dumps(payload))
                     self.order_id = None
