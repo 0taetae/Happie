@@ -180,10 +180,17 @@ class Controller(Node):
             self.current_goal_idx = 0
             # rclpy.shutdown()
 
-            payload = {
-                "id": self.order_id if self.order_id is not None else -1,
-                "status": "arrived"
-            }
+            # 기자재 방에 도착했을 경우 
+            if self.pose_x <= -55.20 and self.pose_y <= -51.76:
+                payload = {
+                    "id": self.order_id if self.order_id is not None else -1,
+                    "status": "arrive"
+                }
+            else:
+                payload = {
+                    "id": self.order_id if self.order_id is not None else -1,
+                    "status": "finish"
+                }
             self.mqtt_client.publish(self.mqtt_topic, json.dumps(payload))
             self.order_id = None
 
