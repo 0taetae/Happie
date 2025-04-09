@@ -10,7 +10,7 @@ import pymysql
 import re
 import os
 from . import config  # DB 설정 불러오기
-
+from .config import YOLOV5_DIR, MODEL_PATH
 class EquipmentDetectionNode(Node):
     def __init__(self):
         super().__init__('equipment_detection_node')
