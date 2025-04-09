@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,7 +28,7 @@ public class OrderService {
         "503호실", new double[] {-42.64277267456055, -38.69271469116211},
         "간호사실", new double[] {-50.82450485229492, -54.83995056152344},
         "휠체어 보관실", new double[] {-56.482933044433594, -52.840431213378906},
-        "링거폴대 보관실", new double[] {-59.81382751464844, -52.48174285888672},
+        "링거 보관실", new double[] {-59.81382751464844, -52.48174285888672},
         "로봇방", new double[] {-42.52598571777344, -46.45439147949219}
     );
 
@@ -124,27 +125,71 @@ public class OrderService {
         Order order = orderRepository.findFirstByRobotAndStateOrderByIdAsc(robot, "대기")
                 .orElseThrow(() -> new IllegalArgumentException("robot1의 대기 중인 명령이 없습니다."));
 
-        // MQTT 메시지 전송
-        mqttPublisher.sendLocation(order.getId(), order.getX(), order.getY());
-
-        // 상태를 '진행 중'으로 변경
+        String todo = order.getTodo();
         order.setState("진행 중");
+
+        if (todo.equals("운행")) {
+            mqttPublisher.autoDriving(order.getId(), "start");
+
+            return String.format("자율주행 명령 전송 완료 (id = %d)", order.getId());
+        } else if (todo.equals("청소")) {
+            mqttPublisher.cleanEquipment(order.getId(), 2, "start");
+
+            return String.format("청소 명령 전송 완료 (id = %d)", order.getId());
+        } else if (todo.contains("전달")) {
+            String item = todo.split(" ")[0];  // "휠체어" 또는 "링거"
+            int type = item.equals("휠체어") ? 1 : 2;
+            String storagePlace = item + " 보관실";
+            double[] coords = PLACE_COORDINATES.get(storagePlace);
+
+            if (coords == null) {
+                throw new IllegalArgumentException("알 수 없는 보관실 장소: " + storagePlace);
+            }
+
+            mqttPublisher.sendEquipment(order.getId(), type, coords[0], coords[1]);
+            return String.format("MQTT 전송 완료 (기자재) id = %d, type = %d, x = %.6f, y = %.6f", order.getId(), type, coords[0], coords[1]);
+        }
+
+        // 그 외 일반 위치 이동 명령 처리
+        mqttPublisher.sendLocation(order.getId(), order.getX(), order.getY());
 
         return String.format("MQTT 전송 완료 id = %d, x = %.6f, y = %.6f", order.getId(), order.getX(), order.getY());
     }
 
     @Transactional
     public void robotLog(int id, String status) {
-        if (id == -1 || !"arrived".equalsIgnoreCase(status)) {
-            System.out.println("처리하지 않는 로그: id=" + id + ", status=" + status);
+        if (id == -1) {
+            System.out.println("잘못된 ID: -1");
             return;
         }
 
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("해당 ID의 명령이 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("해당 ID의 명령이 없습니다: " + id));
 
-        order.setState("완료");
-        System.out.printf("명령 상태 변경 완료: id = %d, state = 완료", id);
+        String todo = order.getTodo();
+
+        if (status.equals("arrive")) {
+            if (!todo.contains("전달")) {
+                System.out.println("전달 명령이 아니므로 좌표 재전송 생략");
+                return;
+            }
+
+            String item = todo.split(" ")[0];  // "휠체어" 또는 "링거"
+            int type = item.equals("휠체어") ? 1 : 2;
+
+            // 좌표 재전송
+            mqttPublisher.sendEquipment(order.getId(), type, order.getX(), order.getY());
+            System.out.printf("📦 좌표 재전송 완료 (id = %d, type = %d, x = %.6f, y = %.6f)%n",
+                    order.getId(), type, order.getX(), order.getY());
+
+        } else if (status.equals("finish")) {
+            order.setState("완료");
+            orderRepository.save(order);
+            System.out.printf("명령 상태 완료 처리됨 (id = %d)%n", order.getId());
+
+        } else {
+            System.out.printf("처리되지 않은 상태: %s%n", status);
+        }
     }
 
     @Transactional
@@ -157,7 +202,7 @@ public class OrderService {
             return "완료되지 않은 명령 존재";
         }
 
-        mqttPublisher.sendLocation(-1, 0.000000, 0.000000);
+        mqttPublisher.autoDriving(-1, "start");
         return "전체 순회 명령 전송 완료";
     }
 }

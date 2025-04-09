@@ -58,7 +58,7 @@ export default function VoiceButton({
         <button
           ref={buttonRef}
           onClick={handleClick}
-          className="w-32 h-10 bg-emerald-500 text-white border border-gray-300 hover:bg-emerald-700 rounded-xl text-gray-800 shadow-md hover:scale-110 transition-all duration-200 text-lg"
+          className="w-36 h-10 bg-emerald-500 text-xl text-white border border-gray-300 hover:bg-emerald-700 rounded-xl text-gray-800 shadow-md hover:scale-110 transition-all duration-200"
         >
           다시 질문하기
         </button>

@@ -23,6 +23,7 @@ mqttClient.on("connect", () => {
     "map/data",
     "robot/map_position",
     "robot/image",
+    "robot/log",
   ];
 
   topics.forEach((topic) => {
