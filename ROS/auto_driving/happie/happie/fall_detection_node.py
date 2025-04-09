@@ -90,7 +90,7 @@ class FallDetectionNode(Node):
                             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
 
         if fall_detected != self.prev_fall_state:
-            self.fall_pub.publish(Bool(data=fall_detected))
+            self.fall_pub.publish(Bool(data=True))
             self.prev_fall_state = fall_detected
             self.get_logger().info(f"fall_detected status publish: {fall_detected}")
         

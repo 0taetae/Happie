@@ -6,7 +6,7 @@ from nav_msgs.msg import Path
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Bool
 import numpy as np
-import time
+import time, json
 
 from .config import params_map, PKG_PATH, MQTT_CONFIG
 import paho.mqtt.client as mqtt
@@ -71,7 +71,6 @@ class Controller(Node):
         payload = msg.payload.decode("utf-8")
         data = json.loads(payload)
         print(f"📨 MQTT 메시지 수신: {payload}")
-
         if data["status"] == "check":
             if self.fall_detected:
                 print("✅ 낙상 해제 신호 수신 → 이동 재개")
@@ -91,6 +90,7 @@ class Controller(Node):
 
     def fall_callback(self,msg):
         self.fall_detected = msg.data
+        print(self.fall_detected,'callback')
         if self.fall_detected:
             print("🛑 낙상 감지됨 → 이동 정지")
             self.is_to_move = False
