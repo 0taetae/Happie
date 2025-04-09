@@ -36,20 +36,20 @@ public class MqttPublisher {
         }
     }
 
-    public void sendEquipment(int id, String equip, double x, double y){
-        System.out.println("id" + id + ", equip: "+ equip + ", x: "+ x + ", y: " + y);
+    public void sendEquipment(int id, int equip, double x, double y){
+        System.out.println("id" + id + ", no: "+ equip + ", x: "+ x + ", y: " + y);
 
         try{
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("id", id);
-            jsonObject.put("equip", equip);
+            jsonObject.put("no", equip);
             jsonObject.put("x", x);
             jsonObject.put("y", y);
 
             MqttMessage message = new MqttMessage(jsonObject.toString().getBytes());
             message.setQos(1);
 
-            mqttClient.publish("robot/move/equipment", message);
+            mqttClient.publish("robot/equipment", message);
             System.out.println("메시지 전송 완료:" + jsonObject.toString());
         } catch (MqttException e) {
             e.printStackTrace();
@@ -69,6 +69,38 @@ public class MqttPublisher {
 
             mqttClient.publish("robot/nav/complete", message);
             System.out.println("메시지 전송 완료:" + jsonObject.toString());
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void autoDriving(int id, String status) {
+        try {
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("id", id);
+            jsonObject.put("status", status);
+
+            MqttMessage message = new MqttMessage(jsonObject.toString().getBytes());
+            message.setQos(1);
+
+            mqttClient.publish("robot/patrol", message);
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void cleanEquipment(int id, int equip, String status) {
+        try {
+            JSONObject jsonObject = new JSONObject();
+
+            jsonObject.put("id", id);
+            jsonObject.put("no", equip);
+            jsonObject.put("status", status);
+
+            MqttMessage message = new MqttMessage(jsonObject.toString().getBytes());
+            message.setQos(1);
+
+            mqttClient.publish("robot/clean", message);
         } catch (MqttException e) {
             e.printStackTrace();
         }
