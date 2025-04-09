@@ -52,7 +52,7 @@ class Controller(Node):
         self.goal = Point()
         self.set_new_goal()
         self.object_detected = False
-        self.object_detected_cnt = 0
+        self.object_detected_cnt = 1000
         self.path_requested = False
         self.object_angle = 0.0
         self.order_id = None 
@@ -92,6 +92,9 @@ class Controller(Node):
         # print([round(val, 2) for val in msg.ranges])
 
         self.heading = (msg.time_increment + 360) % 360
+        # 일정 시간 지나기 전, 다시 장애물 감지 하지않음.
+        if self.object_detected_cnt >= 0: return
+
         left = [val for val in self.ranges[:20] if val < 2.0]
         right = [val for val in self.ranges[339:359] if val < 2.0]
         front = [val for val in  self.ranges[:10] if val < 2.0] + [val for val in self.ranges[349:359] if val < 2.0]
@@ -101,11 +104,10 @@ class Controller(Node):
         pivot = min(front, right, left)
         # print(msg.ranges)
 
-        if pivot < 0.3: print(f'장애물 감지됨, 재 감지까지 남은시간: {self.object_detected_cnt}')
-        if pivot < 0.3 and self.object_detected_cnt < 0:
+        if pivot < 0.3: 
+            print(f'장애물 감지됨, 재 감지까지 남은시간: {self.object_detected_cnt}')
             if self.object_detected == False:
                 self.object_detected = True
-                print('장애물 감지됨')
                 # if front == pivot: print('정면 장애물 감지')
                 # elif right == pivot: print('우측면 장애물 감지')
                 # elif left == pivot: print('좌측면 장애물 감지')
@@ -159,6 +161,7 @@ class Controller(Node):
         self.is_to_move = False 
 
     def set_new_goal(self):
+        self.turtlebot_stop()
         print(self.current_goal_idx, ' 인덱스')
 
         # global_path가 비어 있지 않을 때만 진행
