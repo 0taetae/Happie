@@ -28,8 +28,8 @@ class EquipmentDetectionNode(Node):
             10
         )
 
-        yolov5_dir = r'C:\Users\SSAFY\Desktop\S12P21E103\ROS\yolov5'
-        model_path = r'C:\Users\SSAFY\Desktop\project\mobility-smarthome-skeleton\yolov5\runs\train\exp15\weights\best.pt'
+        yolov5_dir = YOLOV5_DIR
+        model_path = MODEL_PATH
 
         self.model = torch.hub.load(
             yolov5_dir,
