@@ -162,23 +162,19 @@ class a_star(Node):
 
     def on_message(self, client, userdata, msg):
         try:
-            #topic = msg.topic
+            topic = msg.topic
             payload = msg.payload.decode("utf-8")
             data = json.loads(payload)
             print(data)
-            goal_x = float(data["x"])
-            goal_y = float(data["y"])
-            print("goal")
             self.order_id = int(data["id"])
-            print(f"🎯 목표 위치 수신: x={goal_x}, y={goal_y} (ID: {self.order_id})")
 
-            #id_msg = Int32()
-            #id_msg.data = order_id
-            #self.order_id_pub.publish(id_msg)
-            #print(f"🚀 /order_id 퍼블리시 완료: {order_id}")
+            id_msg = Int32()
+            id_msg.data = self.order_id
+            self.order_id_pub.publish(id_msg)
+            print(f"🚀 /order_id 퍼블리시 완료: {self.order_id}")
 
+            if topic == 'robot/patrol':
             # 전체순찰의 경우 
-            if goal_x == 0.0 and goal_y == 0.0:
                 print("📌 전체 순찰 명령")
                 #print(payload)
                 # 순찰종료 명령을 받은 경우
@@ -187,7 +183,6 @@ class a_star(Node):
                 #     self.is_patrol_command = False
                 #     return
                 # 순찰 명령을 받은 경우
-                #print(f"📌 순찰 명령 수신: {patrol_path}")
                 self.is_patrol_command = True
                 goal_x, goal_y = patrol_path[self.patrol_idx]
                 # 좌표를 맵 좌표계로 변환
@@ -197,7 +192,11 @@ class a_star(Node):
                 self.path_finding(goal_map_x, goal_map_y)
 
             # 목적지로 이동의 경우 
-            else:
+            elif topic == 'robot/destination':
+                goal_x = float(data["x"])
+                goal_y = float(data["y"])
+                print("goal")
+                print(f"🎯 목표 위치 수신: x={goal_x}, y={goal_y} (ID: {self.order_id})")
                 print("📌 목적지 이동 명령")
                 self.is_patrol_command = False
                 # MQTT에서 받은 좌표를 맵 좌표계로 변환
@@ -209,6 +208,27 @@ class a_star(Node):
 
                 print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
                 self.path_finding(goal_map_x, goal_map_y)
+
+            elif topic == 'robot/equipment':
+                goal_x = float(data["x"])
+                goal_y = float(data["y"])
+                print("goal")
+                print(f"🎯 목표 위치 수신: x={goal_x}, y={goal_y} (ID: {self.order_id})")
+                print("📌 목적지 이동 명령; robot/equipment")
+                self.is_patrol_command = False
+                # MQTT에서 받은 좌표를 맵 좌표계로 변환
+                goal_map_x = (goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION']
+                goal_map_y = (goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1] / 2) / params_map['MAP_RESOLUTION']
+
+                goal_map_x = int(goal_map_x) 
+                goal_map_y = int(goal_map_y)
+
+                print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
+                self.path_finding(goal_map_x, goal_map_y)
+            elif topic == 'robot/clean':
+                pass
+            else:
+                pass
 
         except Exception as e:
             print(f"❌ 목표 좌표 처리 오류: {e}")
@@ -266,8 +286,8 @@ class a_star(Node):
         safety_penalty = 0
     
         # 벽 근처에 있을 경우 패널티 추가 (4칸)
-        for dx in range(-2, 3):
-            for dy in range(-2, 3):
+        for dx in range(-4, 5):
+            for dy in range(-4, 5):
                 nx, ny = a[0] + dx, a[1] + dy
                 #print(self.rows,'rows')
                 if 0 <= nx < self.rows and 0 <= ny < self.cols:
@@ -293,7 +313,7 @@ class a_star(Node):
                 cost = dCost[i]
                 
                 # 벽 근처 가중치 추가 (4칸 안전 마진 적용)
-                min_distance = 2  
+                min_distance = 4  
                 for dx in range(-min_distance, min_distance + 1):
                     for dy in range(-min_distance, min_distance + 1):
                         if 0 <= nx + dx < self.rows and 0 <= ny + dy < self.cols:

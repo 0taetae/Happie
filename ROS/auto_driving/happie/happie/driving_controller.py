@@ -33,6 +33,7 @@ class Controller(Node):
 
         # 배터리 잔량
         self.is_charging = False
+        self.cum_pose = []
         self.prior_pose = 0.0
         self.present_pose = 0.0
         self.battery = 1000.0
@@ -54,7 +55,7 @@ class Controller(Node):
         self.object_detected_cnt = 0
         self.path_requested = False
         self.object_angle = 0.0
-        self.order_id = None
+        self.order_id = None 
 
         # MQTT 설정 
         self.mqtt_client = mqtt.Client()
@@ -69,6 +70,7 @@ class Controller(Node):
 
 
     def scan_callback(self, msg):
+        self.cum_pose.append(msg)
         # 매 초당, 대기전력 0.01 사용
         self.battery -= 0.01
         self.battery = max(self.battery, 0.0)
@@ -87,7 +89,6 @@ class Controller(Node):
         self.pose_x = msg.range_min
         self.pose_y = msg.scan_time 
         self.ranges = np.array(msg.ranges)
-
         # print([round(val, 2) for val in msg.ranges])
 
         self.heading = (msg.time_increment + 360) % 360
@@ -98,8 +99,10 @@ class Controller(Node):
         right = sum(right) / len(right) if len(right) else 100
         front = sum(front) / len(front) if len(front) else 100
         pivot = min(front, right, left)
+        # print(msg.ranges)
 
-        if pivot < 0.8 and self.object_detected_cnt < 0:
+        if pivot < 0.3: print(f'장애물 감지됨, 재 감지까지 남은시간: {self.object_detected_cnt}')
+        if pivot < 0.3 and self.object_detected_cnt < 0:
             if self.object_detected == False:
                 self.object_detected = True
                 print('장애물 감지됨')
@@ -110,7 +113,7 @@ class Controller(Node):
                 self.turtlebot_stop() 
                 self.request_new_path()
                 self.path_requested = True  # 한 번만 요청하도록 설정
-                self.object_detected_cnt = 50
+                self.object_detected_cnt = 1000
         else:
             self.object_detected = False
 
