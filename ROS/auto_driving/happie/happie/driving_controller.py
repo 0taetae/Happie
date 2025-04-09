@@ -54,16 +54,25 @@ class Controller(Node):
         self.mqtt_topic_log = "robot/log"
         self.mqtt_topic_fall_check = "robot/fall_check" # 낙상 확인 후 재이동 
 
-        #self.mqtt_client.on_connect = self.on_connect
+        self.mqtt_client.on_connect = self.on_connect
         self.mqtt_client.on_message = self.on_message
         self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
         self.mqtt_client.loop_start()
     
+    # MQTT 연결 시 실행될 콜백 함수
+    def on_connect(self, client, userdata, flags, rc):
+        if rc == 0:
+            print("✅ MQTT 연결 성공(driving_controller)")
+            client.subscribe(self.mqtt_topic_fall_check)
+        else:
+            print(f"❌ MQTT 연결 실패 (코드: {rc})")
+    
     def on_message(self, client, userdata, msg):
-        payload = msg.payload.decode()
+        payload = msg.payload.decode("utf-8")
+        data = json.loads(payload)
         print(f"📨 MQTT 메시지 수신: {payload}")
 
-        if payload == "check":
+        if data["status"] == "check":
             if self.fall_detected:
                 print("✅ 낙상 해제 신호 수신 → 이동 재개")
                 self.fall_detected = False
