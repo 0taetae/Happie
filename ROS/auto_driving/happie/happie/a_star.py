@@ -83,7 +83,7 @@ class a_star(Node):
         super().__init__('a_Star')
         # 로직 1. publisher, subscriber 만들기
         self.map_sub = self.create_subscription(OccupancyGrid, 'map', self.map_callback, 1)
-        self.subscription = self.create_subscription(LaserScan,'/scan',self.scan_callback,10)
+        self.subscription = self.create_subscription(LaserScan,'/scan',self.scan_callback,1)
         self.global_path_pub = self.create_publisher(Path, 'a_star_global_path', 10)
         self.order_id_pub = self.create_publisher(Int32, '/order_id', 1)
 
@@ -218,7 +218,6 @@ class a_star(Node):
         try:
             new_goal_x = msg.x
             new_goal_y = msg.y
-            print(f"🔄 새로운 경로 요청: ({new_goal_x}, {new_goal_y})")
 
             # MQTT에서 받은 좌표를 맵 좌표계로 변환
             goal_map_x = (new_goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION']
@@ -257,7 +256,6 @@ class a_star(Node):
                     # 좌표를 맵 좌표계로 변환
                     goal_map_x = int((goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION'])
                     goal_map_y = int((goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1] / 2) / params_map['MAP_RESOLUTION'])
-                    print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
                     self.path_finding(goal_map_x, goal_map_y)
             else: 
                 pass 
@@ -422,7 +420,6 @@ class a_star(Node):
 
         # A* 실행
         start = (int(self.map_pose_y), int(self.map_pose_x))
-        print(start)
         goal = (goal_map_y, goal_map_x)
 
         path, real_path = self.a_star(start, goal)
@@ -430,7 +427,7 @@ class a_star(Node):
         print("끝!!!")
         if path:
             print(f"✅ 경로 탐색 성공! 경로 길이: {len(path)}")
-            self.publish_global_path(real_path)
+            self.publish_global_path(real_path[::5])
             for p in path:
                 data_array[p[0]][p[1]] = 50  # 경로 표시
         else:
