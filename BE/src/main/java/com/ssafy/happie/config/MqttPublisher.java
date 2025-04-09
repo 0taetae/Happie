@@ -30,7 +30,7 @@ public class MqttPublisher {
         try {
             MqttMessage message = new MqttMessage(payload.getBytes());
             message.setQos(1);
-            mqttClient.publish(topic, message);
+            mqttClient.publish("robot/destination", message);
         } catch (MqttException e) {
             e.printStackTrace();
         }
