@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { mqttClient } from "@/lib/mqttClient";
@@ -22,7 +22,6 @@ interface InProgress {
 }
 
 export default function Map({ onOrderSuccess }: { onOrderSuccess: () => void }) {
-  const pathname = usePathname();
   const router = useRouter();
   const [hoveredId, setHoveredId] = useState<number | null>(null);
   const [statuses, setStatuses] = useState<Record<number, InProgress>>({});
@@ -84,18 +83,10 @@ export default function Map({ onOrderSuccess }: { onOrderSuccess: () => void }) 
     { id: 3, x: 79, y: 67 },
   ];
 
-  const title = pathname.includes("bot1")
-    ? "로봇 1 이동 경로"
-    : pathname.includes("bot2")
-    ? "로봇 2 이동 경로"
-    : pathname.includes("bot3")
-    ? "로봇 3 이동 경로"
-    : "로봇들의 실시간 위치";
-
   return (
     <div className="w-full h-full flex flex-col px-4 bg-white">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl text-blue-600">🤖 {title}</h2>
+        <h2 className="text-3xl text-blue-600">🤖 로봇들의 실시간 위치</h2>
         <OrderButton onOrderSuccess={onOrderSuccess} />
       </div>
 
