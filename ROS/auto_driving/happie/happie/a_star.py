@@ -229,16 +229,8 @@ class a_star(Node):
 
             print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
             # 현재 위치를 기준으로 새로운 경로 찾기
-            start = (int(self.map_pose_y), int(self.map_pose_x))
-            goal = (goal_map_y, goal_map_x)
 
-            path, real_path = self.a_star(start, goal)
-
-            if path:
-                print(f"✅ 새로운 경로 탐색 성공! 경로 길이: {len(path)}")
-                self.publish_global_path(real_path)
-            else:
-                print("⚠️ 새로운 경로를 찾을 수 없음.")
+            self.path_finding(goal_map_x, goal_map_y)
 
         except Exception as e:
             print(f"❌ 새로운 경로 요청 처리 오류: {e}")
@@ -471,7 +463,7 @@ class a_star(Node):
         print(f"📷 시각화 이미지 저장 완료: {save_path}")
 
         # 이미지 열기
-        os.startfile(save_path)
+        # os.startfile(save_path)
 
     def map_callback(self, msg):
         self.is_map = True
