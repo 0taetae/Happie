@@ -25,6 +25,7 @@ export default function BotLayout() {
   const [selectedQuestion, setSelectedQuestion] = useState<string | null>(null);
   const [navigationImage, setNavigationImage] = useState<string | null>(null);
   const [navigationDone, setNavigationDone] = useState(false); // ✅ 안내 종료 메시지 제어용
+  const [showInteraction, setShowInteraction] = useState(false);
 
   const questionList = ["원무수납처 \n어디야?", "소아진정실은 \n뭐하는 곳이야?", "501호실이 \n어디있어?"].map((text, idx) => ({
     text,
@@ -109,17 +110,62 @@ export default function BotLayout() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 relative">
       {stage !== "navigating" && <EyeTracker />}
 
-      {/* ✅ 질문 버튼 + 음성 질문 */}
       {stage === "idle" && (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6 w-full max-w-4xl">
+  <>
+{!showInteraction && (
+  <div className="flex flex-col items-center m-5">
+    <button
+      className="px-20 py-10 bg-emerald-500 hover:bg-emerald-600 text-white text-6xl rounded-xl shadow-md transition"
+      onClick={() => setShowInteraction(true)}
+    >
+      🤖 하피가 도와드릴까요?
+    <p className="mt-8 text-gray-100 text-2xl animate-bounce">▲ 여기를 눌러주세요</p>
+    </button>
+  </div>
+)}
+
+    {/* ✅ X 버튼 – 화면 우측 상단에 고정 */}
+    {showInteraction && (
+      <>
+        <button
+          onClick={() => setShowInteraction(false)}
+          className="fixed top-6 right-6 z-50 text-3xl text-gray-400 hover:text-gray-600 transition"
+          title="닫기"
+        >
+          &times;
+        </button>
+
+        {/* 질문 + 음성 버튼 묶음 */}
+        <div className="flex flex-col items-center gap-6 w-full max-w-4xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full">
             {questionList.map(({ text, color }, idx) => (
-              <QuestionButton key={idx} text={text} color={color} selected={selectedQuestion === text} onSelect={() => setSelectedQuestion(text)} setQuestion={setQuestion} setAnswer={setAnswer} setStage={setStage} />
+              <QuestionButton
+                key={idx}
+                text={text}
+                color={color}
+                selected={selectedQuestion === text}
+                onSelect={() => setSelectedQuestion(text)}
+                setQuestion={setQuestion}
+                setAnswer={setAnswer}
+                setStage={setStage}
+              />
             ))}
           </div>
-          <VoiceButton setQuestion={setQuestion} setAnswer={setAnswer} setStage={setStage} stage={stage} size={24} />
-        </>
-      )}
+
+          <VoiceButton
+            setQuestion={setQuestion}
+            setAnswer={setAnswer}
+            setStage={setStage}
+            stage={stage}
+            size={24}
+          />
+        </div>
+      </>
+    )}
+  </>
+)}
+
+
 
       {/* ✅ 녹음 중 UI */}
       {stage === "recording" && (
