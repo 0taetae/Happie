@@ -1,6 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
+from std_msgs.msg import Int32
 from ssafy_msgs.msg import HandControl
 import torch
 import cv2
@@ -37,10 +38,17 @@ class EquipmentDetectionNode(Node):
             '/hand_control',
             10
         )
+        self.equipment_detected_pub = self.create_publisher(
+            Int32,
+            '/equipment_detected',
+            10
+        )
 
         # YOLOv5 모델 로드
-        yolov5_dir = r"C:\Users\SSAFY\Desktop\e103\S12P21E103\ROS\yolov5"
-        model_path = r"C:\Users\SSAFY\Desktop\e103\S12P21E103\ROS\yolov5\runs\train\exp13\weights\best.pt"
+        yolov5_dir = config.YOLOV5_DIR
+        model_path = config.MODEL_PATH
+        print(config.YOLOV5_DIR)
+
 
         self.model = torch.hub.load(
             yolov5_dir,
@@ -140,6 +148,7 @@ class EquipmentDetectionNode(Node):
         self.is_processing = False
         # cv2.imshow("Equipment Detection", frame)
         # cv2.waitKey(1)
+
 
     def send_hand_control_pickup(self):
         msg = HandControl()
