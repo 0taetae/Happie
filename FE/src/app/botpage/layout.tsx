@@ -188,7 +188,34 @@ export default function BotLayout() {
                     });
 
                     if (result.isConfirmed) {
-                      setStage("navigating"); // ✅ 이전에 받은 image 사용
+                      // 안내 명령 API 전송
+                      try {
+                        const res = await fetch("https://j12e103.p.ssafy.io/api/equipment/create-order", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                          },
+                          body: JSON.stringify({
+                            robot: "robot1",
+                            place: facility,
+                            todo: "안내",
+                          }),
+                        });
+
+                        if (!res.ok) throw new Error("안내 명령 전송 실패");
+
+                        console.log("✅ 안내 명령 전송 완료");
+                      } catch (error) {
+                        console.error("❌ 안내 명령 실패:", error);
+                        Swal.fire({
+                          icon: "error",
+                          title: "안내 명령 실패",
+                          text: "서버 전송 중 문제가 발생했어요!",
+                        });
+                        return;
+                      }
+
+                      setStage("navigating");
                     }
                   }}
                   className="w-20 h-10 bg-green-300 text-xl hover:bg-green-400 hover:scale-110 rounded-xl text-gray-800 shadow-md transition-all"
@@ -234,17 +261,21 @@ export default function BotLayout() {
 
       {stage === "navigating" && navigationImage && (
         <div className="flex flex-col items-center justify-center bg-white w-full h-full flex-grow gap-10">
-          <img src={navigationImage} alt="안내 중" className="rounded-xl w-full max-h-[600px] object-contain mb-4" />
-          <p className="text-xl text-gray-800 font-semibold flex items-center">
-            <div className="text-7xl text-emerald-700 wavy-text flex gap-2">
-              {"하피를 따라오세요!".split("").map((char, idx) => (
-                <span key={idx}>{char}</span>
-              ))}
-            </div>
-          </p>
+          {!navigationDone && (
+            <>
+              <img src={navigationImage} alt="안내 중" className="rounded-xl w-full max-h-[600px] object-contain mb-4" />
+              <p className="text-xl text-gray-800 font-semibold flex items-center">
+                <div className="text-7xl text-emerald-700 wavy-text flex gap-2">
+                  {"하피를 따라오세요!".split("").map((char, idx) => (
+                    <span key={idx}>{char}</span>
+                  ))}
+                </div>
+              </p>
+            </>
+          )}
 
-          {/* ✅ 안내 종료 메시지 */}
-          {navigationDone && <p className="text-2xl text-gray-500 animate-fadeIn transition-opacity duration-500">안내가 종료되었습니다.</p>}
+          {/* ✅ 안내 종료 메시지만 출력 */}
+          {navigationDone && <p className="text-7xl text-gray-700 animate-fadeIn transition-opacity duration-500">안내가 종료되었습니다.</p>}
         </div>
       )}
 
