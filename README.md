@@ -23,13 +23,27 @@
 
 ### 2-1. ROS2 자율주행
 
+상시 원내 순회한다. 장애물 회피와 최단 거리 주행을 수행한다.
+
+#### 관리자 시스템 화면
+
+![패트롤_웹__online-video-cutter.com_](/uploads/c0bf0d45fcc2d7b0333ae300e96a13e5/패트롤_웹__online-video-cutter.com_.gif)
+
+#### 시뮬레이터 화면
+
+![전체순회_5배속](/uploads/b69863cfe1fcff0adb42e84550ae73f8/전체순회_5배속.gif){width=400}
+
 ### 2-2. 기자재 관리 : 링거폴대 및 휠체어
+
+(여기 해야 해)
 
 ### 2-3. 낙상사고 감지 및 대응
 
+(여기도 해야 해)
+
 ### 2-4. 대화형 음성인식 챗봇
 
-음성 또는 자주 하는 질문을 선택하여 하피에게 물을 수 있다.<br/>텍스트 및 음성의 응답을 제공 받는다.<br/>병원 또는 원내 시설 관련, 이외 다양한 일상 대화를 나눈다.<br/>특정 장소로 하피에게 직접 주행 안내를 받을 수 있다.
+음성 또는 자주 하는 질문을 선택하여 하피에게 물을 수 있다. 텍스트 및 음성의 응답을 제공 받는다. 병원 또는 원내 시설 관련, 이외 다양한 일상 대화를 나눈다. 특정 장소로 하피에게 직접 주행 안내를 받을 수 있다.
 
 ![llm__online-video-cutter.com_](/uploads/a7c7e35d95b743780e711d3d6967b1ef/llm__online-video-cutter.com_.gif)
 
@@ -39,7 +53,7 @@
 
 2D LiDAR 센서를 활용해 실내 물체까지의 거리 정보를 스캔한다. 이에 SLAM 알고리즘을 적용하여 실시간 지도 생성을 수행한다.
 
-![매핑_10배속__online-video-cutter.com_](/uploads/331938db0f3dd298dd5593f16e429278/매핑_10배속__online-video-cutter.com_.gif){width=600}
+![매핑_10배속__online-video-cutter.com_](/uploads/331938db0f3dd298dd5593f16e429278/매핑_10배속__online-video-cutter.com_.gif){width=400}
 
 
 ### A* 알고리즘 기반 경로 계획
