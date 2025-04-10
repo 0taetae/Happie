@@ -42,7 +42,7 @@ class Controller(Node):
         self.battery = 1000.0
 
         # 이동 타이머 설정
-        self.timer = self.create_timer(0.1, self.move_to_destination)
+        self.timer = self.create_timer(0.02, self.move_to_destination)
 
         self.is_to_move = False
         self.fall_detected = False
@@ -218,7 +218,7 @@ class Controller(Node):
         # global_path가 비어 있지 않을 때만 진행
         if self.current_goal_idx < len(self.global_path):
             # 경로에서 앞으로 10개의 포인트 중 현재 위치에서 가장 가까운 지점 선택
-            search_window = self.global_path[self.current_goal_idx:self.current_goal_idx + 10]
+            search_window = self.global_path[self.current_goal_idx:self.current_goal_idx + 15]
             min_dist = float('inf')
             closest_idx = self.current_goal_idx  # 초기화
             for idx, (x, y) in enumerate(search_window):
@@ -248,12 +248,12 @@ class Controller(Node):
                     "id": self.order_id if self.order_id is not None else -1,
                     "status": "finish"
                 }
-            self.mqtt_client.publish(self.mqtt_topic, json.dumps(payload))
+            self.mqtt_client.publish(self.mqtt_topic_log, json.dumps(payload))
             self.order_id = None
 
     def move_to_destination(self):
         # print(f'배터리 잔량 {round(self.battery, 2)}%')
-        self.object_detected_cnt -= 1
+        self.object_detected_cnt -= 0.2
         # 우선순위 작업이 없는 경우
         if self.is_priority_work == False:
             # if self.path_requested == False:
