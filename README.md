@@ -27,7 +27,7 @@
 
 #### 관리자 시스템 화면
 
-![패트롤_웹__online-video-cutter.com_](/uploads/c0bf0d45fcc2d7b0333ae300e96a13e5/패트롤_웹__online-video-cutter.com_.gif){width=900}
+![패트롤_웹__online-video-cutter.com_](/uploads/c0bf0d45fcc2d7b0333ae300e96a13e5/패트롤_웹__online-video-cutter.com_.gif){width=850}
 
 #### 시뮬레이터 화면
 
@@ -60,7 +60,7 @@
 
 A* 알고리즘이란 시작 지점에서 목표 지점까지의 최적 경로를 찾는 알고리즘이다. 하피는 벽에 가까울수록 비용이 증가하며, 지고 내 안전 마진 5 이내의 비용 가중치를 부여해 최적 경로를 산출한다.
 
-![a_star_result](/uploads/8edefab5f3421551812e29de8ba4a100/a_star_result.png)
+![a_star_result](/uploads/8edefab5f3421551812e29de8ba4a100/a_star_result.png){width=400}
 
 ### YOLOv5를 활용한 물체 인식 및 감지
 
