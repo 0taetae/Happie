@@ -90,8 +90,8 @@ export default function Map({ onOrderSuccess }: { onOrderSuccess: () => void }) 
   }, []);
 
   const staticPositions: Position[] = [
-    { id: 2, x: 84, y: 47 },
-    { id: 3, x: 92, y: 47 },
+    { id: 2, x: 84, y: 56 },
+    { id: 3, x: 93, y: 56 },
   ];
 
   return (
