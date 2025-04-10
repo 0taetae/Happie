@@ -102,7 +102,7 @@ export default function Map({ onOrderSuccess }: { onOrderSuccess: () => void }) 
       </div>
 
       <div className="flex-grow flex items-center justify-center">
-        <div className="relative w-full max-w-[550px] aspect-square rounded-lg border border-gray-300 bg-gray-100 overflow-hidden">
+        <div className="relative w-full max-w-[550px] aspect-square rounded-lg border border-gray-300 bg-gray-100">
           {mapImage ? (
             <img src={mapImage} alt="Map" className="absolute inset-0 object-contain w-full h-full" />
           ) : (
