@@ -50,6 +50,10 @@ public class OrderService {
 
         orderRepository.save(order);
 
+        if (orderRequestDto.getTodo().equals("안내")) {
+            sendDestination();
+        }
+
         return OrderResponseDto.builder()
                 .Id(order.getId())
                 .robot(order.getRobot())
@@ -128,7 +132,7 @@ public class OrderService {
         String todo = order.getTodo();
         order.setState("진행 중");
 
-        if (todo.equals("운행")) {
+        if (todo.equals("운행") || todo.equals("안내")) {
             mqttPublisher.autoDriving(order.getId(), "start");
 
             return String.format("자율주행 명령 전송 완료 (id = %d)", order.getId());
