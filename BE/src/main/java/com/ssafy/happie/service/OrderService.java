@@ -166,7 +166,7 @@ public class OrderService {
             System.out.println("잘못된 ID: -1");
             return;
         }
-
+        System.out.println(id + "아이디!~!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 ID의 명령이 없습니다: " + id));
 

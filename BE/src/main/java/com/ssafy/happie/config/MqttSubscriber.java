@@ -25,7 +25,7 @@ public class MqttSubscriber {
         System.out.println("✅ MqttSubscriber 초기화 시작");
 
         try {
-            mqttClient.subscribe("/robot/log", (topic, message) -> {
+            mqttClient.subscribe("robot/log", (topic, message) -> {
                 String payload = new String(message.getPayload());
                 System.out.println("📩 수신한 메시지: " + payload); // <- 반드시 보이도록!
 
@@ -43,7 +43,7 @@ public class MqttSubscriber {
                 }
             });
 
-            System.out.println("✅ /robot/log 구독 완료");
+            System.out.println("✅ robot/log 구독 완료");
 
         } catch (MqttException e) {
             System.err.println("❌ MQTT 구독 실패: " + e.getMessage());
