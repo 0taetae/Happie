@@ -31,19 +31,29 @@
 
 음성 또는 자주 하는 질문을 선택하여 하피에게 물을 수 있다.<br/>텍스트 및 음성의 응답을 제공 받는다.<br/>병원 또는 원내 시설 관련, 이외 다양한 일상 대화를 나눈다.<br/>특정 장소로 하피에게 직접 주행 안내를 받을 수 있다.
 
-![챗봇](/uploads/f427ec801737925e8b3519e525d32601/챗봇.gif)
+![llm__online-video-cutter.com_](/uploads/a7c7e35d95b743780e711d3d6967b1ef/llm__online-video-cutter.com_.gif)
 
-# Chapter3. 시연 영상
-
-# Chapter4. 기술
+# Chapter3. 기술
 
 ### 2D LiDAR와 SLAM을 사용하여 실내 지도 생성
 
+2D LiDAR 센서를 활용해 실내 물체까지의 거리 정보를 스캔한다. 이에 SLAM 알고리즘을 적용하여 실시간 지도 생성을 수행한다.
+
+![매핑_10배속__online-video-cutter.com_](/uploads/331938db0f3dd298dd5593f16e429278/매핑_10배속__online-video-cutter.com_.gif)
+
 ### A* 알고리즘 기반 경로 계획
 
-### 장애물 회피
+A* 알고리즘이란 시작 지점에서 목표 지점까지의 최적 경로를 찾는 알고리즘이다. 하피는 벽에 가까울수록 비용이 증가하며, 지고 내 안전 마진 5 이내의 비용 가중치를 부여해 최적 경로를 산출한다.
+
+![a_star_result](/uploads/8edefab5f3421551812e29de8ba4a100/a_star_result.png)
 
 ### YOLOv5를 활용한 물체 인식 및 감지
+
+시뮬레이터와 버전 문제와 클래스 단위의 분류가 가능한 특징을 활용하고자 YOLOv5를 사용하여 데이터셋을 학습한다. 정확도를 높이기 위해 데이터의 다양성과 수량을 증가한다. 이러한 데이터 학습은 기자재 관리와 낙상 감지 기능에 활용된다.
+
+![_](/uploads/7bbdb75f4995bf709322c1a94ef37db6/_.png)
+
+![2](/uploads/b1bc6aefc7b818f9787885313fd334ec/2.png)
 
 ### RAG 기반 LangChain 및 LLM 활용
 
@@ -78,30 +88,34 @@ RAG(Retrieval-Augmented Generation)란 외부 지식을 검색하고, 그 결과
 ![Jira](https://img.shields.io/badge/Jira-Tracking-0052CC?logo=jira&logoColor=white)
 ![Notion](https://img.shields.io/badge/Notion-Workspace-000000?logo=notion&logoColor=white)
 
-# Chapter5. 산출물
+# Chapter4. 산출물
 
-## 5-1. 패키지 구조도
+### 4-1. 패키지 구조도
 
-## 5-2. UI/UX 설계
+(유빈아 여기)
 
-### Figma
+### 4-2. UI/UX 설계
+
+#### Figma
 
 ![image](/uploads/74d67ec564976be9e4c8c73a090d638c/image.png){width=552 height=608}
 
-### 시뮬레이션
+#### 시뮬레이션
 
 ![스크린샷_2025-03-20_134020](/uploads/02727e6896fd7ee71d305d16ff33b97b/스크린샷_2025-03-20_134020.png){width=800}
 
-## 5-3. DB 설계
+### 4-3. DB 설계
 
 ![image](/uploads/3d95604a84002090cd9beea420710f26/image.png){width=748 height=497}
 
-## 5-4. 아키텍처 구조
+### 4-4. 아키텍처 구조
 
 ![최종_구조도](/uploads/691d1df4fb784a89f963ad0ee9f8c180/최종_구조도.png)
 
-## 5-5. API 및 MQTT 통신 설계
+### 4-5. API 및 MQTT 통신 설계
 
-# Chatper6. 팀 구성
+(유빈아 여기)
+
+# Chatper5. 팀 구성
 
 ![image](/uploads/3387e093c5adbfd0d0eee3c5cd772269/image.png){width=794 height=464}
