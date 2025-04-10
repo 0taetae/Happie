@@ -160,6 +160,7 @@ class Controller(Node):
         if msg.data:  # 기자재 감지됨
             self.is_priority_work = True
             print("기자재 감지!")
+            print(msg.data)
 
 
     def fall_callback(self,msg):
@@ -341,6 +342,8 @@ class Controller(Node):
             self.pub.publish(vel_msg)
         # 우선순위 작업이 존재하는 경우
         else:
+            self.turtlebot_stop() 
+            print('잠시 대기')
             pass
 
     def turtlebot_stop(self):
