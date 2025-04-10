@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { mqttClient } from "@/lib/mqttClient";
 
 interface WarningProps {
@@ -9,14 +9,20 @@ interface WarningProps {
   imageUrl: string;
 }
 
-// 원본 지도 해상도 (MQTT로 전달되는 좌표 기준)
-const MAP_WIDTH = 1024;
-const MAP_HEIGHT = 1024;
-
 export default function Warning({ onClose, imageUrl }: WarningProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [mapImage, setMapImage] = useState<string | null>(null);
   const [robot1Position, setRobot1Position] = useState<{ x: number; y: number } | null>(null);
+  const [mapParams, setMapParams] = useState<{ MAP_SIZE: number[]; MAP_RESOLUTION: number } | null>(null);
+
+  // 🧠 계산된 지도 해상도 (픽셀 단위)
+  const mapWidthPx = useMemo(() => {
+    return mapParams ? mapParams.MAP_SIZE[0] / mapParams.MAP_RESOLUTION : 1024;
+  }, [mapParams]);
+
+  const mapHeightPx = useMemo(() => {
+    return mapParams ? mapParams.MAP_SIZE[1] / mapParams.MAP_RESOLUTION : 1024;
+  }, [mapParams]);
 
   // 🔈 경고음 재생
   useEffect(() => {
@@ -36,14 +42,14 @@ export default function Warning({ onClose, imageUrl }: WarningProps) {
     };
   }, []);
 
-  // 🛰️ MQTT 구독
+  // 🛰️ MQTT 수신 처리
   useEffect(() => {
     const handleMapMessage = (topic: string, message: Buffer) => {
       if (topic === "map/data") {
         try {
           const parsed = JSON.parse(message.toString());
-          const base64 = parsed.image;
-          setMapImage(`data:image/png;base64,${base64}`);
+          if (parsed.image) setMapImage(`data:image/png;base64,${parsed.image}`);
+          if (parsed.params) setMapParams(parsed.params); // ✅ 지도 해상도 받아오기
         } catch (err) {
           console.error("❌ 맵 데이터 파싱 오류:", err);
         }
@@ -68,7 +74,7 @@ export default function Warning({ onClose, imageUrl }: WarningProps) {
     };
   }, []);
 
-  // 닫기 + MQTT 전송
+  // 닫기 + MQTT 발신
   const handleClose = () => {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -86,12 +92,10 @@ export default function Warning({ onClose, imageUrl }: WarningProps) {
       <audio ref={audioRef} src="/sounds/warning.mp3" loop autoPlay />
 
       <div className="bg-white border-4 border-red-500 rounded-2xl p-6 sm:p-10 md:p-12 w-full max-w-6xl shadow-2xl animate-fadeInModal">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-6xl text-center flex-grow">⚠️ 사고 발생 ⚠️</h2>
-        </div>
+        <h2 className="text-6xl text-center mb-10">⚠️ 사고 발생 ⚠️</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          {/* 낙상 이미지 */}
+          {/* 🔸 낙상 이미지 */}
           <div className="border-4 border-yellow-400 rounded-xl p-2 flex items-center justify-center">
             <Image
               src={imageUrl || "/images/fall.png"}
@@ -103,24 +107,27 @@ export default function Warning({ onClose, imageUrl }: WarningProps) {
             />
           </div>
 
-          {/* 지도 + 마커 */}
-          <div className="border-4 border-yellow-400 rounded-xl p-2 relative flex items-center justify-center bg-gray-100">
+          {/* 🔸 지도 + 마커 */}
+          <div className="border-4 border-yellow-400 rounded-xl p-2 relative w-full aspect-square bg-gray-100 overflow-hidden">
             {mapImage ? (
               <img
                 src={mapImage}
                 alt="실시간 지도"
-                className="object-contain w-full h-auto rounded-lg max-h-[50vh]"
+                className="absolute inset-0 object-contain w-full h-full rounded-lg"
               />
             ) : (
-              <span className="text-gray-400">🕓 지도를 불러오는 중...</span>
+              <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-2xl">
+                🕓 지도를 불러오는 중...
+              </div>
             )}
 
+            {/* ✅ 실시간 마커 위치 */}
             {robot1Position && (
               <div
                 className="absolute z-20"
                 style={{
-                  left: `${(robot1Position.x / MAP_WIDTH) * 100}%`,
-                  top: `${(robot1Position.y / MAP_HEIGHT) * 100}%`,
+                  left: `${(robot1Position.x / mapWidthPx) * 100}%`,
+                  top: `${(robot1Position.y / mapHeightPx) * 100}%`,
                   transform: "translate(-50%, -50%)",
                 }}
               >
