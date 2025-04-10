@@ -42,6 +42,7 @@ setup(
             'run_mapping = happie.run_mapping:main',
             'run_localization = happie.run_localization:main',
             'fall_detection = happie.fall_detection_node:main',
+            'equipment_detection = happie.equipment_detection_node:main',
         ],
     },
 )
