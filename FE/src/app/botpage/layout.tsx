@@ -25,6 +25,7 @@ export default function BotLayout() {
   const [selectedQuestion, setSelectedQuestion] = useState<string | null>(null);
   const [navigationImage, setNavigationImage] = useState<string | null>(null);
   const [navigationDone, setNavigationDone] = useState(false); // ✅ 안내 종료 메시지 제어용
+  const [showInteraction, setShowInteraction] = useState(false);
 
   const questionList = ["원무수납처 \n어디야?", "소아진정실은 \n뭐하는 곳이야?", "501호실이 \n어디있어?"].map((text, idx) => ({
     text,
@@ -109,17 +110,62 @@ export default function BotLayout() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 relative">
       {stage !== "navigating" && <EyeTracker />}
 
-      {/* ✅ 질문 버튼 + 음성 질문 */}
       {stage === "idle" && (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6 w-full max-w-4xl">
+  <>
+{!showInteraction && (
+  <div className="flex flex-col items-center m-5">
+    <button
+      className="px-20 py-10 bg-emerald-500 hover:bg-emerald-600 text-white text-6xl rounded-xl shadow-md transition"
+      onClick={() => setShowInteraction(true)}
+    >
+      🤖 하피가 도와드릴까요?
+    <p className="mt-8 text-gray-100 text-2xl animate-bounce">▲ 여기를 눌러주세요</p>
+    </button>
+  </div>
+)}
+
+    {/* ✅ X 버튼 – 화면 우측 상단에 고정 */}
+    {showInteraction && (
+      <>
+        <button
+          onClick={() => setShowInteraction(false)}
+          className="fixed top-6 right-6 z-50 text-3xl text-gray-400 hover:text-gray-600 transition"
+          title="닫기"
+        >
+          &times;
+        </button>
+
+        {/* 질문 + 음성 버튼 묶음 */}
+        <div className="flex flex-col items-center gap-6 w-full max-w-4xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full">
             {questionList.map(({ text, color }, idx) => (
-              <QuestionButton key={idx} text={text} color={color} selected={selectedQuestion === text} onSelect={() => setSelectedQuestion(text)} setQuestion={setQuestion} setAnswer={setAnswer} setStage={setStage} />
+              <QuestionButton
+                key={idx}
+                text={text}
+                color={color}
+                selected={selectedQuestion === text}
+                onSelect={() => setSelectedQuestion(text)}
+                setQuestion={setQuestion}
+                setAnswer={setAnswer}
+                setStage={setStage}
+              />
             ))}
           </div>
-          <VoiceButton setQuestion={setQuestion} setAnswer={setAnswer} setStage={setStage} stage={stage} size={24} />
-        </>
-      )}
+
+          <VoiceButton
+            setQuestion={setQuestion}
+            setAnswer={setAnswer}
+            setStage={setStage}
+            stage={stage}
+            size={24}
+          />
+        </div>
+      </>
+    )}
+  </>
+)}
+
+
 
       {/* ✅ 녹음 중 UI */}
       {stage === "recording" && (
@@ -188,7 +234,34 @@ export default function BotLayout() {
                     });
 
                     if (result.isConfirmed) {
-                      setStage("navigating"); // ✅ 이전에 받은 image 사용
+                      // 안내 명령 API 전송
+                      try {
+                        const res = await fetch("https://j12e103.p.ssafy.io/api/equipment/create-order", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                          },
+                          body: JSON.stringify({
+                            robot: "robot1",
+                            place: facility,
+                            todo: "안내",
+                          }),
+                        });
+
+                        if (!res.ok) throw new Error("안내 명령 전송 실패");
+
+                        console.log("✅ 안내 명령 전송 완료");
+                      } catch (error) {
+                        console.error("❌ 안내 명령 실패:", error);
+                        Swal.fire({
+                          icon: "error",
+                          title: "안내 명령 실패",
+                          text: "서버 전송 중 문제가 발생했어요!",
+                        });
+                        return;
+                      }
+
+                      setStage("navigating");
                     }
                   }}
                   className="w-20 h-10 bg-green-300 text-xl hover:bg-green-400 hover:scale-110 rounded-xl text-gray-800 shadow-md transition-all"
@@ -234,17 +307,21 @@ export default function BotLayout() {
 
       {stage === "navigating" && navigationImage && (
         <div className="flex flex-col items-center justify-center bg-white w-full h-full flex-grow gap-10">
-          <img src={navigationImage} alt="안내 중" className="rounded-xl w-full max-h-[600px] object-contain mb-4" />
-          <p className="text-xl text-gray-800 font-semibold flex items-center">
-            <div className="text-7xl text-emerald-700 wavy-text flex gap-2">
-              {"하피를 따라오세요!".split("").map((char, idx) => (
-                <span key={idx}>{char}</span>
-              ))}
-            </div>
-          </p>
+          {!navigationDone && (
+            <>
+              <img src={navigationImage} alt="안내 중" className="rounded-xl w-full max-h-[600px] object-contain mb-4" />
+              <p className="text-xl text-gray-800 font-semibold flex items-center">
+                <div className="text-7xl text-emerald-700 wavy-text flex gap-2">
+                  {"하피를 따라오세요!".split("").map((char, idx) => (
+                    <span key={idx}>{char}</span>
+                  ))}
+                </div>
+              </p>
+            </>
+          )}
 
-          {/* ✅ 안내 종료 메시지 */}
-          {navigationDone && <p className="text-2xl text-gray-500 animate-fadeIn transition-opacity duration-500">안내가 종료되었습니다.</p>}
+          {/* ✅ 안내 종료 메시지만 출력 */}
+          {navigationDone && <p className="text-7xl text-gray-700 animate-fadeIn transition-opacity duration-500">안내가 종료되었습니다.</p>}
         </div>
       )}
 

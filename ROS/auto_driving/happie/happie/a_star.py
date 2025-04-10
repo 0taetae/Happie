@@ -13,12 +13,12 @@ from collections import deque
 from std_msgs.msg import String
 from std_msgs.msg import Bool
 import json
-from std_msgs.msg import Int32
+from std_msgs.msg import Int32, String
 import matplotlib
 matplotlib.use('Agg')  # GUI 비활성화 (필수)
 import matplotlib.pyplot as plt
 
-from .config import params_map, PKG_PATH, MQTT_CONFIG, patrol_path
+from .config import params_map, PKG_PATH, MQTT_CONFIG, patrol_path, clean_patrol_path
 import paho.mqtt.client as mqtt
 
 #from custom_msgs.srv import SetPose
@@ -86,6 +86,7 @@ class a_star(Node):
         self.subscription = self.create_subscription(LaserScan,'/scan',self.scan_callback,1)
         self.global_path_pub = self.create_publisher(Path, 'a_star_global_path', 10)
         self.order_id_pub = self.create_publisher(Int32, '/order_id', 1)
+        self.priority_work_pub = self.create_publisher(String, '/priority_work', 1)
 
         #self.srv = self.create_service(SetPose, 'request_path', self.handle_request_path)
 
@@ -100,6 +101,8 @@ class a_star(Node):
         # 이동 타이머 설정
         self.timer = self.create_timer(0.1, self.check_command)
         self.order_id = None
+        self.priority_work = ""
+
         # MQTT 설정 
         self.mqtt_client = mqtt.Client()
         self.mqtt_broker = MQTT_CONFIG["BROKER"]
@@ -107,9 +110,12 @@ class a_star(Node):
         # 목표 경로로 이동 mqtt_topic
         self.mqtt_topic = "robot/destination"
         self.mqtt_topic_log = "robot/log"
-        
         # 순찰 명령을 받을 mqtt_topic
-        #self.mqtt_patrol_topic = "robot/patrol"
+        self.mqtt_patrol_topic = "robot/patrol"
+        # 기자재 옮기는 명령을 받을 mqtt_topic
+        self.mqtt_equipment_topic = "robot/equipment"
+        # 기자재 청소 명령을 받을 mqtt_topic
+        self.mqtt_clean_topic = "robot/clean"
 
 
         self.mqtt_client.on_connect = self.on_connect
@@ -151,18 +157,25 @@ class a_star(Node):
         self.patrol_idx = 0
         self.is_patrol_command = False
 
+        # robot/clean의 인덱스
+        self.clean_patrol_idx = 0
+        self.is_clean_patrol_command = False
+
     # MQTT 연결 시 실행될 콜백 함수
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
             print("✅ MQTT 연결 성공")
             client.subscribe(self.mqtt_topic)
-            #client.subscribe(self.mqtt_patrol_topic)
+            client.subscribe(self.mqtt_patrol_topic)
+            client.subscribe(self.mqtt_equipment_topic)
+            client.subscribe(self.mqtt_clean_topic)
         else:
             print(f"❌ MQTT 연결 실패 (코드: {rc})")
 
     def on_message(self, client, userdata, msg):
         try:
             topic = msg.topic
+            print(topic)
             payload = msg.payload.decode("utf-8")
             data = json.loads(payload)
             print(data)
@@ -226,7 +239,19 @@ class a_star(Node):
                 print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
                 self.path_finding(goal_map_x, goal_map_y)
             elif topic == 'robot/clean':
-                pass
+                # 청소 명령을 받은 경우
+                self.is_clean_patrol_command = True
+                self.priority_work = 'clean'
+                goal_x, goal_y = clean_patrol_path[self.clean_patrol_idx]
+                # 좌표를 맵 좌표계로 변환
+                goal_map_x = int((goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION'])
+                goal_map_y = int((goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1] / 2) / params_map['MAP_RESOLUTION'])
+                print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
+                self.path_finding(goal_map_x, goal_map_y)
+                priority_msg = String()
+                priority_msg.data = self.priority_work
+                self.priority_work_pub.publish(priority_msg)
+                print(f"🚀 /priority_work 퍼블리시 완료: {self.priority_work}")
             else:
                 pass
 
@@ -256,6 +281,7 @@ class a_star(Node):
     
 
     def check_command(self):
+        # 순찰 명령의 경우
         if self.is_patrol_command == False: 
             pass
         else:
@@ -270,9 +296,33 @@ class a_star(Node):
                     self.mqtt_client.publish(self.mqtt_topic_log, json.dumps(payload))
                     self.order_id = None
                 else:
-                    if self.patrol_idx == len(patrol_path): self.patrol_idx = 0
-                    else: self.patrol_idx += 1
+                    self.patrol_idx += 1
                     goal_x, goal_y = patrol_path[self.patrol_idx]
+                    # 좌표를 맵 좌표계로 변환
+                    goal_map_x = int((goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION'])
+                    goal_map_y = int((goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1] / 2) / params_map['MAP_RESOLUTION'])
+                    self.path_finding(goal_map_x, goal_map_y)
+            else: 
+                pass 
+
+        # 청소 명령의 경우
+        if self.is_clean_patrol_command == False:
+            pass
+        else:
+            if math.hypot(self.pose_x - clean_patrol_path[self.clean_patrol_idx][0], self.pose_y - clean_patrol_path[self.clean_patrol_idx][1]) < 0.2:
+                if self.clean_patrol_idx == len(clean_patrol_path):
+                    self.clean_patrol_idx = 0
+                    self.is_clean_patrol_command = False
+                    payload = {
+                        "id": self.order_id if self.order_id is not None else -1,
+                        # ?? arrived 맞나 ??
+                        "status": "arrived"
+                    }
+                    self.mqtt_client.publish(self.mqtt_topic_log, json.dumps(payload))
+                    self.order_id = None
+                else:
+                    self.clean_patrol_idx += 1
+                    goal_x, goal_y = clean_patrol_path[self.clean_patrol_idx]
                     # 좌표를 맵 좌표계로 변환
                     goal_map_x = int((goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION'])
                     goal_map_y = int((goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1] / 2) / params_map['MAP_RESOLUTION'])
@@ -493,7 +543,9 @@ class a_star(Node):
         self.pose_x = msg.range_min  # 실제 x 좌표 (meters)
         self.pose_y = msg.scan_time  # 실제 y 좌표 (meters)
         self.heading = msg.time_increment  # 로봇의 방향 (radians)
-        # print(self.pose_x, self.pose_y)
+
+        # print('현 위치: ', self.pose_x, self.pose_y)
+
         self.map_pose_x = (self.pose_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0]/2) / params_map['MAP_RESOLUTION']
         self.map_pose_y = (self.pose_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1]/2) / params_map['MAP_RESOLUTION']
         #print(f'현 위치: {self.map_pose_x, self.map_pose_y} ')

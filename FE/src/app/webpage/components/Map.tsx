@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { mqttClient } from "@/lib/mqttClient";
 import OrderButton from "./OrderButton";
@@ -27,43 +27,54 @@ export default function Map({ onOrderSuccess }: { onOrderSuccess: () => void }) 
   const [statuses, setStatuses] = useState<Record<number, InProgress>>({});
   const [mapImage, setMapImage] = useState<string | null>(null);
   const [robot1Position, setRobot1Position] = useState<{ x: number; y: number } | null>(null);
+  const [mapParams, setMapParams] = useState<{ MAP_RESOLUTION: number; MAP_SIZE: number[] } | null>(null);
 
-  const fetchStatuses = async () => {
-    const newStatuses: Record<number, InProgress> = {};
-    for (let i = 1; i <= 3; i++) {
-      try {
-        const res = await fetch(`https://j12e103.p.ssafy.io/api/equipment/order-inprogress/robot${i}`);
-        if (!res.ok) throw new Error("API 실패");
-        const data = await res.json();
-        newStatuses[i] = data;
-      } catch (err) {
-        console.error(`로봇 ${i} 상태 가져오기 실패`, err);
-      }
-    }
-    setStatuses(newStatuses);
-  };
+  const mapWidthPx = useMemo(() => {
+    return mapParams ? mapParams.MAP_SIZE[0] / mapParams.MAP_RESOLUTION : 1024;
+  }, [mapParams]);
+
+  const mapHeightPx = useMemo(() => {
+    return mapParams ? mapParams.MAP_SIZE[1] / mapParams.MAP_RESOLUTION : 1024;
+  }, [mapParams]);
 
   useEffect(() => {
+    const fetchStatuses = async () => {
+      const newStatuses: Record<number, InProgress> = {};
+      await Promise.all([1, 2, 3].map(async (i) => {
+        try {
+          const res = await fetch(`https://j12e103.p.ssafy.io/api/equipment/order-inprogress/robot${i}`);
+          if (!res.ok) throw new Error("API 실패");
+          const data = await res.json();
+          newStatuses[i] = data;
+        } catch (err) {
+          console.error(`로봇 ${i} 상태 가져오기 실패`, err);
+        }
+      }));
+      setStatuses(newStatuses);
+    };
+
     fetchStatuses();
   }, []);
 
   useEffect(() => {
     const handleMapMessage = (topic: string, message: Buffer) => {
-      if (topic === "map/data") {
-        try {
+      try {
+        if (topic === "map/data") {
           const parsed = JSON.parse(message.toString());
-          const base64 = parsed.image;
-          setMapImage(`data:image/png;base64,${base64}`);
-        } catch (err) {
-          console.error("❌ 맵 데이터 파싱 오류:", err);
+          if (parsed.image) setMapImage(`data:image/png;base64,${parsed.image}`);
+          if (parsed.params) setMapParams(parsed.params);
         }
-      }
 
-      if (topic === "robot/map_position") {
-        const [x, y] = message.toString().split(",").map(Number);
-        if (!isNaN(x) && !isNaN(y)) {
-          setRobot1Position({ x, y });
+        if (topic === "robot/map_position") {
+          const [xStr, yStr] = message.toString().split(",");
+          const x = parseFloat(xStr);
+          const y = parseFloat(yStr);
+          if (!isNaN(x) && !isNaN(y)) {
+            setRobot1Position({ x, y });
+          }
         }
+      } catch (err) {
+        console.error("❌ MQTT 메시지 파싱 오류:", err);
       }
     };
 
@@ -78,9 +89,9 @@ export default function Map({ onOrderSuccess }: { onOrderSuccess: () => void }) 
     };
   }, []);
 
-  const positions: Position[] = [
-    { id: 2, x: 71, y: 67 },
-    { id: 3, x: 79, y: 67 },
+  const staticPositions: Position[] = [
+    { id: 2, x: 84, y: 56 },
+    { id: 3, x: 93, y: 56 },
   ];
 
   return (
@@ -91,102 +102,100 @@ export default function Map({ onOrderSuccess }: { onOrderSuccess: () => void }) 
       </div>
 
       <div className="flex-grow flex items-center justify-center">
-        <div className="relative w-full max-w-[550px] aspect-square rounded-lg border border-gray-300 bg-gray-100 overflow-hidden">
+        <div className="relative w-full max-w-[550px] aspect-square rounded-lg border border-gray-300 bg-gray-100">
           {mapImage ? (
             <img src={mapImage} alt="Map" className="absolute inset-0 object-contain w-full h-full" />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-3xl">
               🕓 지도를 불러오는 중
-              <span className="ml-1">
-                              <DotAnimation />
-                            </span>
+              <span className="ml-1"><DotAnimation /></span>
             </div>
           )}
 
-          {/* ✅ 로봇1 마커 + 툴팁 */}
+          {/* ✅ 로봇1 마커 */}
           {robot1Position && (
-            <div
-              className="absolute z-20 cursor-pointer-custom"
-              style={{
-                left: `${(robot1Position.x / 1024) * 100}%`,
-                top: `${(robot1Position.y / 1024) * 100}%`,
-                transform: "translate(-50%, -50%)",
-              }}
-              onMouseEnter={() => setHoveredId(1)}
-              onMouseLeave={() => setHoveredId(null)}
+            <RobotMarker
+              id={1}
+              x={(robot1Position.x / mapWidthPx) * 100}
+              y={(robot1Position.y / mapHeightPx) * 100}
+              hoveredId={hoveredId}
+              setHoveredId={setHoveredId}
+              status={statuses[1]}
               onClick={() => router.push("/webpage/bot1")}
-            >
-              <div className="relative flex flex-col items-center">
-                {/* 툴팁 */}
-                <AnimatePresence>
-                  {hoveredId === 1 && (
-                    <motion.div
-                      className="absolute -top-20 whitespace-nowrap bg-white border border-gray-300 px-3 py-2 rounded-lg text-sm shadow-md z-30"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <div className="font-semibold text-lg flex items-center gap-1">
-                        🤖 <span>로봇 1</span>
-                      </div>
-                      <div className="text-lg text-gray-500">
-                        {statuses[1]?.todo?.includes("충전") || statuses[1]?.todo?.includes("수리")
-                          ? statuses[1]?.todo
-                          : `${statuses[1]?.todo ?? "로딩"}하는 중...`}
-                      </div>
-                      <div className="absolute left-1/2 -bottom-2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-white" />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* 마커 */}
-                <div className="w-5 h-5 bg-red-500 rounded-full border-2 border-white shadow-md" />
-              </div>
-            </div>
+            />
           )}
 
-          {/* ✅ 로봇 2, 3 마커 */}
-          {positions.map((pos) => (
-            <div
+          {/* ✅ 로봇 2~3 마커 (고정 위치) */}
+          {staticPositions.map((pos) => (
+            <RobotMarker
               key={pos.id}
-              className="absolute cursor-pointer-custom z-20"
-              style={{
-                left: `${pos.x}%`,
-                top: `${pos.y}%`,
-                transform: "translate(-50%, -50%)",
-              }}
-              onMouseEnter={() => setHoveredId(pos.id)}
-              onMouseLeave={() => setHoveredId(null)}
+              id={pos.id}
+              x={pos.x}
+              y={pos.y}
+              hoveredId={hoveredId}
+              setHoveredId={setHoveredId}
+              status={statuses[pos.id]}
               onClick={() => router.push(`/webpage/bot${pos.id}`)}
-            >
-              <div className="relative flex flex-col items-center">
-                <AnimatePresence>
-                  {hoveredId === pos.id && (
-                    <motion.div
-                      className="absolute -top-20 whitespace-nowrap bg-white border border-gray-300 px-3 py-2 rounded-lg text-sm shadow-md z-30"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <div className="font-semibold text-lg flex items-center gap-1">
-                        🤖 <span>로봇 {pos.id}</span>
-                      </div>
-                      <div className="text-lg text-gray-500">
-                        {statuses[pos.id]?.todo?.includes("충전") || statuses[pos.id]?.todo?.includes("수리")
-                          ? statuses[pos.id]?.todo
-                          : `${statuses[pos.id]?.todo ?? "로딩"}하는 중...`}
-                      </div>
-                      <div className="absolute left-1/2 -bottom-2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-white" />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-                <div className="w-5 h-5 bg-red-500 rounded-full border-2 border-white shadow-md" />
-              </div>
-            </div>
+            />
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function RobotMarker({
+  id,
+  x,
+  y,
+  hoveredId,
+  setHoveredId,
+  status,
+  onClick,
+}: {
+  id: number;
+  x: number;
+  y: number;
+  hoveredId: number | null;
+  setHoveredId: (id: number | null) => void;
+  status?: InProgress;
+  onClick: () => void;
+}) {
+  return (
+    <div
+      className="absolute z-20 cursor-pointer-custom"
+      style={{
+        left: `${x}%`,
+        top: `${y}%`,
+        transform: "translate(-50%, -50%)",
+      }}
+      onMouseEnter={() => setHoveredId(id)}
+      onMouseLeave={() => setHoveredId(null)}
+      onClick={onClick}
+    >
+      <div className="relative flex flex-col items-center">
+        <AnimatePresence>
+          {hoveredId === id && (
+            <motion.div
+              className="absolute -top-20 whitespace-nowrap bg-white border border-gray-300 px-3 py-2 rounded-lg text-sm shadow-md z-30"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="font-semibold text-lg flex items-center gap-1">
+                🤖 <span>로봇 {id}</span>
+              </div>
+              <div className="text-lg text-gray-500">
+                {status?.todo?.includes("충전") || status?.todo?.includes("수리")
+                  ? status.todo
+                  : `${status?.todo ?? "로딩"}하는 중...`}
+              </div>
+              <div className="absolute left-1/2 -bottom-2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-white" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <div className="w-5 h-5 bg-red-500 rounded-full border-2 border-white shadow-md" />
       </div>
     </div>
   );
