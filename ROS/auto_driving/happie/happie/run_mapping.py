@@ -188,6 +188,8 @@ class Mapping:
 
 
     def show_pose_and_points(self, pose, laser_global):
+        # run_mapping 실행 시, 성능이슈로 시각화x
+        return
         tmp_map = self.map.astype(np.float32)
         map_bgr = cv2.cvtColor(tmp_map, cv2.COLOR_GRAY2BGR)
 
