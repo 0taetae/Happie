@@ -39,7 +39,12 @@ public class MqttPublisher {
     public void sendEquipment(int id, int equip, double x, double y){
         System.out.println("id" + id + ", no: "+ equip + ", x: "+ x + ", y: " + y);
 
-        try{
+        try {
+            if (!mqttClient.isConnected()) {
+                System.out.println("MQTT 연결이 끊겨있어 재연결 시도 중...");
+                mqttClient.reconnect(); // 또는 mqttClient.connect(options); 다시 설정해도 됨
+            }
+
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("id", id);
             jsonObject.put("no", equip);
@@ -55,6 +60,7 @@ public class MqttPublisher {
             e.printStackTrace();
         }
     }
+
 
     public void sendNavComplete(String where, String status, String todo){
         try{
