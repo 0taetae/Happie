@@ -1,6 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
+from std_msgs.msg import Int32
 from ssafy_msgs.msg import HandControl
 import torch
 import cv2
@@ -10,7 +11,7 @@ import pymysql
 import re
 import os
 from . import config  # DB 설정 불러오기
-from .config import YOLOV5_DIR, MODEL_PATH
+
 class EquipmentDetectionNode(Node):
     def __init__(self):
         super().__init__('equipment_detection_node')
@@ -28,8 +29,15 @@ class EquipmentDetectionNode(Node):
             10
         )
 
-        yolov5_dir = YOLOV5_DIR
-        model_path = MODEL_PATH
+        self.equipment_detected_pub = self.create_publisher(
+            Int32,
+            '/equipment_detected',
+            10
+        )
+
+        print(config.YOLOV5_DIR)
+        yolov5_dir = config.YOLOV5_DIR
+        model_path = config.MODEL_PATH
 
         self.model = torch.hub.load(
             yolov5_dir,
@@ -80,7 +88,8 @@ class EquipmentDetectionNode(Node):
                             self.current_order_id = order_id
                             self.current_destination = place
                             self.destination_coords = (x, y)
-                            self.get_logger().info(f"[DB 명령 인식] id={order_id}, 대상: {self.current_target}, 목적지: {place}, 좌표: ({x}, {y})")
+                            # self.get_logger().info(f"[DB 명령 인식] id={order_id}, 대상: {self.current_target}, 목적지: {place}, 좌표: ({x}, {y})")
+
             conn.close()
         except Exception as e:
             self.get_logger().error(f"[DB 에러] {e}")
@@ -112,6 +121,7 @@ class EquipmentDetectionNode(Node):
                     self.last_command_time = time.time()
                     self.update_order_state_to_in_progress(self.current_order_id)
 
+                print('감지됨')
         cv2.imshow("Equipment Detection", frame)
         cv2.waitKey(1)
 
