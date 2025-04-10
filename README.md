@@ -39,7 +39,7 @@
 
 2D LiDAR 센서를 활용해 실내 물체까지의 거리 정보를 스캔한다. 이에 SLAM 알고리즘을 적용하여 실시간 지도 생성을 수행한다.
 
-![매핑_10배속__online-video-cutter.com_](/uploads/331938db0f3dd298dd5593f16e429278/매핑_10배속__online-video-cutter.com_.gif) {width=600}
+![매핑_10배속__online-video-cutter.com_](/uploads/331938db0f3dd298dd5593f16e429278/매핑_10배속__online-video-cutter.com_.gif){width=600}
 
 
 ### A* 알고리즘 기반 경로 계획
@@ -52,9 +52,9 @@ A* 알고리즘이란 시작 지점에서 목표 지점까지의 최적 경로�
 
 시뮬레이터와 버전 문제와 클래스 단위의 분류가 가능한 특징을 활용하고자 YOLOv5를 사용하여 데이터셋을 학습한다. 정확도를 높이기 위해 데이터의 다양성과 수량을 증가한다. 이러한 데이터 학습은 기자재 관리와 낙상 감지 기능에 활용된다.
 
-![_](/uploads/7bbdb75f4995bf709322c1a94ef37db6/_.png) {width=800}
+![_](/uploads/7bbdb75f4995bf709322c1a94ef37db6/_.png){width=800}
 
-![2](/uploads/b1bc6aefc7b818f9787885313fd334ec/2.png) {width=800}
+![2](/uploads/b1bc6aefc7b818f9787885313fd334ec/2.png){width=800}
 
 ### RAG 기반 LangChain 및 LLM 활용
 
