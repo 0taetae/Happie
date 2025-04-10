@@ -27,7 +27,7 @@
 
 #### 관리자 시스템 화면
 
-![패트롤_웹__online-video-cutter.com_](/uploads/c0bf0d45fcc2d7b0333ae300e96a13e5/패트롤_웹__online-video-cutter.com_.gif)
+![패트롤_웹__online-video-cutter.com_](/uploads/c0bf0d45fcc2d7b0333ae300e96a13e5/패트롤_웹__online-video-cutter.com_.gif){width=900}
 
 #### 시뮬레이터 화면
 
