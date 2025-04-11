@@ -11,14 +11,19 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.69.0",
+    "canvas-confetti": "^1.9.3",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.6.2",
     "mqtt": "^5.10.4",
     "next": "15.2.3",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "sweetalert2": "^11.17.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
