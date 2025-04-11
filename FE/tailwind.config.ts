@@ -2,10 +2,20 @@
 module.exports = {
   content: [
     "./src/**/*.{js,ts,jsx,tsx}",
-    "./src/app/globals.css" // Tailwind가 CSS 파일도 감지하도록 추가
+    "./src/app/globals.css"
+  ],
+  safelist: [
+    "cursor-default-custom",
+    "cursor-pointer-custom"
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        godo: ["'Godo'", "sans-serif"],
+        bmjua: ["'BMJUA'", "sans-serif"],
+
+      },
+    },
   },
   plugins: [],
 };

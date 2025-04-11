@@ -5,7 +5,7 @@ services:
     build:
       context: ./FE
       dockerfile: Dockerfile
-    container_name: my-frontend-container-v1
+    container_name: happie-frontend-v1
     ports:
       - "80:80"
       - "443:443"
@@ -14,6 +14,53 @@ services:
     networks:
       - frontend_network
 
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: mosquitto
+    ports:
+      - "1883:1883"  # MQTT 기본 포트
+      - "8083:8083"  # WebSocket 포트
+    volumes:
+      - /home/ubuntu/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf  # 호스트의 mosquitto.conf를 컨테이너에 마운트
+    networks:
+      - frontend_network
+
+  backend:
+    build:
+      context: ./BE
+      dockerfile: Dockerfile
+    container_name: happie-backend-v1
+    ports:
+      - "8085:8080"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - frontend_network
+    environment:
+      - MYSQL_URL=${MYSQL_URL}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MQTT_USERNAME=${MQTT_USERNAME}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
+
+#  mysql:
+#    image: mysql:8.0
+#    container_name: mysql-container
+#    environment:
+#      MYSQL_ROOT_PASSWORD: ${MYSQL_USER_PASSWORD}
+#      MYSQL_DATABASE: happiedb
+#      MYSQL_USER: mysql_happie_user
+#      MYSQL_PASSWORD: ${MYSQL_USER_PASSWORD}
+#    ports:
+#      - "3306:3306"
+#    volumes:
+#      - mysql-data:/var/lib/mysql
+#    networks:
+#      - frontend_network
+
+#volumes:
+#  mysql-data:
+#    driver: local
 
 networks:
   frontend_network:
