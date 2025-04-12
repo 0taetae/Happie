@@ -117,6 +117,8 @@ class a_star(Node):
         # 기자재 청소 명령을 받을 mqtt_topic
         self.mqtt_clean_topic = "robot/clean"
 
+        # 테스트용 mqtt_topic
+        self.mqtt_test_topic = "robot/test"
 
         self.mqtt_client.on_connect = self.on_connect
         self.mqtt_client.on_message = self.on_message
@@ -169,6 +171,8 @@ class a_star(Node):
             client.subscribe(self.mqtt_patrol_topic)
             client.subscribe(self.mqtt_equipment_topic)
             client.subscribe(self.mqtt_clean_topic)
+            # 테스트용 토픽 구독
+            client.subscribe(self.mqtt_test_topic)
         else:
             print(f"❌ MQTT 연결 실패 (코드: {rc})")
 
@@ -186,7 +190,9 @@ class a_star(Node):
             self.order_id_pub.publish(id_msg)
             print(f"🚀 /order_id 퍼블리시 완료: {self.order_id}")
 
-            if topic == 'robot/patrol':
+            # 테스트용 토픽으로 개발 중, 잠시 변경경
+            if topic == 'robot/test':
+            # if topic == 'robot/patrol':
             # 전체순찰의 경우 
                 print("📌 전체 순찰 명령")
                 #print(payload)
@@ -204,56 +210,58 @@ class a_star(Node):
                 print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
                 self.path_finding(goal_map_x, goal_map_y)
 
-            # 목적지로 이동의 경우 
-            elif topic == 'robot/destination':
-                goal_x = float(data["x"])
-                goal_y = float(data["y"])
-                print("goal")
-                print(f"🎯 목표 위치 수신: x={goal_x}, y={goal_y} (ID: {self.order_id})")
-                print("📌 목적지 이동 명령")
-                self.is_patrol_command = False
-                # MQTT에서 받은 좌표를 맵 좌표계로 변환
-                goal_map_x = (goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION']
-                goal_map_y = (goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1] / 2) / params_map['MAP_RESOLUTION']
+            return
 
-                goal_map_x = int(goal_map_x) 
-                goal_map_y = int(goal_map_y)
+            # # 목적지로 이동의 경우 
+            # elif topic == 'robot/destination':
+            #     goal_x = float(data["x"])
+            #     goal_y = float(data["y"])
+            #     print("goal")
+            #     print(f"🎯 목표 위치 수신: x={goal_x}, y={goal_y} (ID: {self.order_id})")
+            #     print("📌 목적지 이동 명령")
+            #     self.is_patrol_command = False
+            #     # MQTT에서 받은 좌표를 맵 좌표계로 변환
+            #     goal_map_x = (goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION']
+            #     goal_map_y = (goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1] / 2) / params_map['MAP_RESOLUTION']
 
-                print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
-                self.path_finding(goal_map_x, goal_map_y)
+            #     goal_map_x = int(goal_map_x) 
+            #     goal_map_y = int(goal_map_y)
 
-            elif topic == 'robot/equipment':
-                goal_x = float(data["x"])
-                goal_y = float(data["y"])
-                print("goal")
-                print(f"🎯 목표 위치 수신: x={goal_x}, y={goal_y} (ID: {self.order_id})")
-                print("📌 목적지 이동 명령; robot/equipment")
-                self.is_patrol_command = False
-                # MQTT에서 받은 좌표를 맵 좌표계로 변환
-                goal_map_x = (goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION']
-                goal_map_y = (goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1] / 2) / params_map['MAP_RESOLUTION']
+            #     print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
+            #     self.path_finding(goal_map_x, goal_map_y)
 
-                goal_map_x = int(goal_map_x) 
-                goal_map_y = int(goal_map_y)
+            # elif topic == 'robot/equipment':
+            #     goal_x = float(data["x"])
+            #     goal_y = float(data["y"])
+            #     print("goal")
+            #     print(f"🎯 목표 위치 수신: x={goal_x}, y={goal_y} (ID: {self.order_id})")
+            #     print("📌 목적지 이동 명령; robot/equipment")
+            #     self.is_patrol_command = False
+            #     # MQTT에서 받은 좌표를 맵 좌표계로 변환
+            #     goal_map_x = (goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION']
+            #     goal_map_y = (goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1] / 2) / params_map['MAP_RESOLUTION']
 
-                print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
-                self.path_finding(goal_map_x, goal_map_y)
-            elif topic == 'robot/clean':
-                # 청소 명령을 받은 경우
-                self.is_clean_patrol_command = True
-                self.priority_work = 'clean'
-                goal_x, goal_y = clean_patrol_path[self.clean_patrol_idx]
-                # 좌표를 맵 좌표계로 변환
-                goal_map_x = int((goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION'])
-                goal_map_y = int((goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1] / 2) / params_map['MAP_RESOLUTION'])
-                print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
-                self.path_finding(goal_map_x, goal_map_y)
-                priority_msg = String()
-                priority_msg.data = self.priority_work
-                self.priority_work_pub.publish(priority_msg)
-                print(f"🚀 /priority_work 퍼블리시 완료: {self.priority_work}")
-            else:
-                pass
+            #     goal_map_x = int(goal_map_x) 
+            #     goal_map_y = int(goal_map_y)
+
+            #     print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
+            #     self.path_finding(goal_map_x, goal_map_y)
+            # elif topic == 'robot/clean':
+            #     # 청소 명령을 받은 경우
+            #     self.is_clean_patrol_command = True
+            #     self.priority_work = 'clean'
+            #     goal_x, goal_y = clean_patrol_path[self.clean_patrol_idx]
+            #     # 좌표를 맵 좌표계로 변환
+            #     goal_map_x = int((goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION'])
+            #     goal_map_y = int((goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1] / 2) / params_map['MAP_RESOLUTION'])
+            #     print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
+            #     self.path_finding(goal_map_x, goal_map_y)
+            #     priority_msg = String()
+            #     priority_msg.data = self.priority_work
+            #     self.priority_work_pub.publish(priority_msg)
+            #     print(f"🚀 /priority_work 퍼블리시 완료: {self.priority_work}")
+            # else:
+            #     pass
 
         except Exception as e:
             print(f"❌ 목표 좌표 처리 오류: {e}")

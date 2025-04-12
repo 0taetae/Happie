@@ -42,7 +42,7 @@ class Controller(Node):
         self.battery = 1000.0
 
         # 이동 타이머 설정
-        self.timer = self.create_timer(0.02, self.move_to_destination)
+        self.timer = self.create_timer(0.01, self.move_to_destination)
 
         self.is_to_move = False
         self.fall_detected = False
@@ -54,6 +54,7 @@ class Controller(Node):
         self.current_goal_idx = 0
 
         # 우선 명령 변수
+        self.correct_Gaussian_error = {'status': False, 'target_heading': 0}
         self.is_priority_work = False
         self.type_priority_work = ''
 
@@ -115,10 +116,15 @@ class Controller(Node):
         # LaserScan 데이터를 받아 현재 위치와 heading 업데이트 
         self.pose_x = msg.range_min
         self.pose_y = msg.scan_time 
+
         self.ranges = np.array(msg.ranges)
         # print([round(val, 2) for val in msg.ranges])
 
         self.heading = (msg.time_increment + 360) % 360
+
+        print(self.pose_x, self.pose_y, self.heading)
+
+        return 
         # 일정 시간 지나기 전, 다시 장애물 감지 하지않음.
         if self.object_detected_cnt >= 0: return
 
@@ -133,6 +139,7 @@ class Controller(Node):
 
         if pivot < 0.3: 
             print(f'장애물 감지됨, 재 감지까지 남은시간: {self.object_detected_cnt}')
+            return
             if self.object_detected == False:
                 self.object_detected = True
                 # if front == pivot: print('정면 장애물 감지')
@@ -148,9 +155,9 @@ class Controller(Node):
 
 
     def order_id_callback(self, msg):
-        self.order_id = msg.data
-        print(f"명령 ID 수신: {self.order_id}")
-
+        # self.order_id = msg.data
+        # print(f"명령 ID 수신: {self.order_id}")
+        return
 
     def priority_work_callback(self, msg):
         self.type_priority_work = msg.data
@@ -213,7 +220,7 @@ class Controller(Node):
 
     def set_new_goal(self):
         self.turtlebot_stop()
-        print(self.current_goal_idx, ' 인덱스')
+        # print(self.current_goal_idx, ' 인덱스')
 
         # global_path가 비어 있지 않을 때만 진행
         if self.current_goal_idx < len(self.global_path):
@@ -229,7 +236,7 @@ class Controller(Node):
             # 가장 가까운 지점으로 목표 설정
             self.goal.x, self.goal.y = self.global_path[closest_idx]
             self.current_goal_idx = closest_idx
-            print(f"새 목표 지점 설정: {self.goal.x:.2f}, {self.goal.y:.2f} (인덱스: {self.current_goal_idx})")
+            # print(f"새 목표 지점 설정: {self.goal.x:.2f}, {self.goal.y:.2f} (인덱스: {self.current_goal_idx})")
         else:
             self.turtlebot_stop()
             self.get_logger().info("finish =========")
@@ -254,6 +261,28 @@ class Controller(Node):
     def move_to_destination(self):
         # print(f'배터리 잔량 {round(self.battery, 2)}%')
         self.object_detected_cnt -= 0.2
+
+        # heading 오차 보정
+        if self.correct_Gaussian_error['status'] == True:
+            vel_msg = Twist()
+            angle_diff = abs(self.correct_Gaussian_error['target_heading'] - self.heading)
+            print('각도 보정중 =====')
+            print(self.correct_Gaussian_error['target_heading'], self.heading)
+            if angle_diff < 1:
+                print('각도 차이 1도 미만')
+                vel_msg.linear.x = 0.2
+                vel_msg.angular.z = 0.0  # 직진 시 회전 없음
+                # heading 오차 보정 상태 해제
+                self.correct_Gaussian_error['status'] = False
+
+            else:
+                # print(f"목표각도 {round(self.correct_Gaussian_error['target_heading'], 2)} 현재각도 {round(self.heading, 2)}")
+                vel_msg.angular.z = 0.1*self.correct_Gaussian_error['weight']
+                vel_msg.linear.x = 0.0  # 회전 중 직진 금지
+
+            self.pub.publish(vel_msg)
+            return
+        
         # 우선순위 작업이 없는 경우
         if self.is_priority_work == False:
             # if self.path_requested == False:
@@ -286,7 +315,7 @@ class Controller(Node):
                     # 목표 지점 도착 여부 확인
                     if distance < 0.1:
                         # self.get_logger().info(f"목표 지점 {self.current_goal_idx} 도착. 잠시 정지합니다.")
-                        print(f"목표 지점 {self.current_goal_idx} 도착. 잠시 정지합니다.")
+                        # print(f"목표 지점 {self.current_goal_idx} 도착. 잠시 정지합니다.")
                         # 목표 지점 도착 후 1초 정지
                         self.turtlebot_stop()
                         self.current_goal_idx += 1
@@ -310,21 +339,33 @@ class Controller(Node):
                         if self.heading - 180.0 <= target_heading <= self.heading: weight = 1
                         else: weight = -1
 
-                    angle_diff = abs(self.heading - target_heading)
-                    if abs(target_heading -self.heading) < abs(self.heading - target_heading): 
-                        angle_diff = abs(target_heading -self.heading)
+                    Ang_1, Ang_2 = self.heading, target_heading
+                    if Ang_1 < Ang_2: Ang_1, Ang_2 = Ang_2, Ang_1
 
-                    # print('목표 heading:', target_heading, '현재 heading:', self.heading)
+                    angle_diff = abs(Ang_1 - Ang_2)
+                    if abs(Ang_1 - (Ang_2 + 360.0)) < angle_diff:
+                        angle_diff = abs(Ang_1 - (Ang_2 + 360.0))
+                    # angle_diff = abs(self.heading - target_heading)
+                    # if abs(target_heading -self.heading) < abs(self.heading - target_heading): 
+                    #     angle_diff = abs(target_heading -self.heading)
+
+                    print('목표 heading:', target_heading, '현재 heading:', self.heading)
+                    print('각 차이', angle_diff)
                     # 🔹 heading이 목표와 10도 이상 차이나면 회전
-                    if angle_diff > 10:
+                    if angle_diff > 20.0:
 
-                        # # 회전 속도를 angle_diff에 비례하도록 조정 (단, 최대 속도 제한)
-                        if angle_diff <= 20.0:
-                            vel_msg.angular.z = 0.08*weight
+                        # 회전 속도를 angle_diff에 비례하도록 조정 (단, 최대 속도 제한)
+                        if angle_diff <= 25.0:
+                            vel_msg.angular.z = 0.1*weight
+                            print('각도 미세조정 시작 ==========')
+                            # 각도 미세조정 시작
+                            self.correct_Gaussian_error['status'] = True
+                            self.correct_Gaussian_error['target_heading'] = target_heading
+                            self.correct_Gaussian_error['weight'] = weight
                         elif angle_diff <= 30.0:
-                            vel_msg.angular.z = 0.08*weight
+                            vel_msg.angular.z = 0.1*weight
                         elif angle_diff <= 60.0:
-                            vel_msg.angular.z = max(0.1, 0.01*(angle_diff/4))*weight
+                            vel_msg.angular.z = min(0.1, 0.01*(angle_diff/4))*weight
                         elif angle_diff <= 90.0:
                             vel_msg.angular.z = max(0.15, 0.01*(angle_diff/5))*weight
                         elif angle_diff <= 120.0:
