@@ -26,7 +26,7 @@ class EquipmentDetectionNode(Node):
     def __init__(self):
         super().__init__('equipment_detection_node')
 
-        # ROS Subscriber & Publisher
+         # ROS Subscriber & Publisher
         self.subscriber = self.create_subscription(
             CompressedImage,
             '/image_jpeg/compressed',
@@ -44,6 +44,9 @@ class EquipmentDetectionNode(Node):
             10
         )
 
+        # 시간
+        self.last_infer_time = time.time()
+
         # YOLOv5 모델 로드
         yolov5_dir = config.YOLOV5_DIR
         model_path = config.MODEL_PATH
@@ -58,11 +61,16 @@ class EquipmentDetectionNode(Node):
         )
         self.model.conf = 0.5
 
+        # 추론모드
+        self.model.eval()
+
         # 상태 변수
         self.last_command_time = 0
         self.command_interval = 5.0
-        self.current_target = "wheelchair"
-        self.current_order_id = 1
+        # self.current_target = "wheelchair"        
+        # self.current_order_id = 1
+        self.current_target = "intravenous"        
+        self.current_order_id = 2
         self.current_destination = None
         self.destination_coords = None
         self.target_detected = False  # 기자재 감지 여부
@@ -118,6 +126,10 @@ class EquipmentDetectionNode(Node):
             self.get_logger().error(f"[DB 에러] {e}")
 
     def image_callback(self, msg):
+        if time.time() - self.last_infer_time < 1:  # 0.5초마다만 실행
+            return
+        self.last_infer_time = time.time()
+
         if not self.current_target:
             return
 
@@ -130,6 +142,7 @@ class EquipmentDetectionNode(Node):
         frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
         results = self.model(frame)
 
+       # 하나만 처리
         for *xyxy, conf, cls in results.xyxy[0]:
             label = self.model.names[int(cls)]
 
@@ -142,8 +155,8 @@ class EquipmentDetectionNode(Node):
                 cv2.putText(frame, f'{label.upper()} {conf:.2f}', (x1, y1 - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
-                self.target_detected = True  # ✅ 감지만 하고 집진 않음
-            self.is_processing = False
+                self.target_detected = True
+                break  # ✅ 첫 번째만 처리 후 break
 
         self.is_processing = False
         cv2.imshow("Equipment Detection", frame)
