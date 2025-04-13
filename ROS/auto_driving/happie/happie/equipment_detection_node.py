@@ -61,15 +61,15 @@ class EquipmentDetectionNode(Node):
         # 상태 변수
         self.last_command_time = 0
         self.command_interval = 5.0
-        self.current_target = None
-        self.current_order_id = None
+        self.current_target = "wheelchair"
+        self.current_order_id = 1
         self.current_destination = None
         self.destination_coords = None
         self.target_detected = False  # 기자재 감지 여부
         self.is_processing = False
 
         # DB 주문 확인 타이머
-        self.create_timer(5.0, self.check_orders_from_db)
+        # self.create_timer(5.0, self.check_orders_from_db)
 
         # MQTT 설정
         self.mqtt_client = mqtt.Client()
@@ -146,8 +146,8 @@ class EquipmentDetectionNode(Node):
             self.is_processing = False
 
         self.is_processing = False
-        # cv2.imshow("Equipment Detection", frame)
-        # cv2.waitKey(1)
+        cv2.imshow("Equipment Detection", frame)
+        cv2.waitKey(1)
 
 
     def send_hand_control_pickup(self):
