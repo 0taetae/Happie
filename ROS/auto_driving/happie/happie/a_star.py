@@ -266,6 +266,8 @@ class a_star(Node):
 
     # 최단 경로 재계산 요청을 처리
     def path_request_callback(self, msg):
+        print('경로요청 명령 받음')
+        print(msg)
         try:
             new_goal_x = msg.x
             new_goal_y = msg.y
