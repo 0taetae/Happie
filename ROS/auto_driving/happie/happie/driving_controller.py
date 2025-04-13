@@ -36,8 +36,8 @@ class Controller(Node):
         self.cum_pose = []
         self.prior_pose = 0.0
         self.present_pose = 0.0
-        # self.battery = 1000.0
-        self.battery = 13.0
+        self.battery = 100.0
+        # self.battery = 30.0
         self.is_going_charging_station = False
 
         # 이동 타이머 설정
@@ -97,8 +97,7 @@ class Controller(Node):
     def scan_callback(self, msg):
         # 충전 상태관리
         if math.hypot(-42.44 - self.pose_x, -45.6 - self.pose_y) < 0.1:
-            self.is_to_move = False
-            self.is_charging = True
+            self.is_charging = True if self.battery < 95.0 else False
             if self.is_going_charging_station == True: 
                 self.is_going_charging_station = False
         else:
@@ -129,7 +128,7 @@ class Controller(Node):
 
         self.heading = (msg.time_increment + 360) % 360
 
-        # print(self.pose_x, self.pose_y, self.heading)
+        print(self.pose_x, self.pose_y, self.heading)
 
         # 일정 시간 지나기 전, 다시 장애물 감지 하지않음.
         if self.object_detected_cnt >= 0: return
@@ -268,8 +267,9 @@ class Controller(Node):
             self.order_id = None
 
     def move_to_destination(self):
-        # print("self.path_requested, self.is_charging, self.is_going_charging_station, self.is_charging")
-        # print(self.path_requested, self.is_charging, self.is_going_charging_station, self.is_charging)
+        # print(self.is_to_move)
+        # print("self.path_requested, self.is_charging, self.is_going_charging_station")
+        # print(self.path_requested, self.is_charging, self.is_going_charging_station)
         # print(f'배터리 잔량 {round(self.battery, 2)}%')
         self.object_detected_cnt -= 0.2
 
@@ -313,13 +313,11 @@ class Controller(Node):
                 return
             
             if self.is_charging:
-                print('배터리 충전중')
                 # 배터리 충전
                 self.battery += 1.0
                 self.battery = min(self.battery, 100.0)
                 #  배터리가 충전 중이면서, 배터리 잔량이 50% 미만인 경우, 다른 명령 수행 불가능
-                if self.battery < 50.0:
-                    return
+                return
                     
             vel_msg = Twist()
             if self.is_to_move == False: 
@@ -346,11 +344,7 @@ class Controller(Node):
                     # 목표 heading 계산
                     target_heading = math.degrees(math.atan2(-(self.goal.x - self.pose_x), self.goal.y - self.pose_y))
                     target_heading = (target_heading + 360) % 360  # 0~360도로 변환
-                    # print(f'target_heading: {target_heading}')
-                    # print(f'현 위치: {round(self.pose_x, 2)} {round(self.pose_y, 2)}')
-                    # print(f'현 위치: {round(self.goal.x, 2)} {round(self.goal.y, 2)}')
 
-                    # angle_diff = (target_heading - self.heading + 540) % 360 - 180
                     # 현재 heading과 목표 heading 비교 (최단 회전 경로 고려)
                     if 0.0 <= self.heading <= 180.0:
                         if self.heading <= target_heading <= self.heading + 180.0: weight = -1 
@@ -367,9 +361,6 @@ class Controller(Node):
                     if abs(Ang_1 - (Ang_2 + 360.0)) < angle_diff:
                         angle_diff = abs(Ang_1 - (Ang_2 + 360.0))
 
-
-                    # print('목표 heading:', target_heading, '현재 heading:', self.heading)
-                    # print('각 차이', angle_diff)
                     # 🔹 heading이 목표와 10도 이상 차이나면 회전
                     if angle_diff > 15.0:
 
@@ -398,7 +389,7 @@ class Controller(Node):
 
                     else:
                         vel_msg.linear.x = 0.2
-                        vel_msg.angular.z = 0.05 * weight * angle_diff / 10.0  # 직진 중 부드러운 조향
+                        vel_msg.angular.z = 0.1 * weight * angle_diff / 10.0  # 직진 중 부드러운 조향
                         # vel_msg.angular.z = 0.0  # 직진 시 회전 없음
 
             self.pub.publish(vel_msg)
