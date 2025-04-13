@@ -122,9 +122,8 @@ class Controller(Node):
 
         self.heading = (msg.time_increment + 360) % 360
 
-        print(self.pose_x, self.pose_y, self.heading)
+        # print(self.pose_x, self.pose_y, self.heading)
 
-        return 
         # 일정 시간 지나기 전, 다시 장애물 감지 하지않음.
         if self.object_detected_cnt >= 0: return
 
@@ -139,7 +138,7 @@ class Controller(Node):
 
         if pivot < 0.3: 
             print(f'장애물 감지됨, 재 감지까지 남은시간: {self.object_detected_cnt}')
-            return
+
             if self.object_detected == False:
                 self.object_detected = True
                 # if front == pivot: print('정면 장애물 감지')
@@ -207,7 +206,7 @@ class Controller(Node):
         elif type == 'new_goal':
             pass
         else:
-            print(f"📢 새로운 경로 요청! 목적지: ({self.global_path[-1][0]}, {self.global_path[-1][1]})")
+            # print(f"📢 새로운 경로 요청! 목적지: ({self.global_path[-1][0]}, {self.global_path[-1][1]})")
             path_request_msg.x = self.global_path[-1][0]
             path_request_msg.y = self.global_path[-1][1]
             path_request_msg.z = self.object_angle
@@ -265,20 +264,29 @@ class Controller(Node):
         # heading 오차 보정
         if self.correct_Gaussian_error['status'] == True:
             vel_msg = Twist()
-            angle_diff = abs(self.correct_Gaussian_error['target_heading'] - self.heading)
-            print('각도 보정중 =====')
-            print(self.correct_Gaussian_error['target_heading'], self.heading)
+            # 각도 차이 구하기 STEP 1
+            Ang_1, Ang_2 = self.heading, self.correct_Gaussian_error['target_heading']
+            if Ang_1 < Ang_2: Ang_1, Ang_2 = Ang_2, Ang_1
+            # 각도 차이 구하기 STEP 2
+            angle_diff = abs(Ang_1 - Ang_2)
+            if abs(Ang_1 - (Ang_2 + 360.0)) < angle_diff:
+                angle_diff = abs(Ang_1 - (Ang_2 + 360.0))
+            # print('각도 보정중 =====')
+            # print(self.correct_Gaussian_error['target_heading'], self.heading)
             if angle_diff < 1:
-                print('각도 차이 1도 미만')
+                # print('각도 차이 1도 미만')
                 vel_msg.linear.x = 0.2
                 vel_msg.angular.z = 0.0  # 직진 시 회전 없음
                 # heading 오차 보정 상태 해제
                 self.correct_Gaussian_error['status'] = False
 
             else:
-                # print(f"목표각도 {round(self.correct_Gaussian_error['target_heading'], 2)} 현재각도 {round(self.heading, 2)}")
-                vel_msg.angular.z = 0.1*self.correct_Gaussian_error['weight']
-                vel_msg.linear.x = 0.0  # 회전 중 직진 금지
+                if angle_diff < 15.0:
+                    vel_msg.angular.z = 0.1*self.correct_Gaussian_error['weight']
+                    vel_msg.linear.x = 0.0  # 회전 중 직진 금지
+                else:
+                    vel_msg.angular.z = 0.15*self.correct_Gaussian_error['weight']
+                    vel_msg.linear.x = 0.0  # 회전 중 직진 금지
 
             self.pub.publish(vel_msg)
             return
@@ -339,46 +347,47 @@ class Controller(Node):
                         if self.heading - 180.0 <= target_heading <= self.heading: weight = 1
                         else: weight = -1
 
+                    # 각도 차이 구하기
                     Ang_1, Ang_2 = self.heading, target_heading
                     if Ang_1 < Ang_2: Ang_1, Ang_2 = Ang_2, Ang_1
-
+                    # 각도 차이 구하기
                     angle_diff = abs(Ang_1 - Ang_2)
                     if abs(Ang_1 - (Ang_2 + 360.0)) < angle_diff:
                         angle_diff = abs(Ang_1 - (Ang_2 + 360.0))
-                    # angle_diff = abs(self.heading - target_heading)
-                    # if abs(target_heading -self.heading) < abs(self.heading - target_heading): 
-                    #     angle_diff = abs(target_heading -self.heading)
 
-                    print('목표 heading:', target_heading, '현재 heading:', self.heading)
-                    print('각 차이', angle_diff)
+
+                    # print('목표 heading:', target_heading, '현재 heading:', self.heading)
+                    # print('각 차이', angle_diff)
                     # 🔹 heading이 목표와 10도 이상 차이나면 회전
-                    if angle_diff > 20.0:
+                    if angle_diff > 15.0:
 
                         # 회전 속도를 angle_diff에 비례하도록 조정 (단, 최대 속도 제한)
-                        if angle_diff <= 25.0:
-                            vel_msg.angular.z = 0.1*weight
-                            print('각도 미세조정 시작 ==========')
+                        if angle_diff <= 30.0:
+                            vel_msg.angular.z = 0.15*weight
+                            # print('각도 미세조정 시작 ==========')
                             # 각도 미세조정 시작
                             self.correct_Gaussian_error['status'] = True
                             self.correct_Gaussian_error['target_heading'] = target_heading
                             self.correct_Gaussian_error['weight'] = weight
-                        elif angle_diff <= 30.0:
-                            vel_msg.angular.z = 0.1*weight
                         elif angle_diff <= 60.0:
-                            vel_msg.angular.z = min(0.1, 0.01*(angle_diff/4))*weight
+                            vel_msg.angular.z = 0.15*weight
+                            # vel_msg.angular.z = min(0.1, 0.01*(angle_diff/4))*weight
                         elif angle_diff <= 90.0:
-                            vel_msg.angular.z = max(0.15, 0.01*(angle_diff/5))*weight
+                            vel_msg.angular.z = 0.2*weight
+                            # vel_msg.angular.z = max(0.15, 0.01*(angle_diff/5))*weight
                         elif angle_diff <= 120.0:
-                            vel_msg.angular.z = max(0.18, 0.01*(angle_diff/6))*weight
-                        else:
                             vel_msg.angular.z = 0.25*weight
+                            # vel_msg.angular.z = max(0.18, 0.01*(angle_diff/6))*weight
+                        else:
+                            vel_msg.angular.z = 0.3*weight
                         vel_msg.linear.x = 0.0  # 회전 중 직진 금지
                 
                         # =======================================================================
 
                     else:
                         vel_msg.linear.x = 0.2
-                        vel_msg.angular.z = 0.0  # 직진 시 회전 없음
+                        vel_msg.angular.z = 0.05 * weight * angle_diff / 10.0  # 직진 중 부드러운 조향
+                        # vel_msg.angular.z = 0.0  # 직진 시 회전 없음
 
             self.pub.publish(vel_msg)
         # 우선순위 작업이 존재하는 경우
@@ -389,7 +398,7 @@ class Controller(Node):
 
     def turtlebot_stop(self):
         # self.get_logger().info("Turtlebot stopping")
-        print("=================정지================")
+        # print("=================정지================")
         self.cmd_msg.linear.x = 0.0
         self.cmd_msg.angular.z = 0.0
         self.pub.publish(self.cmd_msg)
