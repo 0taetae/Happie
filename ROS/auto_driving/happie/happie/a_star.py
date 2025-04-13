@@ -139,7 +139,7 @@ class a_star(Node):
         ## 주변 그리드를 탐색할 때 사용할 리스트
         self.dx = [-1,0,0,1,-1,-1,1,1]
         self.dy = [0,1,-1,0,-1,1,-1,1]
-        self.dCost = [1,1,1,1,1.414,1.414,1.414,1.414]
+        self.dCost = [1,1,1,1,2,2,2,2]
 
         # 현재 위치 및 방향
         self.pose_x = 0.0
@@ -266,7 +266,7 @@ class a_star(Node):
 
     # 최단 경로 재계산 요청을 처리
     def path_request_callback(self, msg):
-        print('경로요청 명령 받음')
+        print('경로요청 명령 받음!!!!')
         print(msg)
         try:
             new_goal_x = msg.x

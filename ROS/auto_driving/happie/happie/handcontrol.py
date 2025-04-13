@@ -74,8 +74,8 @@ class HandControlNode(Node):
             return
         
         self.hand_control_msg.control_mode = PUT_DOWN_MODE
-        self.hand_control_msg.put_distance = 0.5  # 적절한 거리 설정
-        self.hand_control_msg.put_height = 0.2  # 적절한 높이 설정
+        self.hand_control_msg.put_distance = 1.0  # 적절한 거리 설정
+        self.hand_control_msg.put_height = 0.4  # 적절한 높이 설정
         self.hand_control_pub.publish(self.hand_control_msg)
         print('Put down command sent.')
     
