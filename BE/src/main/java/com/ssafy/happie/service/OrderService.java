@@ -50,6 +50,8 @@ public class OrderService {
 
         orderRepository.save(order);
 
+//        send하기 전에 id 가져와ㅏ서 조회 하고 mqtt 전송
+
         if (orderRequestDto.getTodo().equals("안내")) {
             sendDestination();
         }
@@ -132,7 +134,7 @@ public class OrderService {
         String todo = order.getTodo();
         order.setState("진행 중");
 
-        if (todo.equals("운행") || todo.equals("안내")) {
+        if (todo.equals("운행")) {
             mqttPublisher.autoDriving(order.getId(), "start");
 
             return String.format("자율주행 명령 전송 완료 (id = %d)", order.getId());
@@ -155,7 +157,12 @@ public class OrderService {
             }
 
             mqttPublisher.sendEquipment(order.getId(), type, coords[0], coords[1]);
+
             return String.format("MQTT 전송 완료 (기자재) id = %d, type = %d, x = %.6f, y = %.6f", order.getId(), type, coords[0], coords[1]);
+        } else if (todo.equals("안내")) {
+            mqttPublisher.sendLocation(order.getId(), order.getX(), order.getY());
+
+            return String.format("안내 명령 MQTT 전송 완료", + order.getId());
         }
 
         // 그 외 일반 위치 이동 명령 처리
