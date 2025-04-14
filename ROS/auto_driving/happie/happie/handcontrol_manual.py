@@ -27,8 +27,8 @@ class HandControlNode(Node):
     ## 타이머가 트리거될 때마다 호출 : 사용자에게 메뉴를 선택하도록 요청, 선택한 메뉴에 따라 다양한 손 제어 명령을 수행 
     def timer_callback(self):
         print('Select Menu [0: status_check, 1: preview, 2: pick_up, 3: put_down]')
-        menu = None        
-        # menu = input('>> ')
+        # menu = None        
+        menu = input('>> ')
         if menu == '0':               
             self.hand_control_status()
         elif menu == '1':

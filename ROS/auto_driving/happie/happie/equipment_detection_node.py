@@ -21,7 +21,7 @@ PORT = config.MQTT_CONFIG["PORT"]
 USERNAME = config.MQTT_CONFIG["USERNAME"]
 PASSWORD = config.MQTT_CONFIG["PASSWORD"]
 TOPIC = "robot/log"
-
+TOPIC2 = "robot/equipment"
 class EquipmentDetectionNode(Node):
     def __init__(self):
         super().__init__('equipment_detection_node')
@@ -68,7 +68,7 @@ class EquipmentDetectionNode(Node):
         self.last_command_time = 0
         self.command_interval = 5.0
         self.current_target = None
-        self.current_order_id = 0        
+        self.current_order_id = None       
         # self.current_target = "wheelchair"        
         # self.current_order_id = 1
         # self.current_target = "intravenous"        
@@ -177,79 +177,20 @@ class EquipmentDetectionNode(Node):
         cv2.waitKey(1)
 
 
-    def send_hand_control_pickup(self):
-        msg = HandControl()
-        msg.control_mode = 2  # 집기
-        self.hand_control_pub.publish(msg)
-        self.get_logger().info("📦 기자재 집기 명령 전송")
-
-    def send_hand_control_release(self):
-        msg = HandControl()
-        msg.control_mode = 3  # 내려놓기
-        self.hand_control_pub.publish(msg)
-        self.get_logger().info("📦 기자재 내려놓기 명령 전송")
-
-    def update_order_state_to_in_progress(self, order_id):
-        try:
-            conn = pymysql.connect(
-                **config.MYSQL,
-                cursorclass=pymysql.cursors.DictCursor
-            )
-            with conn.cursor() as cursor:
-                sql = "UPDATE orders SET state = '진행 중' WHERE id = %s"
-                cursor.execute(sql, (order_id,))
-                conn.commit()
-                self.get_logger().info(f"[DB 업데이트] id={order_id} → '진행 중'")
-            conn.close()
-        except Exception as e:
-            self.get_logger().error(f"[DB 업데이트 에러] {e}")
-
-    def update_order_state_to_done(self, order_id):
-        try:
-            conn = pymysql.connect(
-                **config.MYSQL,
-                cursorclass=pymysql.cursors.DictCursor
-            )
-            with conn.cursor() as cursor:
-                sql = "UPDATE orders SET state = '완료' WHERE id = %s"
-                cursor.execute(sql, (order_id,))
-                conn.commit()
-                self.get_logger().info(f"[DB 업데이트] id={order_id} → '완료'")
-            conn.close()
-
-            # 상태 초기화
-            self.current_target = None
-            self.current_order_id = None
-            self.current_destination = None
-            self.destination_coords = None
-            self.target_detected = False
-
-        except Exception as e:
-            self.get_logger().error(f"[DB 업데이트 에러] {e}")
-
     # MQTT 관련
     def on_mqtt_connect(self, client, userdata, flags, rc):
         self.get_logger().info("[MQTT] 연결 성공")
         client.subscribe(TOPIC)
+        client.subscribe(TOPIC2)
 
     def on_mqtt_message(self, client, userdata, msg):
         try:
-            payload = json.loads(msg.payload.decode())
-            order_id = payload.get("id")
-            status = payload.get("status")
+            payload = msg.payload.decode("utf-8")
+            data = json.loads(payload)
 
-            if self.current_order_id is None or int(order_id) != int(self.current_order_id):
-                return
-
-            if status == "arrive":
-                self.get_logger().info(f"[MQTT] 로봇 도착 (id={order_id}) → 기자재 집기 강행")
-                self.send_hand_control_pickup()
-                self.update_order_state_to_in_progress(order_id)
-
-            elif status == "finish":
-                self.get_logger().info(f"[MQTT] 작업 완료 (id={order_id}) → 내려놓기 수행")
-                self.send_hand_control_release()
-                self.update_order_state_to_done(order_id)
+            if msg.topic == TOPIC2:
+                self.current_order_id = data['no']
+                self.current_target = [None, "wheelchair", "intravenous"][self.current_order_id]
 
         except Exception as e:
             self.get_logger().error(f"[MQTT 처리 에러] {e}")
