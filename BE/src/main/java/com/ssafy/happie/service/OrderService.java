@@ -136,14 +136,18 @@ public class OrderService {
             mqttPublisher.autoDriving(order.getId(), "start");
 
             return String.format("자율주행 명령 전송 완료 (id = %d)", order.getId());
-        } else if (todo.equals("청소")) {
-            mqttPublisher.cleanEquipment(order.getId(), 2, "start");
+        } else if (todo.contains("정리")) {
+            String item = todo.split(" ")[0];
+            int type = item.equals("휠체어") ? 1 : 2;
 
-            return String.format("청소 명령 전송 완료 (id = %d)", order.getId());
+            mqttPublisher.cleanEquipment(order.getId(), type, "start");
+
+            return String.format("정리 명령 전송 완료 (id = %d)", order.getId());
         } else if (todo.contains("전달")) {
             String item = todo.split(" ")[0];  // "휠체어" 또는 "링거"
             int type = item.equals("휠체어") ? 1 : 2;
             String storagePlace = item + " 보관실";
+
             double[] coords = PLACE_COORDINATES.get(storagePlace);
 
             if (coords == null) {
