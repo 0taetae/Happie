@@ -50,10 +50,6 @@ public class OrderService {
 
         orderRepository.save(order);
 
-        if (orderRequestDto.getTodo().equals("안내")) {
-            sendDestination();
-        }
-
         return OrderResponseDto.builder()
                 .Id(order.getId())
                 .robot(order.getRobot())
@@ -132,18 +128,22 @@ public class OrderService {
         String todo = order.getTodo();
         order.setState("진행 중");
 
-        if (todo.equals("운행") || todo.equals("안내")) {
+        if (todo.equals("운행")) {
             mqttPublisher.autoDriving(order.getId(), "start");
 
             return String.format("자율주행 명령 전송 완료 (id = %d)", order.getId());
-        } else if (todo.equals("청소")) {
-            mqttPublisher.cleanEquipment(order.getId(), 2, "start");
+        } else if (todo.contains("정리")) {
+            String item = todo.split(" ")[0];
+            int type = item.equals("휠체어") ? 1 : 2;
 
-            return String.format("청소 명령 전송 완료 (id = %d)", order.getId());
+            mqttPublisher.cleanEquipment(order.getId(), type, "start");
+
+            return String.format("정리 명령 전송 완료 (id = %d)", order.getId());
         } else if (todo.contains("전달")) {
             String item = todo.split(" ")[0];  // "휠체어" 또는 "링거"
             int type = item.equals("휠체어") ? 1 : 2;
             String storagePlace = item + " 보관실";
+
             double[] coords = PLACE_COORDINATES.get(storagePlace);
 
             if (coords == null) {
@@ -151,7 +151,12 @@ public class OrderService {
             }
 
             mqttPublisher.sendEquipment(order.getId(), type, coords[0], coords[1]);
+
             return String.format("MQTT 전송 완료 (기자재) id = %d, type = %d, x = %.6f, y = %.6f", order.getId(), type, coords[0], coords[1]);
+        } else if (todo.equals("안내")) {
+            mqttPublisher.sendLocation(order.getId(), order.getX(), order.getY());
+
+            return String.format("안내 명령 MQTT 전송 완료", + order.getId());
         }
 
         // 그 외 일반 위치 이동 명령 처리

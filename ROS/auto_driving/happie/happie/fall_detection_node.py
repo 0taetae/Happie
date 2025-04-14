@@ -41,7 +41,7 @@ class FallDetectionNode(Node):
             CompressedImage,
             '/image_jpeg/compressed',
             self.image_callback,
-            10
+            30
         )
 
         self.last_sent_time = 0
@@ -67,10 +67,18 @@ class FallDetectionNode(Node):
         self.mqtt_client.connect(BROKER, PORT, 60)
         self.mqtt_client.loop_start()
 
+        self.is_processing = False 
+
     def on_connect(self, client, userdata, flags, rc):
         self.get_logger().info(f"MQTT Connected with result code {rc}")
 
     def image_callback(self, msg):
+        # 버퍼 방지
+        if self.is_processing == True:
+            return
+        
+        self.is_processing = True 
+
         np_arr = np.frombuffer(msg.data, np.uint8)
         frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
@@ -126,8 +134,10 @@ class FallDetectionNode(Node):
             except Exception as e:
                 self.get_logger().error(f"Failed to upload image: {e}")
 
-        cv2.imshow("Fall", frame)
-        cv2.waitKey(1)
+        # cv2.imshow("Fall", frame)
+        # cv2.waitKey(5)
+        self.is_processing = False
+
 
 def main(args=None):
     rclpy.init(args=args)

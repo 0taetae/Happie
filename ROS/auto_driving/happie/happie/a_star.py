@@ -543,11 +543,13 @@ class a_star(Node):
         self.pose_x = msg.range_min  # 실제 x 좌표 (meters)
         self.pose_y = msg.scan_time  # 실제 y 좌표 (meters)
         self.heading = msg.time_increment  # 로봇의 방향 (radians)
+
         # print('현 위치: ', self.pose_x, self.pose_y)
+
         self.map_pose_x = (self.pose_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0]/2) / params_map['MAP_RESOLUTION']
         self.map_pose_y = (self.pose_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1]/2) / params_map['MAP_RESOLUTION']
         #print(f'현 위치: {self.map_pose_x, self.map_pose_y} ')
-
+        # print(len(msg.ranges))
 
 def main(args=None):
     rclpy.init(args=args)
