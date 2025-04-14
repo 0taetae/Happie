@@ -26,7 +26,7 @@ class EquipmentDetectionNode(Node):
     def __init__(self):
         super().__init__('equipment_detection_node')
 
-         # ROS Subscriber & Publisher
+        # ROS Subscriber & Publisher
         self.subscriber = self.create_subscription(
             CompressedImage,
             '/image_jpeg/compressed',
@@ -67,10 +67,12 @@ class EquipmentDetectionNode(Node):
         # 상태 변수
         self.last_command_time = 0
         self.command_interval = 5.0
+        self.current_target = None
+        self.current_order_id = 0        
         # self.current_target = "wheelchair"        
         # self.current_order_id = 1
-        self.current_target = "intravenous"        
-        self.current_order_id = 2
+        # self.current_target = "intravenous"        
+        # self.current_order_id = 2
         self.current_destination = None
         self.destination_coords = None
         self.target_detected = False  # 기자재 감지 여부
@@ -142,6 +144,8 @@ class EquipmentDetectionNode(Node):
         frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
         results = self.model(frame)
 
+        msg = Int32()
+        msg.data = 0
        # 하나만 처리
         for *xyxy, conf, cls in results.xyxy[0]:
             label = self.model.names[int(cls)]
@@ -156,7 +160,17 @@ class EquipmentDetectionNode(Node):
                             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
                 self.target_detected = True
+
+                msg.data = 1  # 예: 감지되었음을 알리는 값
                 break  # ✅ 첫 번째만 처리 후 break
+
+        # 결과값 publish        
+        self.get_logger().info(f"📡 Equipment detected, published value: {msg.data}")
+        self.equipment_detected_pub.publish(msg)
+
+        # 필요하면 한 번만 보내고 멈추도록
+        self.target_detected = False
+
 
         self.is_processing = False
         cv2.imshow("Equipment Detection", frame)

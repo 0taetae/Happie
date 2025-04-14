@@ -14,11 +14,13 @@ from std_msgs.msg import String
 from std_msgs.msg import Bool
 import json
 from std_msgs.msg import Int32, String
+from ssafy_msgs.msg import TurtlebotStatus
+import time
 import matplotlib
 matplotlib.use('Agg')  # GUI 비활성화 (필수)
 import matplotlib.pyplot as plt
 
-from .config import params_map, PKG_PATH, MQTT_CONFIG, patrol_path, clean_patrol_path
+from .config import params_map, PKG_PATH, MQTT_CONFIG, patrol_path, clean_patrol_path, equipment_path
 import paho.mqtt.client as mqtt
 
 #from custom_msgs.srv import SetPose
@@ -83,11 +85,13 @@ class a_star(Node):
         super().__init__('a_Star')
         # 로직 1. publisher, subscriber 만들기
         self.map_sub = self.create_subscription(OccupancyGrid, 'map', self.map_callback, 1)
+        self.turtlebot_status_sub = self.create_subscription(TurtlebotStatus, '/turtlebot_status', self.turtlebot_status_cb, 10)
         self.subscription = self.create_subscription(LaserScan,'/scan',self.scan_callback,1)
         self.global_path_pub = self.create_publisher(Path, 'a_star_global_path', 10)
         self.order_id_pub = self.create_publisher(Int32, '/order_id', 1)
         self.priority_work_pub = self.create_publisher(String, '/priority_work', 1)
-
+        self.equipment_detection_subscription = self.create_subscription(Int32, '/equipment_detected', self.equipment_detection_callback, 10)
+        self.hand_control_pub = self.create_publisher(Int32, '/hand_control_id', 10)
         #self.srv = self.create_service(SetPose, 'request_path', self.handle_request_path)
 
         self.path_request_sub = self.create_subscription(Point, '/request_new_path', self.path_request_callback,10)
@@ -163,6 +167,13 @@ class a_star(Node):
         self.clean_patrol_idx = 0
         self.is_clean_patrol_command = False
 
+        # robot/equipment의 인덱스
+        self.equipment_path_idx = 0
+        self.equipment_path = []
+        self.is_equipment_command = False
+        self.is_equipment_detected = False
+        self.equipment_detected_time = 0
+
     # MQTT 연결 시 실행될 콜백 함수
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
@@ -195,12 +206,6 @@ class a_star(Node):
             if topic == 'robot/patrol':
             # 전체순찰의 경우 
                 print("📌 전체 순찰 명령")
-                #print(payload)
-                # 순찰종료 명령을 받은 경우
-                # if payload.strip().lower() != 'go':
-                #     print(f"📌 순찰종료 명령 수신: {patrol_path}")
-                #     self.is_patrol_command = False
-                #     return
                 # 순찰 명령을 받은 경우
                 self.is_patrol_command = True
                 goal_x, goal_y = patrol_path[self.patrol_idx]
@@ -229,12 +234,14 @@ class a_star(Node):
                 self.path_finding(goal_map_x, goal_map_y)
 
             elif topic == 'robot/equipment':
-                goal_x = float(data["x"])
-                goal_y = float(data["y"])
-                print("goal")
-                print(f"🎯 목표 위치 수신: x={goal_x}, y={goal_y} (ID: {self.order_id})")
-                print("📌 목적지 이동 명령; robot/equipment")
-                self.is_patrol_command = False
+                print(f"🎯 최종 목표 위치 수신: x={float(data['x'])}, y={data['y']} (ID: {self.order_id}) (NO: {data['no']})")
+                # 목적지 명령 및 경로 셋팅
+                self.is_equipment_command = True
+                self.equipment_path = equipment_path[data['no']] + [(float(data["x"]), float(data["y"]))]
+                print(f'equipment_path {self.equipment_path}')
+
+                goal_x = self.equipment_path[self.equipment_path_idx][0]
+                goal_y = self.equipment_path[self.equipment_path_idx][1]
                 # MQTT에서 받은 좌표를 맵 좌표계로 변환
                 goal_map_x = (goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION']
                 goal_map_y = (goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1] / 2) / params_map['MAP_RESOLUTION']
@@ -242,8 +249,9 @@ class a_star(Node):
                 goal_map_x = int(goal_map_x) 
                 goal_map_y = int(goal_map_y)
 
-                print(f"📍 변환된 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
+                print(f"📍 변환된 최종 목표 위치 (그리드): x={goal_map_x}, y={goal_map_y}")
                 self.path_finding(goal_map_x, goal_map_y)
+
             elif topic == 'robot/clean':
                 # 청소 명령을 받은 경우
                 self.is_clean_patrol_command = True
@@ -337,6 +345,48 @@ class a_star(Node):
                     self.path_finding(goal_map_x, goal_map_y)
             else: 
                 pass 
+            
+        # 기자재 명령의 경우
+        if self.is_equipment_command == False:
+            pass
+        else:
+            if math.hypot(self.pose_x - self.equipment_path[self.equipment_path_idx][0], self.pose_y - self.equipment_path[self.equipment_path_idx][1]) < 2.5:
+                if self.equipment_path_idx == 0:
+                    if self.is_equipment_detected == 0 and self.equipment_detected_time > 20:
+                        return                    
+            else:
+                self.equipment_detected_time = 0 
+                self.is_equipment_detected = 0
+                
+            if math.hypot(self.pose_x - self.equipment_path[self.equipment_path_idx][0], self.pose_y - self.equipment_path[self.equipment_path_idx][1]) < 0.1:
+                if self.equipment_path_idx == 1:
+                    print('기자재 옮김 완료')
+                    # payload 정의 후 보내주기
+                    # 물건 내려놓기 과정 추가해야함
+                    # 이후에
+                    self.equipment_path = []
+                    self.equipment_path_idx = 0 
+                    self.is_equipment_command = False
+                    return
+                else:
+                    if self.turtlebot_status_msg.can_use_hand == True:
+                        self.equipment_path_idx += 1
+                        goal_x, goal_y = self.equipment_path[self.equipment_path_idx]
+                        # 좌표를 맵 좌표계로 변환
+                        goal_map_x = int((goal_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0] / 2) / params_map['MAP_RESOLUTION'])
+                        goal_map_y = int((goal_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1] / 2) / params_map['MAP_RESOLUTION'])
+                        self.path_finding(goal_map_x, goal_map_y)
+                        self.get_logger().info('Start - move to final destination!')
+                    else: 
+                        print(f'Can Use Hand: {self.turtlebot_status_msg.can_use_hand}')
+                        print(f'Can Put: {self.turtlebot_status_msg.can_put}')
+                        print(f'Can Lift: {self.turtlebot_status_msg.can_lift}')
+                        msg = Int32()
+                        msg.data = 2  # command = 2 설정
+                        self.hand_control_pub.publish(msg)  # 퍼블리시
+                        self.get_logger().info('Published hand control command: 2')
+
+        return                
 
     def heuristic(self, a, b):
         #print("heuristic!!")
@@ -521,7 +571,7 @@ class a_star(Node):
             for p in path:
                 ax.plot(p[1], p[0], color='red', marker='o', markersize=2)
         plt.colorbar(cax)
-        plt.title("A* Pathfinding with Red Path")
+        plt.title("Derived path based on heuristic A*")
         # 저장 경로 구성
         back_folder = '..'
         pkg_path = PKG_PATH
@@ -552,12 +602,18 @@ class a_star(Node):
         self.pose_y = msg.scan_time  # 실제 y 좌표 (meters)
         self.heading = msg.time_increment  # 로봇의 방향 (radians)
 
-        # print('현 위치: ', self.pose_x, self.pose_y)
-
         self.map_pose_x = (self.pose_x - params_map['MAP_CENTER'][0] + params_map['MAP_SIZE'][0]/2) / params_map['MAP_RESOLUTION']
         self.map_pose_y = (self.pose_y - params_map['MAP_CENTER'][1] + params_map['MAP_SIZE'][1]/2) / params_map['MAP_RESOLUTION']
-        #print(f'현 위치: {self.map_pose_x, self.map_pose_y} ')
-        # print(len(msg.ranges))
+
+    def equipment_detection_callback(self, msg):
+        self.equipment_detected_time += 1
+        self.is_equipment_detected *= msg.data
+
+
+    # 터틀봇 상태 call_back
+    def turtlebot_status_cb(self, msg):
+        self.is_turtlebot_status = True
+        self.turtlebot_status_msg = msg
 
 def main(args=None):
     rclpy.init(args=args)
