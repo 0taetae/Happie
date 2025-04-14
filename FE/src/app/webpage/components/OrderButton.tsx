@@ -15,7 +15,7 @@ export default function OrderButton({ onOrderSuccess }: { onOrderSuccess?: () =>
     "502호실": ["링거 전달하기", "휠체어 전달하기", "방문하기"],
     "503호실": ["링거 전달하기", "휠체어 전달하기", "방문하기"],
     "간호사실": ["출동하기"],
-    "병동": ["운행하기", "청소하기"],
+    "병동": ["링거 정리하기", "휠체어 정리하기", "운행하기"],
   };
 
   const resetSelections = () => {
