@@ -50,12 +50,6 @@ public class OrderService {
 
         orderRepository.save(order);
 
-//        send하기 전에 id 가져와ㅏ서 조회 하고 mqtt 전송
-
-        if (orderRequestDto.getTodo().equals("안내")) {
-            sendDestination();
-        }
-
         return OrderResponseDto.builder()
                 .Id(order.getId())
                 .robot(order.getRobot())
