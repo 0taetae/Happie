@@ -11,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -49,6 +48,9 @@ public class OrderService {
         );
 
         orderRepository.save(order);
+
+        String result = sendDestination();
+        System.out.println("MQTT 전송 결과: " + result);
 
         return OrderResponseDto.builder()
                 .Id(order.getId())
@@ -127,6 +129,7 @@ public class OrderService {
 
         String todo = order.getTodo();
         order.setState("진행 중");
+        orderRepository.save(order);
 
         if (todo.equals("운행")) {
             mqttPublisher.autoDriving(order.getId(), "start");
@@ -142,17 +145,13 @@ public class OrderService {
         } else if (todo.contains("전달")) {
             String item = todo.split(" ")[0];  // "휠체어" 또는 "링거"
             int type = item.equals("휠체어") ? 1 : 2;
-            String storagePlace = item + " 보관실";
 
-            double[] coords = PLACE_COORDINATES.get(storagePlace);
+            double x = order.getX();
+            double y = order.getY();
 
-            if (coords == null) {
-                throw new IllegalArgumentException("알 수 없는 보관실 장소: " + storagePlace);
-            }
+            mqttPublisher.sendEquipment(order.getId(), type, x, y);
 
-            mqttPublisher.sendEquipment(order.getId(), type, coords[0], coords[1]);
-
-            return String.format("MQTT 전송 완료 (기자재) id = %d, type = %d, x = %.6f, y = %.6f", order.getId(), type, coords[0], coords[1]);
+            return String.format("MQTT 전송 완료 (기자재 전달) id = %d, type = %d, x = %.6f, y = %.6f", order.getId(), type, x, y);
         } else if (todo.equals("안내")) {
             mqttPublisher.sendLocation(order.getId(), order.getX(), order.getY());
 
@@ -167,30 +166,32 @@ public class OrderService {
 
     @Transactional
     public void robotLog(int id, String status) {
-        if (id == -1) {
-            System.out.println("잘못된 ID: -1");
+        if (id == -2) {
+            System.out.println("잘못된 ID: -2");
             return;
         }
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 ID의 명령이 없습니다: " + id));
 
-        String todo = order.getTodo();
+//        String todo = order.getTodo();
 
-        if (status.equals("arrive")) {
-            if (!todo.contains("전달")) {
-                System.out.println("전달 명령이 아니므로 좌표 재전송 생략");
-                return;
-            }
+//        if (status.equals("arrive")) {
+//            if (!todo.contains("전달")) {
+//                System.out.println("전달 명령이 아니므로 좌표 재전송 생략");
+//                return;
+//            }
+//
+//            String item = todo.split(" ")[0];  // "휠체어" 또는 "링거"
+//            int type = item.equals("휠체어") ? 1 : 2;
+//
+//            // 좌표 재전송
+//            mqttPublisher.sendEquipment(order.getId(), type, order.getX(), order.getY());
+//            System.out.printf("📦 좌표 재전송 완료 (id = %d, type = %d, x = %.6f, y = %.6f)%n",
+//                    order.getId(), type, order.getX(), order.getY());
 
-            String item = todo.split(" ")[0];  // "휠체어" 또는 "링거"
-            int type = item.equals("휠체어") ? 1 : 2;
-
-            // 좌표 재전송
-            mqttPublisher.sendEquipment(order.getId(), type, order.getX(), order.getY());
-            System.out.printf("📦 좌표 재전송 완료 (id = %d, type = %d, x = %.6f, y = %.6f)%n",
-                    order.getId(), type, order.getX(), order.getY());
-
-        } else if (status.equals("finish")) {
+//        }
+//        else if (status.equals("finish")) {
+        if (status.equals("finish")) {
             order.setState("완료");
             orderRepository.save(order);
             System.out.printf("명령 상태 완료 처리됨 (id = %d)%n", order.getId());

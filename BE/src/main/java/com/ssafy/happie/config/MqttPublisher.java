@@ -40,10 +40,10 @@ public class MqttPublisher {
         System.out.println("id" + id + ", no: "+ equip + ", x: "+ x + ", y: " + y);
 
         try {
-            if (!mqttClient.isConnected()) {
-                System.out.println("MQTT 연결이 끊겨있어 재연결 시도 중...");
-                mqttClient.reconnect(); // 또는 mqttClient.connect(options); 다시 설정해도 됨
-            }
+//            if (!mqttClient.isConnected()) {
+//                System.out.println("MQTT 연결이 끊겨있어 재연결 시도 중...");
+//                mqttClient.reconnect(); // 또는 mqttClient.connect(options); 다시 설정해도 됨
+//            }
 
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("id", id);
@@ -62,23 +62,23 @@ public class MqttPublisher {
     }
 
 
-    public void sendNavComplete(String where, String status, String todo){
-        try{
-            System.out.println("where: " + where);
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put("place", where);
-            jsonObject.put("status", status);
-            jsonObject.put("todo", todo);
-
-            MqttMessage message = new MqttMessage(jsonObject.toString().getBytes());
-            message.setQos(1);
-
-            mqttClient.publish("robot/nav/complete", message);
-            System.out.println("메시지 전송 완료:" + jsonObject.toString());
-        } catch (MqttException e) {
-            e.printStackTrace();
-        }
-    }
+//    public void sendNavComplete(String where, String status, String todo){
+//        try{
+//            System.out.println("where: " + where);
+//            JSONObject jsonObject = new JSONObject();
+//            jsonObject.put("place", where);
+//            jsonObject.put("status", status);
+//            jsonObject.put("todo", todo);
+//
+//            MqttMessage message = new MqttMessage(jsonObject.toString().getBytes());
+//            message.setQos(1);
+//
+//            mqttClient.publish("robot/nav/complete", message);
+//            System.out.println("메시지 전송 완료:" + jsonObject.toString());
+//        } catch (MqttException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     public void autoDriving(int id, String status) {
         try {
