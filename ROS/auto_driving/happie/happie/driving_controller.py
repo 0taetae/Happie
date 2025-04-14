@@ -95,7 +95,7 @@ class Controller(Node):
                 self.is_to_move = True
     
     def scan_callback(self, msg):
-        print(self.pose_x, self.pose_y, self.heading)
+        # print(self.pose_x, self.pose_y, self.heading)
 
         # 충전 상태관리
         if math.hypot(-42.44 - self.pose_x, -45.6 - self.pose_y) < 0.1:
@@ -142,7 +142,7 @@ class Controller(Node):
         right = sum(right) / len(right) if len(right) else 100
         front = sum(front) / len(front) if len(front) else 100
         pivot = min(front, right, left)
-        print(pivot)
+        # print(pivot)
         # print(msg.ranges)
 
         if 0.05 < pivot < 0.2: 

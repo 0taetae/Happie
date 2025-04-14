@@ -172,6 +172,7 @@ class a_star(Node):
         self.equipment_path = []
         self.is_equipment_command = False
         self.is_equipment_detected = False
+        self.equipment_process = 0
         self.equipment_detected_time = 0
 
     # MQTT 연결 시 실행될 콜백 함수
@@ -237,6 +238,7 @@ class a_star(Node):
                 print(f"🎯 최종 목표 위치 수신: x={float(data['x'])}, y={data['y']} (ID: {self.order_id}) (NO: {data['no']})")
                 # 목적지 명령 및 경로 셋팅
                 self.is_equipment_command = True
+                self.equipment_process = 0
                 self.equipment_path = equipment_path[data['no']] + [(float(data["x"]), float(data["y"]))]
                 print(f'equipment_path {self.equipment_path}')
 
@@ -350,23 +352,58 @@ class a_star(Node):
         if self.is_equipment_command == False:
             pass
         else:
-            if math.hypot(self.pose_x - self.equipment_path[self.equipment_path_idx][0], self.pose_y - self.equipment_path[self.equipment_path_idx][1]) < 2.5:
+            dist = math.hypot(self.pose_x - self.equipment_path[self.equipment_path_idx][0], self.pose_y - self.equipment_path[self.equipment_path_idx][1])
+            if dist < 2.5:
                 if self.equipment_path_idx == 0:
                     if self.is_equipment_detected == 0 and self.equipment_detected_time > 20:
                         return                    
             else:
                 self.equipment_detected_time = 0 
                 self.is_equipment_detected = 0
-                
-            if math.hypot(self.pose_x - self.equipment_path[self.equipment_path_idx][0], self.pose_y - self.equipment_path[self.equipment_path_idx][1]) < 0.1:
+
+
+            if dist > 1.0:
                 if self.equipment_path_idx == 1:
-                    print('기자재 옮김 완료')
-                    # payload 정의 후 보내주기
-                    # 물건 내려놓기 과정 추가해야함
-                    # 이후에
-                    self.equipment_path = []
-                    self.equipment_path_idx = 0 
-                    self.is_equipment_command = False
+                    msg = Int32()
+                    msg.data = 1  # command = 1 설정
+                    self.hand_control_pub.publish(msg)  # 퍼블리시
+                    self.get_logger().info('Published hand control command: 1')
+
+                if self.equipment_path_idx == 1 and self.equipment_process == 0:
+                    self.equipment_process += 1
+                    # 기자재 들기 완료
+                    payload = {
+                        "id": self.order_id if self.order_id is not None else -1,
+                        "status": "arrive"
+                    }
+                    self.mqtt_client.publish(self.mqtt_topic_log, json.dumps(payload))
+                    print(f'mqtt 전송 \n {payload}')
+                    '''
+                    mqtt전송 해줘야함
+                    '''
+                    
+            if dist < 0.1:
+                if self.equipment_path_idx == 1:
+                    if self.turtlebot_status_msg.can_use_hand == False:
+                        # 기자재 옮김 완료
+                        payload = {
+                            "id": self.order_id if self.order_id is not None else -1,
+                            "status": "finish"
+                                    }
+                        self.mqtt_client.publish(self.mqtt_topic_log, json.dumps(payload))
+                        print(f'mqtt 전송 \n {payload}')
+                        self.order_id = None
+                        # 물건 내려놓기 과정 추가해야함
+                    
+                        self.equipment_path = []
+                        self.equipment_path_idx = 0 
+                        self.equipment_process = 0
+                        self.is_equipment_command = False
+                    else:
+                        msg = Int32()
+                        msg.data = 3  # command = 3 설정
+                        self.hand_control_pub.publish(msg)  # 퍼블리시
+                        self.get_logger().info('Published hand control command: 3')
                     return
                 else:
                     if self.turtlebot_status_msg.can_use_hand == True:
@@ -378,9 +415,9 @@ class a_star(Node):
                         self.path_finding(goal_map_x, goal_map_y)
                         self.get_logger().info('Start - move to final destination!')
                     else: 
-                        print(f'Can Use Hand: {self.turtlebot_status_msg.can_use_hand}')
-                        print(f'Can Put: {self.turtlebot_status_msg.can_put}')
-                        print(f'Can Lift: {self.turtlebot_status_msg.can_lift}')
+                        # print(f'Can Use Hand: {self.turtlebot_status_msg.can_use_hand}')
+                        # print(f'Can Put: {self.turtlebot_status_msg.can_put}')
+                        # print(f'Can Lift: {self.turtlebot_status_msg.can_lift}')
                         msg = Int32()
                         msg.data = 2  # command = 2 설정
                         self.hand_control_pub.publish(msg)  # 퍼블리시
