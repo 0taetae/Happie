@@ -24,7 +24,7 @@ public class LocationService {
                     double x = location.getX();
                     double y = location.getY();
 
-                    mqttPublisher.sendLocation(-1, x, y);
+//                    mqttPublisher.sendLocation(-1, x, y);
 
                     return new LocationResponseDto(-1, x, y);
                 })
