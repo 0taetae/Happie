@@ -44,6 +44,9 @@ class EquipmentDetectionNode(Node):
             10
         )
 
+        # 시간
+        self.last_infer_time = time.time()
+
         # YOLOv5 모델 로드
         yolov5_dir = config.YOLOV5_DIR
         model_path = config.MODEL_PATH
@@ -58,18 +61,25 @@ class EquipmentDetectionNode(Node):
         )
         self.model.conf = 0.5
 
+        # 추론모드
+        self.model.eval()
+
         # 상태 변수
         self.last_command_time = 0
         self.command_interval = 5.0
         self.current_target = None
-        self.current_order_id = None
+        self.current_order_id = 0        
+        # self.current_target = "wheelchair"        
+        # self.current_order_id = 1
+        # self.current_target = "intravenous"        
+        # self.current_order_id = 2
         self.current_destination = None
         self.destination_coords = None
         self.target_detected = False  # 기자재 감지 여부
         self.is_processing = False
 
         # DB 주문 확인 타이머
-        self.create_timer(5.0, self.check_orders_from_db)
+        # self.create_timer(5.0, self.check_orders_from_db)
 
         # MQTT 설정
         self.mqtt_client = mqtt.Client()
@@ -118,6 +128,10 @@ class EquipmentDetectionNode(Node):
             self.get_logger().error(f"[DB 에러] {e}")
 
     def image_callback(self, msg):
+        if time.time() - self.last_infer_time < 1:  # 0.5초마다만 실행
+            return
+        self.last_infer_time = time.time()
+
         if not self.current_target:
             return
 
@@ -130,6 +144,9 @@ class EquipmentDetectionNode(Node):
         frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
         results = self.model(frame)
 
+        msg = Int32()
+        msg.data = 0
+       # 하나만 처리
         for *xyxy, conf, cls in results.xyxy[0]:
             label = self.model.names[int(cls)]
 
@@ -142,12 +159,22 @@ class EquipmentDetectionNode(Node):
                 cv2.putText(frame, f'{label.upper()} {conf:.2f}', (x1, y1 - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
-                self.target_detected = True  # ✅ 감지만 하고 집진 않음
-            self.is_processing = False
+                self.target_detected = True
+
+                msg.data = 1  # 예: 감지되었음을 알리는 값
+                break  # ✅ 첫 번째만 처리 후 break
+
+        # 결과값 publish        
+        self.get_logger().info(f"📡 Equipment detected, published value: {msg.data}")
+        self.equipment_detected_pub.publish(msg)
+
+        # 필요하면 한 번만 보내고 멈추도록
+        self.target_detected = False
+
 
         self.is_processing = False
-        # cv2.imshow("Equipment Detection", frame)
-        # cv2.waitKey(1)
+        cv2.imshow("Equipment Detection", frame)
+        cv2.waitKey(1)
 
 
     def send_hand_control_pickup(self):
