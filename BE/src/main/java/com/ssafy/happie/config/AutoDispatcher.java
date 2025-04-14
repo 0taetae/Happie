@@ -21,7 +21,7 @@ public class AutoDispatcher {
         }
     }
 
-    @Scheduled(fixedRate = 15000)
+    @Scheduled(fixedRate = 1000000)
     public void autoSendOrder() {
         try {
             String result = orderService.autoDriving();
