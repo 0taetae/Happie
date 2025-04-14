@@ -90,6 +90,7 @@ class a_star(Node):
         self.global_path_pub = self.create_publisher(Path, 'a_star_global_path', 10)
         self.order_id_pub = self.create_publisher(Int32, '/order_id', 1)
         self.priority_work_pub = self.create_publisher(String, '/priority_work', 1)
+        self.is_equipment_detection_on = self.create_publisher(Int32, '/is_equipment_detection_on', 1)
         self.equipment_detection_subscription = self.create_subscription(Int32, '/equipment_detected', self.equipment_detection_callback, 10)
         self.hand_control_pub = self.create_publisher(Int32, '/hand_control_id', 10)
         #self.srv = self.create_service(SetPose, 'request_path', self.handle_request_path)
@@ -378,9 +379,12 @@ class a_star(Node):
                     }
                     self.mqtt_client.publish(self.mqtt_topic_log, json.dumps(payload))
                     print(f'mqtt 전송 \n {payload}')
-                    '''
-                    mqtt전송 해줘야함
-                    '''
+
+                    msg = Int32()
+                    msg.data = 0
+                    self.is_equipment_detection_on.publish(msg)
+                    # detection 카메라 종료를 위함
+                    print('equipment_detection 0 전송 완료')
                     
             if dist < 0.1:
                 if self.equipment_path_idx == 1:
@@ -393,7 +397,6 @@ class a_star(Node):
                         self.mqtt_client.publish(self.mqtt_topic_log, json.dumps(payload))
                         print(f'mqtt 전송 \n {payload}')
                         self.order_id = None
-                        # 물건 내려놓기 과정 추가해야함
                     
                         self.equipment_path = []
                         self.equipment_path_idx = 0 
@@ -556,6 +559,7 @@ class a_star(Node):
         back_folder = '..'  # 상위 폴더 지정
         pkg_path = PKG_PATH
         folder_name = 'data'
+        # file_name = 'map.txt'
         file_name = 'update_map.txt'
         full_path = os.path.join(pkg_path, back_folder, folder_name, file_name)
 
