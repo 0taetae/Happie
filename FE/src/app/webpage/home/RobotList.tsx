@@ -39,10 +39,10 @@ export default function RobotList({ refreshTrigger }: { refreshTrigger: number }
     3: { robot: "", place: "", todo: "", state: "로딩 중...", id: 0 },
   });
 
+  // 전체 fetch: 대기 명령 + 현재 진행 중
   const fetchAllTasks = useCallback(async () => {
     for (let i = 1; i <= 3; i++) {
       const robotKey = `robot${i}`;
-
       try {
         const ordersRes = await fetch(`https://j12e103.p.ssafy.io/api/equipment/orders/${robotKey}`);
         if (!ordersRes.ok) throw new Error("명령 불러오기 실패");
@@ -59,6 +59,17 @@ export default function RobotList({ refreshTrigger }: { refreshTrigger: number }
     }
   }, []);
 
+  // 3초마다 전체 fetch
+  useEffect(() => {
+    fetchAllTasks(); // 초기 1회
+    const interval = setInterval(() => {
+      fetchAllTasks();
+    }, 3000); // 3초마다 전체 데이터 갱신
+
+    return () => clearInterval(interval);
+  }, [fetchAllTasks]);
+
+  // 수동 refreshTrigger로도 fetchAllTasks() 호출 가능하게 유지
   useEffect(() => {
     fetchAllTasks();
   }, [refreshTrigger, fetchAllTasks]);
@@ -77,7 +88,7 @@ export default function RobotList({ refreshTrigger }: { refreshTrigger: number }
   };
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto gap-3"> {/* 💡 핵심: h-full + overflow */}
+    <div className="flex flex-col h-full overflow-y-auto gap-3">
       {[1, 2, 3].map((num) => (
         <div key={num} className="bg-gray-100 p-3 rounded-lg shadow-md">
           <div className="flex items-center space-x-3">
@@ -96,7 +107,7 @@ export default function RobotList({ refreshTrigger }: { refreshTrigger: number }
               "노는 중.."
             )}
           </p>
-  
+
           <button
             className="mt-2 px-3 py-1 text-ml bg-gray-200 rounded-md shadow-sm hover:bg-gray-300 transition"
             onClick={() => setOpenRobot(openRobot === num ? null : num)}
@@ -107,7 +118,7 @@ export default function RobotList({ refreshTrigger }: { refreshTrigger: number }
               ? `대기 명령 ${robotTasks[num].length}개`
               : "대기 명령 없음"}
           </button>
-  
+
           <div
             className={`transition-all duration-300 ease-in-out overflow-hidden mt-2 
               bg-yellow-100 shadow-md rounded-lg text-ml 
@@ -162,7 +173,7 @@ export default function RobotList({ refreshTrigger }: { refreshTrigger: number }
               )}
             </div>
           </div>
-  
+
           <div className="mt-3 flex items-center space-x-2">
             <div className="flex-1 h-2 bg-gray-200 rounded">
               <div
@@ -170,13 +181,10 @@ export default function RobotList({ refreshTrigger }: { refreshTrigger: number }
                 style={{ width: `${progressBar[num].percent}%` }}
               ></div>
             </div>
-            <p className="text-sm w-10 text-right">
-              {progressBar[num].percent}%
-            </p>
+            <p className="text-sm w-10 text-right">{progressBar[num].percent}%</p>
           </div>
         </div>
       ))}
     </div>
   );
-  
 }
