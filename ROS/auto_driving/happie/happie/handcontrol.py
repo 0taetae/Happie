@@ -17,7 +17,7 @@ class HandControlNode(Node):
         self.hand_control_pub = self.create_publisher(HandControl, '/hand_control', 10) ## 로봇의 손 제어 명령을 전송하기 위한 publisher를 생성, 큐 사이즈 10
         self.turtlebot_status_sub = self.create_subscription(TurtlebotStatus, '/turtlebot_status', self.turtlebot_status_cb, 10) ## 로봇의 상태를 수신하기 위한 subscriber 생성 / 큐 사이즈는 10 / 수신된 메시지를 처리하는 콜백함수는 turtlebot_status_cb 
         self.hand_control_id_sub = self.create_subscription(Int32, '/hand_control_id', self.hand_control_callback, 10)
-        self.timer = self.create_timer(1, self.timer_callback) ## 주기적으로 실행되는 타이머 생성 
+        self.timer = self.create_timer(10, self.timer_callback) ## 주기적으로 실행되는 타이머 생성 
         
         # 메시지 변수 생성
         self.hand_control_msg = HandControl()
@@ -26,7 +26,8 @@ class HandControlNode(Node):
     
     ## 타이머가 트리거될 때마다 호출 : 사용자에게 메뉴를 선택하도록 요청, 선택한 메뉴에 따라 다양한 손 제어 명령을 수행 
     def timer_callback(self):
-        print('Select Menu [0: status_check, 1: preview, 2: pick_up, 3: put_down]')
+        # print('Select Menu [0: status_check, 1: preview, 2: pick_up, 3: put_down]')
+        print(self.turtlebot_status_msg)
         menu = None        
         # menu = input('>> ')
         if menu == '0':               

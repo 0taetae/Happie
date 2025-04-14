@@ -175,8 +175,7 @@ class Controller(Node):
     def equipment_callback(self, msg):
         if msg.data:  # 기자재 감지됨
             self.is_priority_work = True
-            print("기자재 감지!")
-            print(msg.data)
+            print(f"기자재 감지! {[None, 'WheelChair', 'Intravenous'][msg.data]}")
 
 
     def fall_callback(self,msg):
@@ -191,7 +190,7 @@ class Controller(Node):
 
 
     def global_path_callback(self, msg):
-        print('global pathh callback ==========')
+        print('global path callback ==========')
         path = [(pose.pose.position.x, pose.pose.position.y) for pose in msg.poses]
         self.global_path = path
         self.goal.x = path[0][0]

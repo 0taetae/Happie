@@ -20,8 +20,8 @@ BROKER = config.MQTT_CONFIG["BROKER"]
 PORT = config.MQTT_CONFIG["PORT"]
 USERNAME = config.MQTT_CONFIG["USERNAME"]
 PASSWORD = config.MQTT_CONFIG["PASSWORD"]
-TOPIC = "robot/log"
-TOPIC2 = "robot/equipment"
+TOPIC = "robot/equipment"
+
 class EquipmentDetectionNode(Node):
     def __init__(self):
         super().__init__('equipment_detection_node')
@@ -43,6 +43,15 @@ class EquipmentDetectionNode(Node):
             '/equipment_detected',
             10
         )
+
+        # /is_equipment_detection_on 토픽 구독
+        self.subscription = self.create_subscription(
+            Int32,
+            '/is_equipment_detection_on',
+            self.is_equipment_detection_on_callback,
+            10  # QoS Depth
+        )
+
 
         # 시간
         self.last_infer_time = time.time()
@@ -69,17 +78,10 @@ class EquipmentDetectionNode(Node):
         self.command_interval = 5.0
         self.current_target = None
         self.current_order_id = None       
-        # self.current_target = "wheelchair"        
-        # self.current_order_id = 1
-        # self.current_target = "intravenous"        
-        # self.current_order_id = 2
         self.current_destination = None
         self.destination_coords = None
         self.target_detected = False  # 기자재 감지 여부
         self.is_processing = False
-
-        # DB 주문 확인 타이머
-        # self.create_timer(5.0, self.check_orders_from_db)
 
         # MQTT 설정
         self.mqtt_client = mqtt.Client()
@@ -89,45 +91,11 @@ class EquipmentDetectionNode(Node):
         self.mqtt_client.connect(BROKER, PORT, 60)
         self.mqtt_client.loop_start()
 
-    def check_orders_from_db(self):
-        try:
-            conn = pymysql.connect(
-                **config.MYSQL,
-                cursorclass=pymysql.cursors.DictCursor
-            )
-            with conn.cursor() as cursor:
-                sql = "SELECT id, place, todo, x, y FROM orders WHERE state = '대기' AND robot = 'robot1' ORDER BY id ASC LIMIT 1"
-                cursor.execute(sql)
-                row = cursor.fetchone()
-
-                if row:
-                    order_id = row['id']
-                    place = row['place']
-                    todo = row['todo']
-                    x = float(row['x'])
-                    y = float(row['y'])
-
-                    match = re.match(r'(\w+)\s+전달', todo)
-                    if match:
-                        equipment_kor = match.group(1)
-                        mapping = {
-                            '휠체어': 'wheelchair',
-                            '링거': 'intravenous'
-                        }
-                        equipment_eng = mapping.get(equipment_kor)
-
-                        if equipment_eng and order_id != self.current_order_id:
-                            self.current_target = equipment_eng
-                            self.current_order_id = order_id
-                            self.current_destination = place
-                            self.destination_coords = (x, y)
-                            self.target_detected = False
-                            self.get_logger().info(f"[DB 명령 인식] id={order_id}, 대상: {self.current_target}, 목적지: {place}, 좌표: ({x}, {y})")
-            conn.close()
-        except Exception as e:
-            self.get_logger().error(f"[DB 에러] {e}")
 
     def image_callback(self, msg):
+        # print('self.current_order_id:', self.current_order_id)
+        # print('self.current_target:', self.current_target)
+
         if time.time() - self.last_infer_time < 1:  # 0.5초마다만 실행
             return
         self.last_infer_time = time.time()
@@ -165,7 +133,7 @@ class EquipmentDetectionNode(Node):
                 break  # ✅ 첫 번째만 처리 후 break
 
         # 결과값 publish        
-        self.get_logger().info(f"📡 Equipment detected, published value: {msg.data}")
+        # self.get_logger().info(f"📡 Equipment detected, published value: {msg.data}")
         self.equipment_detected_pub.publish(msg)
 
         # 필요하면 한 번만 보내고 멈추도록
@@ -176,19 +144,26 @@ class EquipmentDetectionNode(Node):
         cv2.imshow("Equipment Detection", frame)
         cv2.waitKey(1)
 
+    def is_equipment_detection_on_callback(self, msg):
+        print(f'is_equipment_detection_on: {msg.data}')
+        # detection 카메라 종료를 위함
+        if msg.data == 0:
+            self.current_order_id = None
+            self.current_target = None
+            cv2.destroyAllWindows()
+            cv2.waitKey(1)
+
 
     # MQTT 관련
     def on_mqtt_connect(self, client, userdata, flags, rc):
         self.get_logger().info("[MQTT] 연결 성공")
         client.subscribe(TOPIC)
-        client.subscribe(TOPIC2)
 
     def on_mqtt_message(self, client, userdata, msg):
         try:
             payload = msg.payload.decode("utf-8")
             data = json.loads(payload)
-
-            if msg.topic == TOPIC2:
+            if msg.topic == TOPIC:
                 self.current_order_id = data['no']
                 self.current_target = [None, "wheelchair", "intravenous"][self.current_order_id]
 
