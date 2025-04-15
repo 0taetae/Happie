@@ -26,6 +26,12 @@ public class MqttPublisher {
 
     public void sendLocation(int id, double x, double y) {
         try {
+            if (!mqttClient.isConnected()) {
+                System.err.println("MQTT 연결 안됨! 메시지 전송 실패 (robot/destination)");
+                 mqttClient.reconnect();
+                return;
+            }
+
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("id", id);
             jsonObject.put("x", x);
@@ -35,8 +41,9 @@ public class MqttPublisher {
             message.setQos(1);
 
             mqttClient.publish("robot/destination", message);
-            System.out.println("메시지 전송 완료:" + jsonObject.toString());
+            System.out.println("📡 메시지 전송 완료: " + jsonObject.toString());
         } catch (MqttException e) {
+            System.err.println("🔥 MQTT 전송 실패: " + e.getMessage());
             e.printStackTrace();
         }
     }
