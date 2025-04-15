@@ -25,8 +25,6 @@ public class MqttPublisher {
     }
 
     public void sendLocation(int id, double x, double y) {
-//        String payload = String.format("{\"id\": %d, \"x\": %.6f, \"y\": %.6f}", id, x, y);
-
         try {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("id", id);
