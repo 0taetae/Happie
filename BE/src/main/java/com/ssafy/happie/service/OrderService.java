@@ -128,6 +128,8 @@ public class OrderService {
                 .orElseThrow(() -> new IllegalArgumentException("robot1의 대기 중인 명령이 없습니다."));
 
         String todo = order.getTodo();
+        order.setState("진행 중");
+        orderRepository.save(order);
 
         if (todo.equals("운행")) {
             mqttPublisher.autoDriving(order.getId(), "start");
@@ -157,9 +159,6 @@ public class OrderService {
         }
         // 그 외 일반 위치 이동 명령 처리
         mqttPublisher.sendLocation(order.getId(), order.getX(), order.getY());
-
-        order.setState("진행 중");
-        orderRepository.save(order);
 
         return String.format("MQTT 전송 완료 id = %d, x = %.6f, y = %.6f", order.getId(), order.getX(), order.getY());
     }
