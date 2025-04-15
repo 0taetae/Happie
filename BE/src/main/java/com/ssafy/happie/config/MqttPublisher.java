@@ -25,12 +25,19 @@ public class MqttPublisher {
     }
 
     public void sendLocation(int id, double x, double y) {
-        String payload = String.format("{\"id\": %d, \"x\": %.6f, \"y\": %.6f}", id, x, y);
+//        String payload = String.format("{\"id\": %d, \"x\": %.6f, \"y\": %.6f}", id, x, y);
 
         try {
-            MqttMessage message = new MqttMessage(payload.getBytes());
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("id", id);
+            jsonObject.put("x", x);
+            jsonObject.put("y", y);
+
+            MqttMessage message = new MqttMessage(jsonObject.toString().getBytes());
             message.setQos(1);
+
             mqttClient.publish("robot/destination", message);
+            System.out.println("메시지 전송 완료:" + jsonObject.toString());
         } catch (MqttException e) {
             e.printStackTrace();
         }
