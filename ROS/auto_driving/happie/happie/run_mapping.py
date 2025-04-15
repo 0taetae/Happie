@@ -264,9 +264,6 @@ class Mapper(Node):
         m.origin.position.x = ((params_map["MAP_CENTER"][0]-params_map["MAP_SIZE"][0])/2)
         m.origin.position.y = ((params_map["MAP_CENTER"][1]-params_map["MAP_SIZE"][0])/2)
 
-        
-        print(m.origin.position.x, '=====')
-        print(m.origin.position.y, '=====')
         self.map_meta_data = m
 
         self.map_msg.info=self.map_meta_data
@@ -324,12 +321,8 @@ class Mapper(Node):
         map_y = (pose_y - MAP_CENTER[1] + MAP_SIZE[1]/2) / MAP_RESOLUTION
         self.map_pose_x = map_x
         self.map_pose_y = map_y
-
-        # pose = np.array([[pose_x], [pose_y], [heading]])
-        # self.mapping.update(pose, laser)
     
-    
-        # [5] 맵 퍼블리시
+        # 맵 퍼블리시
         # 각도 계산 (1도씩 증가하므로, 각도를 라디안으로 변환)
         angles = np.linspace(0, 2 * np.pi, len(distance), endpoint=False)  # 360개의 각도 생성 (0에서 2π까지)
 
@@ -351,11 +344,11 @@ class Mapper(Node):
         except Exception as e:
             print(f"MQTT 발행 실패: {e}")
 
-        # 로직 6 : map 업데이트 실행
+        # map 업데이트 실행
         pose = np.array([[pose_x], [pose_y], [heading]])
         self.mapping.update(pose, laser)
 
-        # [4] 로그 출력 (현재 위치 확인)
+        # 로그 출력 (현재 위치 확인)
         #print(f"현재 위치 (실제 좌표): x={pose_x:.2f}, y={pose_y:.2f}, heading={heading:.2f} rad")
         #print(f"맵 좌표계 인덱스: map_x={map_x:.0f}, map_y={map_y:.0f}")
         
@@ -367,24 +360,17 @@ class Mapper(Node):
         self.map_msg.data = np.clip((self.mapping.map.flatten() * 100), -128, 127).astype(np.int32).tolist()
         self.map_pub.publish(self.map_msg)
     
-        # [6] 10초마다 맵 저장
+        # 3초마다 맵 저장
         current_time = time.time()
-        if current_time - self.last_save_time > 10:
+        if current_time - self.last_save_time > 3:
             save_map(self, 'update_map.txt')
             self.last_save_time = current_time
-
-    # def odom_callback(self, msg):
-    #     """ Odometry 데이터를 받아 현재 방향 (yaw) 업데이트 """
-    #     orientation_q = msg.pose.pose.orientation
-    #     quat = Quaternion(orientation_q.w, orientation_q.x, orientation_q.y, orientation_q.z)
-    #     _, _, self.yaw = quat.to_euler()
-    #     print('odometry info =========', msg.pose.x, msg.pose.y, round(self.yaw, 3))
 
 
 def save_map(node, file_path):
     print("save map start!!!")
     
-    # 로직 12 : 맵 저장
+    # 맵 저장
     pkg_path = PKG_PATH
     back_folder='..'
     folder_name='data'

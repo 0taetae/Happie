@@ -31,6 +31,9 @@ class Controller(Node):
         self.pose_y = 0.0
         self.heading = 0.0  # LaserScan에서 계산
 
+        # # 일정 시간 후, 경로 재요청 로직1
+        # self.move_cnt = 10.0
+
         # 배터리 잔량
         self.is_charging = False
         self.cum_pose = []
@@ -41,7 +44,7 @@ class Controller(Node):
         self.is_going_charging_station = False
 
         # 이동 타이머 설정
-        self.timer = self.create_timer(0.01, self.move_to_destination)
+        self.timer = self.create_timer(0.001, self.move_to_destination)
 
         self.is_to_move = False
         self.fall_detected = False
@@ -95,7 +98,9 @@ class Controller(Node):
                 self.is_to_move = True
     
     def scan_callback(self, msg):
-        # print(self.pose_x, self.pose_y, self.heading)
+        # # 일정 시간 후, 경로 재요청 로직2
+        # self.move_cnt -= 0.03
+        print(self.pose_x, self.pose_y, self.heading)
 
         # 충전 상태관리
         if math.hypot(-42.44 - self.pose_x, -45.6 - self.pose_y) < 0.1:
@@ -199,6 +204,10 @@ class Controller(Node):
         print("경로 받기 성공")
         self.current_goal_idx = 0
         self.is_to_move = True
+        
+        # # 일정 시간 후, 경로 재요청 로직3
+        # self.move_cnt = 10.0
+
         self.mqtt_client.publish(self.mqtt_topic_log, "moving")
         self.path_requested = False
 
@@ -271,10 +280,14 @@ class Controller(Node):
             self.order_id = None
 
     def move_to_destination(self):
-        # print(self.is_to_move)
-        # print("self.path_requested, self.is_charging, self.is_going_charging_station")
-        # print(self.path_requested, self.is_charging, self.is_going_charging_station)
-        # print(f'배터리 잔량 {round(self.battery, 2)}%')
+        # # 일정 시간 후, 경로 재요청 로직4
+        # if self.is_to_move == False: self.move_cnt = 10.0
+        # # 일정 시간 후, 경로 재요청 로직5
+        # if self.is_to_move == True and self.move_cnt < 0:
+        #     self.turtlebot_stop() 
+        #     self.request_new_path()
+        #     self.path_requested = True  # 한 번만 요청하도록 설정
+
         self.object_detected_cnt -= 0.2
 
         # heading 오차 보정 ==============================
@@ -303,7 +316,9 @@ class Controller(Node):
                 else:
                     vel_msg.angular.z = 0.15*self.correct_Gaussian_error['weight']
                     vel_msg.linear.x = 0.0  # 회전 중 직진 금지
-
+            
+            # vel_msg.angular.z = 2*vel_msg.angular.z
+            vel_msg.linear.x = 1.6*vel_msg.linear.x
             self.pub.publish(vel_msg)
             return
 
@@ -396,6 +411,8 @@ class Controller(Node):
                     vel_msg.angular.z = 0.1 * weight * angle_diff / 10.0  # 직진 중 부드러운 조향
                     # vel_msg.angular.z = 0.0  # 직진 시 회전 없음
 
+            # vel_msg.angular.z = 2*vel_msg.angular.z
+            vel_msg.linear.x = 1.6*vel_msg.linear.x
             self.pub.publish(vel_msg)
         
         # self.is_to_move == False

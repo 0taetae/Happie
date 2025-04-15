@@ -128,8 +128,8 @@ class loadMap(Node):
         print(f"디코딩된 이미지 저장 완료: {decoded_image_path}")
 
         # 이미지 직접 보기 (옵션)
-        image.show(title="원본 맵 이미지")
-        decoded_image.show(title="디코딩된 맵 이미지")
+        # image.show(title="원본 맵 이미지")
+        # decoded_image.show(title="디코딩된 맵 이미지")
 
         return image_bytes
 
