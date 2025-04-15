@@ -204,8 +204,8 @@ class a_star(Node):
             print(f"🚀 /order_id 퍼블리시 완료: {self.order_id}")
 
             # # 테스트용 토픽으로 개발 중, 잠시 변경경
-            # if topic == 'robot/test':
-            if topic == 'robot/patrol':
+            if topic == 'robot/test':
+            # if topic == 'robot/patrol':
             # 전체순찰의 경우 
                 print("📌 전체 순찰 명령")
                 # 순찰 명령을 받은 경우
@@ -460,7 +460,7 @@ class a_star(Node):
             if 0 <= nx < self.rows and 0 <= ny < self.cols:
                 cost = dCost[i]
                 
-                # 벽 근처 가중치 추가 (4칸 안전 마진 적용)
+                # 벽 근처 가중치 추가 (4 ~ 8칸 안전 마진 적용)
                 min_distance = 4  
                 for dx in range(-min_distance, min_distance + 1):
                     for dy in range(-min_distance, min_distance + 1):
@@ -559,8 +559,8 @@ class a_star(Node):
         back_folder = '..'  # 상위 폴더 지정
         pkg_path = PKG_PATH
         folder_name = 'data'
-        # file_name = 'map.txt'
-        file_name = 'update_map.txt'
+        file_name = 'map.txt'
+        # file_name = 'update_map.txt'
         full_path = os.path.join(pkg_path, back_folder, folder_name, file_name)
 
         # 데이터 읽기
@@ -596,7 +596,7 @@ class a_star(Node):
         print("끝!!!")
         if path:
             print(f"✅ 경로 탐색 성공! 경로 길이: {len(path)}")
-            self.publish_global_path(real_path[::5])
+            self.publish_global_path(real_path[::])
             for p in path:
                 data_array[p[0]][p[1]] = 50  # 경로 표시
         else:
