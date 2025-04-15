@@ -129,7 +129,7 @@ class Mapping:
 
 
     def update(self, pose, laser):
-        print("update start!!!")
+        # print("update start!!!")
         # 로직 7. pose 값을 받아서 좌표변환 행렬로 정의
         n_points = laser.shape[1]
         pose_mat = utils.xyh2mat2D(pose)
@@ -175,17 +175,8 @@ class Mapping:
         cv2.waitKey(1)
 
     def __del__(self):
-        # 로직 12. 종료 시 map 저장
-        ## Ros2의 노드가 종료될 때 만들어진 맵을 저장하도록 def __del__과 save_map이 정의되어 있습니다
-        ## self.save_map(())
+
         pass
-
-    
-    ## def save_map(self):
-    ##    map_clone = self.map.copy()
-    ##    cv2.imwrite(self.map_filename, map_clone*255)
-
-
 
     def show_pose_and_points(self, pose, laser_global):
         # run_mapping 실행 시, 성능이슈로 시각화x
@@ -272,6 +263,7 @@ class Mapper(Node):
         self.mapping = Mapping(params_map)
 
     def image_callback(self, msg):
+        print('이미지 콜백 시작!!!!!')
         try:
             # 1. ROS 이미지 데이터를 numpy 배열로 변환
             np_arr = np.frombuffer(msg.data, np.uint8)
@@ -297,13 +289,13 @@ class Mapper(Node):
             print(f"이미지 MQTT 전송 실패: {e}")
     
     def scan_callback(self, msg):
-        # print("scan_callback start!!!")
+        print("scan_callback start!!!")
     
         # [1] 현재 위치 (pose_x, pose_y, heading) 가져오기
         pose_x = msg.range_min  # 실제 x 좌표 (meters)
         pose_y = msg.scan_time  # 실제 y 좌표 (meters)
         heading = msg.time_increment  # 로봇의 방향 (radians)
-        print(pose_x,pose_y,'실제 위치')
+        # print(pose_x,pose_y,'실제 위치')
         
         # [2] 거리 데이터를 기반으로 LIDAR 스캔 변환
         distance = np.array(msg.ranges)
@@ -340,7 +332,7 @@ class Mapper(Node):
         mqtt_payload = f"{map_x:.0f},{map_y:.0f}"
         try:
             self.mqtt_client.publish(self.mqtt_topic_position, mqtt_payload)
-            print(f"MQTT 발행: {mqtt_payload}")
+            print(f"MQTT 발행(위치 데이터): {mqtt_payload}")
         except Exception as e:
             print(f"MQTT 발행 실패: {e}")
 
