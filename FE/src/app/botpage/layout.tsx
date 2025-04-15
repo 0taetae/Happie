@@ -27,7 +27,7 @@ export default function BotLayout() {
   const [navigationDone, setNavigationDone] = useState(false); // ✅ 안내 종료 메시지 제어용
   const [showInteraction, setShowInteraction] = useState(false);
 
-  const questionList = ["원무수납처 \n어디야?", "소아진정실은 \n뭐하는 곳이야?", "501호실이 \n어디있어?"].map((text, idx) => ({
+  const questionList = ["원무수납처 \n어디야?", "소아진정실은 \n뭐하는 곳이야?", "502호실이 \n어디있어?"].map((text, idx) => ({
     text,
     color: colorOptions[idx % colorOptions.length],
   }));
