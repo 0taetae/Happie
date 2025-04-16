@@ -27,7 +27,7 @@ public class OrderService {
         "503호실", new double[] {-42.64277267456055, -38.69271469116211},
         "간호사실", new double[] {-50.82450485229492, -54.83995056152344},
         "휠체어 보관실", new double[] {-56.482933044433594, -52.840431213378906},
-        "링거 보관실", new double[] {-59.81382751464844, -52.48174285888672},
+        "링거 보관실", new double[] {-52.648616790771484 , -38.33458709716797},
         "로봇방", new double[] {-42.52598571777344, -46.45439147949219}
     );
 
@@ -38,7 +38,7 @@ public class OrderService {
 
         // 장소에 따른 좌표를 가져옴
         double[] coordinates = PLACE_COORDINATES.getOrDefault(place, new double[]{0, 0}); // 기본값은 0,0
-
+        System.out.println(orderRequestDto.getTodo());
         Order order = new Order(
                 orderRequestDto.getRobot(),
                 place,
@@ -153,7 +153,14 @@ public class OrderService {
 
             return String.format("MQTT 전송 완료 (기자재 전달) id = %d, type = %d, x = %.6f, y = %.6f", order.getId(), type, x, y);
         } else if (todo.equals("안내")) {
-            mqttPublisher.sendLocation(order.getId(), order.getX(), order.getY());
+            try {
+                mqttPublisher.sendLocation(order.getId(), order.getX(), order.getY());
+            } catch (Exception e) {
+                System.err.println("❌ 안내 명령 MQTT 전송 실패: " + e.getMessage());
+                order.setState("대기");
+                orderRepository.save(order);
+                throw new RuntimeException("MQTT 전송 실패 - 안내 명령 롤백");
+            }
 
             return String.format("안내 명령 MQTT 전송 완료 (id = %d)", order.getId());
         }
