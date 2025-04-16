@@ -3,7 +3,7 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, Point
 from nav_msgs.msg import Path
-from sensor_msgs.msg import LaserScan
+from sensor_msgs.msg import LaserScan, CompressedImage
 from std_msgs.msg import Bool
 import numpy as np
 import time, json
@@ -11,6 +11,11 @@ import time, json
 from .config import params_map, PKG_PATH, MQTT_CONFIG
 import paho.mqtt.client as mqtt
 from std_msgs.msg import Int32, String
+
+import cv2
+from PIL import Image 
+import io
+import base64
 
 class Controller(Node):
     def __init__(self):
@@ -20,6 +25,10 @@ class Controller(Node):
         self.a_star_global_path_sub = self.create_subscription(Path, '/a_star_global_path', self.global_path_callback, 1)
         self.order_id_sub = self.create_subscription(Int32, '/order_id', self.order_id_callback, 1)
         self.priority_work_sub = self.create_subscription(String, '/priority_work', self.priority_work_callback, 1)
+        # 시연용(run_mapping없이) sub 추가
+        self.image_sub = self.create_subscription(CompressedImage,'/image_jpeg/compressed',self.image_callback,1)
+        self.image_last_sent_time = 0
+        self.pose_last_sent_time = 0
 
         self.equipment_detected_sub = self.create_subscription(Int32, '/equipment_detected', self.equipment_callback, 1)
         self.path_request_pub = self.create_publisher(Point, '/request_new_path', 1) # 장애물 감지 시 새 경로 요청
@@ -73,6 +82,9 @@ class Controller(Node):
         self.mqtt_port = MQTT_CONFIG["PORT"]
         self.mqtt_topic_log = "robot/log"
         self.mqtt_topic_fall_check = "robot/fall_check" # 낙상 확인 후 재이동 
+        # 시연용 topic 추가
+        self.mqtt_topic_position = "robot/map_position"
+        self.mqtt_topic_image = "robot/image"
 
         self.mqtt_client.on_connect = self.on_connect
         self.mqtt_client.on_message = self.on_message
@@ -100,7 +112,24 @@ class Controller(Node):
     def scan_callback(self, msg):
         # # 일정 시간 후, 경로 재요청 로직2
         # self.move_cnt -= 0.03
-        print(self.pose_x, self.pose_y, self.heading)
+        # print(self.pose_x, self.pose_y, self.heading)
+        
+        # 시연용(run_mapping 없이 위치 데이터 보내기) ==============================
+        map_x = (self.pose_x - params_map["MAP_CENTER"][0] + params_map["MAP_SIZE"][0]/2) / params_map["MAP_RESOLUTION"]
+        map_y = (self.pose_y - params_map["MAP_CENTER"][1] + params_map["MAP_SIZE"][1]/2) / params_map["MAP_RESOLUTION"]
+        # MQTT로 위치 데이터 전송
+        mqtt_payload = f"{map_x:.0f},{map_y:.0f}"
+        
+        # 현재시간
+        current_time = time.time()
+        # 1초에 한번씩만 위치데이터 전송
+        if current_time - self.pose_last_sent_time >= 1.0:
+            try:
+                self.mqtt_client.publish(self.mqtt_topic_position, mqtt_payload)
+                print(f"MQTT 발행(위치 데이터): {mqtt_payload}")
+            except Exception as e:
+                print(f"MQTT 발행 실패: {e}")
+        # ======================================================================
 
         # 충전 상태관리
         if math.hypot(-42.44 - self.pose_x, -45.6 - self.pose_y) < 0.1:
@@ -211,6 +240,36 @@ class Controller(Node):
         self.mqtt_client.publish(self.mqtt_topic_log, "moving")
         self.path_requested = False
 
+    # 시연용 이미지 callback함수(run_mapping없이 시연)
+    def image_callback(self, msg):
+        print('이미지 콜백 시작!!!!!')
+        # 현재시간
+        current_time = time.time()
+        # 1초에 한번씩만 이미지 데이터 call_back
+        if current_time - self.image_last_sent_time >= 1.0:
+            try:
+                # 1. ROS 이미지 데이터를 numpy 배열로 변환
+                np_arr = np.frombuffer(msg.data, np.uint8)
+                cv_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)  # OpenCV 이미지로 디코딩
+    
+                # 2. 다운스케일 처리 (예: 50% 크기로 축소)
+                scale_percent = 50  # 축소 비율 (%)
+                width = int(cv_image.shape[1] * scale_percent / 100)
+                height = int(cv_image.shape[0] * scale_percent / 100)
+                resized_image = cv2.resize(cv_image, (width, height), interpolation=cv2.INTER_AREA)
+    
+                # 3. 이미지를 PIL로 변환하여 base64 인코딩
+                pil_image = Image.fromarray(cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB))
+                buffer = io.BytesIO()
+                pil_image.save(buffer, format='JPEG')  # JPEG로 저장
+                encoded_image = base64.b64encode(buffer.getvalue()).decode('utf-8')
+    
+                # 4. MQTT로 전송
+                self.mqtt_client.publish(self.mqtt_topic_image, encoded_image)
+                print("다운스케일된 이미지 MQTT 전송 완료")
+    
+            except Exception as e:
+                print(f"이미지 MQTT 전송 실패: {e}")
 
     # 장애물 감지 시 새로운 경로를 요청하고 목적지 좌표를 전달
     def request_new_path(self, type='', new_goal = (-1, -1)):
