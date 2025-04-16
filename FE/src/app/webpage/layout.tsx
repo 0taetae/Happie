@@ -13,7 +13,7 @@ import Link from "next/link";
 export default function WebPageLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
-  const [unauthorized, setUnauthorized] = useState(false);
+  // const [unauthorized, setUnauthorized] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
   const [warningImage, setWarningImage] = useState("");
 
@@ -31,7 +31,7 @@ export default function WebPageLayout({ children }: { children: React.ReactNode 
         timer: 1000,
       });
 
-      setUnauthorized(true);
+      // setUnauthorized(true);
       setTimeout(() => {
         router.push("/");
       }, 1000);
@@ -57,9 +57,9 @@ export default function WebPageLayout({ children }: { children: React.ReactNode 
 
   if (isChecking) return null;
 
-  if (unauthorized) {
-    return <div className="min-h-screen bg-white" />;
-  }
+  // if (unauthorized) {
+  //   return <div className="min-h-screen bg-white" />;
+  // }
 
   return (
     <div className="flex flex-col h-screen font-bmjua bg-white">
