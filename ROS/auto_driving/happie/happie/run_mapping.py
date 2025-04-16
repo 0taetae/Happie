@@ -201,8 +201,8 @@ class Mapping:
 
         map_bgr = cv2.resize(map_bgr, dsize=(0, 0), fx=self.map_vis_resize_scale, fy=self.map_vis_resize_scale)
         # print("Map shape:", map_bgr.shape)
-        cv2.imshow('Sample Map', map_bgr)
-        cv2.waitKey(1)
+        # cv2.imshow('Sample Map', map_bgr)
+        # cv2.waitKey(1)
 
 
 
