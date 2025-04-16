@@ -11,7 +11,7 @@ public class AutoDispatcher {
 
     private final OrderService orderService;
 
-    @Scheduled(fixedRate = 10000)
+    @Scheduled(fixedRate = 20000)
     public void autoSendDestination() {
         try {
             String result = orderService.sendDestination();

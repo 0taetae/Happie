@@ -10,7 +10,6 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class MqttPublisherConfig {
-
     @Bean
     public MqttPublisher mqttPublisher(@Value("${mqtt.broker}") String broker,
                                        @Value("${mqtt.client-id}") String clientId,
@@ -28,7 +27,7 @@ public class MqttPublisherConfig {
 
         MqttClient mqttClient = new MqttClient(broker, subscriberId, new MemoryPersistence());
 
-        // 옵션 설정 (자동 재연결 + 세션 유지)
+        // 옵션 설정
         MqttConnectOptions options = new MqttConnectOptions();
         options.setUserName(username);
         options.setPassword(password.toCharArray());
@@ -37,24 +36,7 @@ public class MqttPublisherConfig {
         options.setKeepAliveInterval(60);            // 헬스 체크
         options.setConnectionTimeout(10);            // 연결 타임아웃
 
-        // 연결 시도 (안되면 예외 던짐)
         mqttClient.connect(options);
-
-        // 연결 상태 백그라운드 체크 (선택)
-        new Thread(() -> {
-            while (true) {
-                try {
-                    if (!mqttClient.isConnected()) {
-                        System.out.println("MQTT 재연결 시도 중...");
-                        mqttClient.reconnect();  // 재연결
-                    }
-                    Thread.sleep(5000);
-                } catch (Exception e) {
-                    System.err.println("MQTT 재연결 실패: " + e.getMessage());
-                }
-            }
-        }).start();
-
         return mqttClient;
     }
 }
