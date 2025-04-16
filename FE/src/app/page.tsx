@@ -5,21 +5,22 @@ import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 
 export default function Home() {
+  const [isLoading, setIsLoading] = useState(true); // ✅ 로딩 상태
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [inputCode, setInputCode] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  // ✅ access_code가 이미 있다면 자동 로그인 처리
   useEffect(() => {
     const savedCode = localStorage.getItem("access_code");
 
     if (savedCode === "gkstkfckdl0411!") {
       router.push("/webpage/home");
+    } else {
+      setIsLoading(false); // ✅ 로그인 필요: 본 화면 렌더링 허용
     }
   }, [router]);
 
-  // 모달 열릴 때 자동 포커스
   useEffect(() => {
     if (isLoginOpen) {
       setTimeout(() => {
@@ -52,6 +53,9 @@ export default function Home() {
       });
     }
   };
+
+  // ✅ 로그인 체크 중엔 아무 것도 렌더링하지 않음
+  if (isLoading) return null;
 
   return (
     <div className="flex h-screen bg-white">
