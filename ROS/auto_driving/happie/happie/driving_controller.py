@@ -242,7 +242,7 @@ class Controller(Node):
 
     # 시연용 이미지 callback함수(run_mapping없이 시연)
     def image_callback(self, msg):
-        print('이미지 콜백 시작!!!!!')
+        # print('이미지 콜백 시작!!!!!')
         # 현재시간
         current_time = time.time()
         # 1초에 한번씩만 이미지 데이터 call_back
@@ -324,17 +324,17 @@ class Controller(Node):
             self.current_goal_idx = 0
             # rclpy.shutdown()
 
-            # 기자재 방에 도착했을 경우 
-            if self.pose_x <= -55.20 and self.pose_y <= -51.76:
-                payload = {
-                    "id": self.order_id if self.order_id is not None else -1,
-                    "status": "arrive"
-                }
-            else:
-                payload = {
-                    "id": self.order_id if self.order_id is not None else -1,
-                    "status": "finish"
-                }
+            # # 기자재 방에 도착했을 경우 
+            # if self.pose_x <= -55.20 and self.pose_y <= -51.76:
+            #     payload = {
+            #         "id": self.order_id if self.order_id is not None else -1,
+            #         "status": "arrive"
+            #     }
+            # else:
+            payload = {
+                "id": self.order_id if self.order_id is not None else -1,
+                "status": "finish"
+            }
             self.mqtt_client.publish(self.mqtt_topic_log, json.dumps(payload))
             self.order_id = None
 
