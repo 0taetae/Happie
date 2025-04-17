@@ -30,6 +30,7 @@ setup(
             'lidar_subscriber = happie.lidar_subscriber:main',
             'image_parser = happie.perception:main',
             'hand_control = happie.handcontrol:main',
+            'hand_control_manual = happie.handcontrol_manual:main',
             'make_path = happie.make_path:main',
             'path_tracking = happie.path_tracking:main',
             'path_pub = happie.path_pub:main',

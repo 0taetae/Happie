@@ -5,7 +5,7 @@ const brokerUrl = "wss://j12e103.p.ssafy.io/ws/";
 const options = {
 
   clientId: `nextjs_mqtt_${Math.random().toString(16).substr(2, 8)}`,
-  reconnectPeriod: 10000000,
+  reconnectPeriod: 1000,
   clean: true,
 } ;
 export const mqttClientId = options.clientId;
@@ -36,4 +36,12 @@ mqttClient.on("connect", () => {
 
 mqttClient.on("error", (err) => {
   console.error("❌ MQTT 오류:", err);
+});
+
+mqttClient.on("close", () => {
+  console.warn("⚠️ MQTT 연결 종료됨");
+});
+
+mqttClient.on("offline", () => {
+  console.warn("⚠️ MQTT 오프라인 상태");
 });

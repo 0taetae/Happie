@@ -11,6 +11,8 @@ import { useChatbotResponse } from "./hooks/useChatbotResponse";
 import Swal from "sweetalert2";
 import { colorOptions } from "../../types/color";
 import "./../globals.css";
+import { useRouter } from "next/navigation";
+
 
 type Stage = "idle" | "recording" | "loading" | "answering" | "navigating";
 
@@ -26,6 +28,7 @@ export default function BotLayout() {
   const [navigationImage, setNavigationImage] = useState<string | null>(null);
   const [navigationDone, setNavigationDone] = useState(false); // ✅ 안내 종료 메시지 제어용
   const [showInteraction, setShowInteraction] = useState(false);
+  const router = useRouter();
 
   const questionList = ["원무수납처 \n어디야?", "소아진정실은 \n뭐하는 곳이야?", "501호실이 \n어디있어?"].map((text, idx) => ({
     text,
@@ -311,7 +314,8 @@ export default function BotLayout() {
             <>
               <img src={navigationImage} alt="안내 중" className="rounded-xl w-full max-h-[600px] object-contain mb-4" />
               <p className="text-xl text-gray-800 font-semibold flex items-center">
-                <div className="text-7xl text-emerald-700 wavy-text flex gap-2">
+                <div className="text-7xl text-emerald-700 wavy-text flex gap-2"
+                onClick={() => router.push("/webpage/home")}>
                   {"하피를 따라오세요!".split("").map((char, idx) => (
                     <span key={idx}>{char}</span>
                   ))}

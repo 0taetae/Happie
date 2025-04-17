@@ -129,7 +129,7 @@ class Mapping:
 
 
     def update(self, pose, laser):
-        print("update start!!!")
+        # print("update start!!!")
         # 로직 7. pose 값을 받아서 좌표변환 행렬로 정의
         n_points = laser.shape[1]
         pose_mat = utils.xyh2mat2D(pose)
@@ -175,21 +175,12 @@ class Mapping:
         cv2.waitKey(1)
 
     def __del__(self):
-        # 로직 12. 종료 시 map 저장
-        ## Ros2의 노드가 종료될 때 만들어진 맵을 저장하도록 def __del__과 save_map이 정의되어 있습니다
-        ## self.save_map(())
+
         pass
-
-    
-    ## def save_map(self):
-    ##    map_clone = self.map.copy()
-    ##    cv2.imwrite(self.map_filename, map_clone*255)
-
-
 
     def show_pose_and_points(self, pose, laser_global):
         # run_mapping 실행 시, 성능이슈로 시각화x
-        return
+        
         tmp_map = self.map.astype(np.float32)
         map_bgr = cv2.cvtColor(tmp_map, cv2.COLOR_GRAY2BGR)
 
@@ -210,8 +201,8 @@ class Mapping:
 
         map_bgr = cv2.resize(map_bgr, dsize=(0, 0), fx=self.map_vis_resize_scale, fy=self.map_vis_resize_scale)
         # print("Map shape:", map_bgr.shape)
-        cv2.imshow('Sample Map', map_bgr)
-        cv2.waitKey(1)
+        # cv2.imshow('Sample Map', map_bgr)
+        # cv2.waitKey(1)
 
 
 
@@ -264,9 +255,6 @@ class Mapper(Node):
         m.origin.position.x = ((params_map["MAP_CENTER"][0]-params_map["MAP_SIZE"][0])/2)
         m.origin.position.y = ((params_map["MAP_CENTER"][1]-params_map["MAP_SIZE"][0])/2)
 
-        
-        print(m.origin.position.x, '=====')
-        print(m.origin.position.y, '=====')
         self.map_meta_data = m
 
         self.map_msg.info=self.map_meta_data
@@ -293,20 +281,25 @@ class Mapper(Node):
             encoded_image = base64.b64encode(buffer.getvalue()).decode('utf-8')
 
             # 4. MQTT로 전송
+            '''
+            # 이미지 데이터 전송 기능 사용 하지 않는 것으로 변경되었음(driving_controller에서 대체)
+            
             self.mqtt_client.publish(self.mqtt_topic_image, encoded_image)
             print("다운스케일된 이미지 MQTT 전송 완료")
-
+            '''
         except Exception as e:
-            print(f"이미지 MQTT 전송 실패: {e}")
+            # print(f"이미지 MQTT 전송 실패: {e}")
+            return
+
     
     def scan_callback(self, msg):
-        # print("scan_callback start!!!")
+        print("scan_callback start!!!")
     
         # [1] 현재 위치 (pose_x, pose_y, heading) 가져오기
         pose_x = msg.range_min  # 실제 x 좌표 (meters)
         pose_y = msg.scan_time  # 실제 y 좌표 (meters)
         heading = msg.time_increment  # 로봇의 방향 (radians)
-        print(pose_x,pose_y,'실제 위치')
+        # print(pose_x,pose_y,'실제 위치')
         
         # [2] 거리 데이터를 기반으로 LIDAR 스캔 변환
         distance = np.array(msg.ranges)
@@ -324,12 +317,8 @@ class Mapper(Node):
         map_y = (pose_y - MAP_CENTER[1] + MAP_SIZE[1]/2) / MAP_RESOLUTION
         self.map_pose_x = map_x
         self.map_pose_y = map_y
-
-        # pose = np.array([[pose_x], [pose_y], [heading]])
-        # self.mapping.update(pose, laser)
     
-    
-        # [5] 맵 퍼블리시
+        # 맵 퍼블리시
         # 각도 계산 (1도씩 증가하므로, 각도를 라디안으로 변환)
         angles = np.linspace(0, 2 * np.pi, len(distance), endpoint=False)  # 360개의 각도 생성 (0에서 2π까지)
 
@@ -344,18 +333,22 @@ class Mapper(Node):
         map_y = (pose_y - params_map["MAP_CENTER"][1] + params_map["MAP_SIZE"][1]/2) / params_map["MAP_RESOLUTION"]
 
         # MQTT로 위치 데이터 전송
+        '''
+        # 위치 데이터 전송 기능 사용 하지 않는 것으로 변경되었음(driving_controller에서 대체)
+
         mqtt_payload = f"{map_x:.0f},{map_y:.0f}"
         try:
             self.mqtt_client.publish(self.mqtt_topic_position, mqtt_payload)
-            print(f"MQTT 발행: {mqtt_payload}")
+            print(f"MQTT 발행(위치 데이터): {mqtt_payload}")
         except Exception as e:
             print(f"MQTT 발행 실패: {e}")
+        '''
 
-        # 로직 6 : map 업데이트 실행
+        # map 업데이트 실행
         pose = np.array([[pose_x], [pose_y], [heading]])
         self.mapping.update(pose, laser)
 
-        # [4] 로그 출력 (현재 위치 확인)
+        # 로그 출력 (현재 위치 확인)
         #print(f"현재 위치 (실제 좌표): x={pose_x:.2f}, y={pose_y:.2f}, heading={heading:.2f} rad")
         #print(f"맵 좌표계 인덱스: map_x={map_x:.0f}, map_y={map_y:.0f}")
         
@@ -367,24 +360,17 @@ class Mapper(Node):
         self.map_msg.data = np.clip((self.mapping.map.flatten() * 100), -128, 127).astype(np.int32).tolist()
         self.map_pub.publish(self.map_msg)
     
-        # [6] 10초마다 맵 저장
+        # 3초마다 맵 저장
         current_time = time.time()
-        if current_time - self.last_save_time > 10:
+        if current_time - self.last_save_time > 3:
             save_map(self, 'update_map.txt')
             self.last_save_time = current_time
-
-    # def odom_callback(self, msg):
-    #     """ Odometry 데이터를 받아 현재 방향 (yaw) 업데이트 """
-    #     orientation_q = msg.pose.pose.orientation
-    #     quat = Quaternion(orientation_q.w, orientation_q.x, orientation_q.y, orientation_q.z)
-    #     _, _, self.yaw = quat.to_euler()
-    #     print('odometry info =========', msg.pose.x, msg.pose.y, round(self.yaw, 3))
 
 
 def save_map(node, file_path):
     print("save map start!!!")
     
-    # 로직 12 : 맵 저장
+    # 맵 저장
     pkg_path = PKG_PATH
     back_folder='..'
     folder_name='data'

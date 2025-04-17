@@ -31,7 +31,10 @@ public class MqttPublisherConfig {
         MqttConnectOptions options = new MqttConnectOptions();
         options.setUserName(username);
         options.setPassword(password.toCharArray());
-        options.setCleanSession(true);
+        options.setCleanSession(false);              // 세션 유지
+        options.setAutomaticReconnect(true);         // 자동 재연결
+        options.setKeepAliveInterval(60);            // 헬스 체크
+        options.setConnectionTimeout(10);            // 연결 타임아웃
 
         mqttClient.connect(options);
         return mqttClient;
