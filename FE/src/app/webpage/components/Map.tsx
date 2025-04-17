@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { mqttClient } from "@/lib/mqttClient";
 import OrderButton from "./OrderButton";
 import DotAnimation from "./DotAnimation";
+import { setMapImageData, setMapParamsData } from "@/lib/mapStore";
 
 interface Position {
   id: number;
@@ -37,6 +38,7 @@ export default function Map({ onOrderSuccess }: { onOrderSuccess: () => void }) 
     return mapParams ? mapParams.MAP_SIZE[1] / mapParams.MAP_RESOLUTION : 1024;
   }, [mapParams]);
 
+  // ✅ 로봇 상태를 3초마다 fetch
   useEffect(() => {
     const fetchStatuses = async () => {
       const newStatuses: Record<number, InProgress> = {};
@@ -53,16 +55,30 @@ export default function Map({ onOrderSuccess }: { onOrderSuccess: () => void }) 
       setStatuses(newStatuses);
     };
 
-    fetchStatuses();
+    fetchStatuses(); // 처음 1번 실행
+
+    const interval = setInterval(() => {
+      fetchStatuses(); // 3초마다 상태 갱신
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, []);
 
+  // ✅ MQTT로 지도 이미지 및 로봇 위치 수신
   useEffect(() => {
     const handleMapMessage = (topic: string, message: Buffer) => {
       try {
         if (topic === "map/data") {
           const parsed = JSON.parse(message.toString());
-          if (parsed.image) setMapImage(`data:image/png;base64,${parsed.image}`);
-          if (parsed.params) setMapParams(parsed.params);
+          if (parsed.image) {
+            const imageUrl = `data:image/png;base64,${parsed.image}`;
+            setMapImage(imageUrl);
+            setMapImageData(imageUrl); // ✅ 추가
+          }
+          if (parsed.params) {
+            setMapParams(parsed.params);
+            setMapParamsData(parsed.params); // ✅ 저장
+          }
         }
 
         if (topic === "robot/map_position") {
