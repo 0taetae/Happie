@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { mqttClient } from "@/lib/mqttClient";
 import OrderButton from "./OrderButton";
 import DotAnimation from "./DotAnimation";
+import { setMapImageData, setMapParamsData } from "@/lib/mapStore";
 
 interface Position {
   id: number;
@@ -69,8 +70,15 @@ export default function Map({ onOrderSuccess }: { onOrderSuccess: () => void }) 
       try {
         if (topic === "map/data") {
           const parsed = JSON.parse(message.toString());
-          if (parsed.image) setMapImage(`data:image/png;base64,${parsed.image}`);
-          if (parsed.params) setMapParams(parsed.params);
+          if (parsed.image) {
+            const imageUrl = `data:image/png;base64,${parsed.image}`;
+            setMapImage(imageUrl);
+            setMapImageData(imageUrl); // ✅ 추가
+          }
+          if (parsed.params) {
+            setMapParams(parsed.params);
+            setMapParamsData(parsed.params); // ✅ 저장
+          }
         }
 
         if (topic === "robot/map_position") {
