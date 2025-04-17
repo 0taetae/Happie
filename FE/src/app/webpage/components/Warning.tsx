@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { mqttClient } from "@/lib/mqttClient";
+import { getMapImageData, getMapParamsData } from "@/lib/mapStore";
 
 interface WarningProps {
   onClose: () => void;
@@ -12,8 +13,8 @@ interface WarningProps {
 export default function Warning({ onClose, imageUrl }: WarningProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [mapImage, setMapImage] = useState<string | null>(null);
-  const [robot1Position, setRobot1Position] = useState<{ x: number; y: number } | null>(null);
   const [mapParams, setMapParams] = useState<{ MAP_SIZE: number[]; MAP_RESOLUTION: number } | null>(null);
+  const [robot1Position, setRobot1Position] = useState<{ x: number; y: number } | null>(null);
 
   // 🧠 계산된 지도 해상도 (픽셀 단위)
   const mapWidthPx = useMemo(() => {
@@ -42,19 +43,17 @@ export default function Warning({ onClose, imageUrl }: WarningProps) {
     };
   }, []);
 
+  // 🗺️ 전역 상태에서 이미지 및 해상도 가져오기
+  useEffect(() => {
+    const savedImage = getMapImageData();
+    const savedParams = getMapParamsData();
+    if (savedImage) setMapImage(savedImage);
+    if (savedParams) setMapParams(savedParams);
+  }, []);
+
   // 🛰️ MQTT 수신 처리
   useEffect(() => {
     const handleMapMessage = (topic: string, message: Buffer) => {
-      if (topic === "map/data") {
-        try {
-          const parsed = JSON.parse(message.toString());
-          if (parsed.image) setMapImage(`data:image/png;base64,${parsed.image}`);
-          if (parsed.params) setMapParams(parsed.params); // ✅ 지도 해상도 받아오기
-        } catch (err) {
-          console.error("❌ 맵 데이터 파싱 오류:", err);
-        }
-      }
-
       if (topic === "robot/map_position") {
         const [x, y] = message.toString().split(",").map(Number);
         if (!isNaN(x) && !isNaN(y)) {
@@ -63,12 +62,10 @@ export default function Warning({ onClose, imageUrl }: WarningProps) {
       }
     };
 
-    mqttClient.subscribe("map/data");
     mqttClient.subscribe("robot/map_position");
     mqttClient.on("message", handleMapMessage);
 
     return () => {
-      mqttClient.unsubscribe("map/data");
       mqttClient.unsubscribe("robot/map_position");
       mqttClient.off("message", handleMapMessage);
     };
