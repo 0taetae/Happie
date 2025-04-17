@@ -204,8 +204,8 @@ class a_star(Node):
             print(f"🚀 /order_id 퍼블리시 완료: {self.order_id}")
 
             # # 테스트용 토픽으로 개발 중, 잠시 변경경
-            if topic == 'robot/test':
-            # if topic == 'robot/patrol':
+            # if topic == 'robot/test':
+            if topic == 'robot/patrol':
             # 전체순찰의 경우 
                 print("📌 전체 순찰 명령")
                 # 순찰 명령을 받은 경우
@@ -240,8 +240,7 @@ class a_star(Node):
                 # 목적지 명령 및 경로 셋팅
                 self.is_equipment_command = True
                 self.equipment_process = 0
-                self.equipment_path = equipment_path[data['no']] + [(-51.64894104003906, -40.2101936340332), (-47.69696807861328, -40.94900894165039)] + [(float(data["x"]), float(data["y"]))]
-                print(f'equipment_path {self.equipment_path}')
+                self.equipment_path = equipment_path[data['no']] + [(float(data["x"]), float(data["y"]))]
 
                 goal_x = self.equipment_path[self.equipment_path_idx][0]
                 goal_y = self.equipment_path[self.equipment_path_idx][1]
@@ -364,7 +363,7 @@ class a_star(Node):
 
 
             if dist > 1.0:
-                if self.equipment_path_idx != 0:
+                if self.equipment_path_idx == 1:
                     msg = Int32()
                     msg.data = 1  # command = 1 설정
                     self.hand_control_pub.publish(msg)  # 퍼블리시
@@ -385,9 +384,8 @@ class a_star(Node):
                     self.is_equipment_detection_on.publish(msg)
                     # detection 카메라 종료를 위함
                     print('equipment_detection 0 전송 완료')
-                    
             if dist < 0.1:
-                if self.equipment_path_idx == 3:
+                if self.equipment_path_idx == 1:
                     if self.turtlebot_status_msg.can_use_hand == False:
                         # 기자재 옮김 완료
                         payload = {
@@ -396,16 +394,13 @@ class a_star(Node):
                                     }
                         self.mqtt_client.publish(self.mqtt_topic_log, json.dumps(payload))
                         print(f'mqtt 전송 \n {payload}')
-                        self.order_id = None
-                    
+                        self.order_id = None                    
                         self.equipment_path = []
                         self.equipment_path_idx = 0 
                         self.equipment_process = 0
                         self.is_equipment_command = False
                     else:
                         msg = Int32()
-                        # if msg.data == 3: msg.data = 1
-                        # else: msg.data = 3
                         msg.data = 3  # command = 3 설정
                         self.hand_control_pub.publish(msg)  # 퍼블리시
                         self.get_logger().info('Published hand control command: 3')
@@ -420,15 +415,13 @@ class a_star(Node):
                         self.path_finding(goal_map_x, goal_map_y)
                         self.get_logger().info('Start - move to final destination!')
                     else: 
-                        # print(f'Can Use Hand: {self.turtlebot_status_msg.can_use_hand}')
-                        # print(f'Can Put: {self.turtlebot_status_msg.can_put}')
-                        # print(f'Can Lift: {self.turtlebot_status_msg.can_lift}')
                         msg = Int32()
                         msg.data = 2  # command = 2 설정
                         self.hand_control_pub.publish(msg)  # 퍼블리시
                         self.get_logger().info('Published hand control command: 2')
 
         return                
+
 
     def heuristic(self, a, b):
         #print("heuristic!!")
@@ -496,9 +489,7 @@ class a_star(Node):
 
         while open_list:
             current_f, current_g, current_h, current_node = heapq.heappop(open_list)
-            #print("while 문")
-            #print(current_node, 'current_node')
-            #print(goal,'goal')
+
             if current_node == goal:
                 print("✅ 목표 도착!")
                 path = []
@@ -561,8 +552,8 @@ class a_star(Node):
         back_folder = '..'  # 상위 폴더 지정
         pkg_path = PKG_PATH
         folder_name = 'data'
-        file_name = 'map.txt'
-        # file_name = 'update_map.txt'
+        # file_name = 'map.txt'
+        file_name = 'update_map.txt'
         full_path = os.path.join(pkg_path, back_folder, folder_name, file_name)
 
         # 데이터 읽기
@@ -640,7 +631,7 @@ class a_star(Node):
     def scan_callback(self, msg):
         # print("scan_callback start!!!")
     
-        # [1] 현재 위치 (pose_x, pose_y, heading) 가져오기
+        # 현재 위치 (pose_x, pose_y, heading) 가져오기
         self.pose_x = msg.range_min  # 실제 x 좌표 (meters)
         self.pose_y = msg.scan_time  # 실제 y 좌표 (meters)
         self.heading = msg.time_increment  # 로봇의 방향 (radians)

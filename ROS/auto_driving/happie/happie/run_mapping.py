@@ -263,7 +263,6 @@ class Mapper(Node):
         self.mapping = Mapping(params_map)
 
     def image_callback(self, msg):
-        print('이미지 콜백 시작!!!!!')
         try:
             # 1. ROS 이미지 데이터를 numpy 배열로 변환
             np_arr = np.frombuffer(msg.data, np.uint8)
@@ -282,11 +281,16 @@ class Mapper(Node):
             encoded_image = base64.b64encode(buffer.getvalue()).decode('utf-8')
 
             # 4. MQTT로 전송
+            '''
+            # 이미지 데이터 전송 기능 사용 하지 않는 것으로 변경되었음(driving_controller에서 대체)
+            
             self.mqtt_client.publish(self.mqtt_topic_image, encoded_image)
             print("다운스케일된 이미지 MQTT 전송 완료")
-
+            '''
         except Exception as e:
-            print(f"이미지 MQTT 전송 실패: {e}")
+            # print(f"이미지 MQTT 전송 실패: {e}")
+            return
+
     
     def scan_callback(self, msg):
         print("scan_callback start!!!")
@@ -329,12 +333,16 @@ class Mapper(Node):
         map_y = (pose_y - params_map["MAP_CENTER"][1] + params_map["MAP_SIZE"][1]/2) / params_map["MAP_RESOLUTION"]
 
         # MQTT로 위치 데이터 전송
+        '''
+        # 위치 데이터 전송 기능 사용 하지 않는 것으로 변경되었음(driving_controller에서 대체)
+
         mqtt_payload = f"{map_x:.0f},{map_y:.0f}"
         try:
             self.mqtt_client.publish(self.mqtt_topic_position, mqtt_payload)
             print(f"MQTT 발행(위치 데이터): {mqtt_payload}")
         except Exception as e:
             print(f"MQTT 발행 실패: {e}")
+        '''
 
         # map 업데이트 실행
         pose = np.array([[pose_x], [pose_y], [heading]])
