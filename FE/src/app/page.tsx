@@ -5,17 +5,22 @@ import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 
 export default function Home() {
+  const [isLoading, setIsLoading] = useState(true); // ✅ 로딩 상태
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [inputCode, setInputCode] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  // 홈 진입 시 access_code 초기화
   useEffect(() => {
-    localStorage.removeItem("access_code");
-  }, []);
+    const savedCode = localStorage.getItem("access_code");
 
-  // 모달 열릴 때 자동 포커스
+    if (savedCode === "gkstkfckdl0411!") {
+      router.push("/webpage/home");
+    } else {
+      setIsLoading(false); // ✅ 로그인 필요: 본 화면 렌더링 허용
+    }
+  }, [router]);
+
   useEffect(() => {
     if (isLoginOpen) {
       setTimeout(() => {
@@ -49,17 +54,36 @@ export default function Home() {
     }
   };
 
+  // ✅ 로그인 체크 중엔 아무 것도 렌더링하지 않음
+  if (isLoading) return null;
+
   return (
     <div className="flex h-screen bg-white">
       {/* 왼쪽 화면 (WEB) */}
-      <div className="w-1/2 flex flex-col items-center justify-center text-pink-400 text-6xl font-bold cursor-pointer-custom transition-all duration-300 hover:shadow-[0_0_60px_0_rgba(251,113,133,0.5)]" onClick={() => setIsLoginOpen(true)}>
-        <img src="/images/webpage.gif" alt="WEB GIF" style={{ width: "400px", height: "400px" }} className="mb-4 object-contain" />
+      <div
+        className="w-1/2 flex flex-col items-center justify-center text-pink-400 text-6xl font-bold cursor-pointer-custom transition-all duration-300 hover:shadow-[0_0_60px_0_rgba(251,113,133,0.5)]"
+        onClick={() => setIsLoginOpen(true)}
+      >
+        <img
+          src="/images/webpage.gif"
+          alt="WEB GIF"
+          style={{ width: "400px", height: "400px" }}
+          className="mb-4 object-contain"
+        />
         WEB
-      </div>                                                                                                 
+      </div>
 
       {/* 오른쪽 화면 (BOT) */}
-      <div className="w-1/2 flex flex-col items-center justify-center text-green-600 text-6xl font-bold cursor-pointer-custom transition-all duration-300 hover:shadow-[0_0_60px_0_rgba(34,197,94,0.5)]" onClick={() => router.push("/botpage")}>
-        <img src="/images/botpage.gif" alt="BOT GIF" style={{ width: "400px", height: "400px" }} className="mb-4 object-contain" />
+      <div
+        className="w-1/2 flex flex-col items-center justify-center text-green-600 text-6xl font-bold cursor-pointer-custom transition-all duration-300 hover:shadow-[0_0_60px_0_rgba(34,197,94,0.5)]"
+        onClick={() => router.push("/botpage")}
+      >
+        <img
+          src="/images/botpage.gif"
+          alt="BOT GIF"
+          style={{ width: "400px", height: "400px" }}
+          className="mb-4 object-contain"
+        />
         ROBOT
       </div>
 
@@ -71,7 +95,7 @@ export default function Home() {
 
             <input
               ref={inputRef}
-              type="password" // ✅ 여기 수정! 텍스트 → 패스워드
+              type="password"
               placeholder="코드를 입력하세요"
               value={inputCode}
               onChange={(e) => setInputCode(e.target.value)}
@@ -85,10 +109,16 @@ export default function Home() {
             />
 
             <div className="flex justify-end space-x-2">
-              <button className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition" onClick={() => setIsLoginOpen(false)}>
+              <button
+                className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition"
+                onClick={() => setIsLoginOpen(false)}
+              >
                 취소
               </button>
-              <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700 transition" onClick={handleLogin}>
+              <button
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700 transition"
+                onClick={handleLogin}
+              >
                 확인
               </button>
             </div>
