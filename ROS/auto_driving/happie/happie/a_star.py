@@ -240,7 +240,7 @@ class a_star(Node):
                 # 목적지 명령 및 경로 셋팅
                 self.is_equipment_command = True
                 self.equipment_process = 0
-                self.equipment_path = equipment_path[data['no']] + [(float(data["x"]), float(data["y"]))]
+                self.equipment_path = equipment_path[data['no']] + [(-51.64894104003906, -40.2101936340332), (-47.69696807861328, -40.94900894165039)] + [(float(data["x"]), float(data["y"]))]
                 print(f'equipment_path {self.equipment_path}')
 
                 goal_x = self.equipment_path[self.equipment_path_idx][0]
@@ -364,7 +364,7 @@ class a_star(Node):
 
 
             if dist > 1.0:
-                if self.equipment_path_idx == 1:
+                if self.equipment_path_idx != 0:
                     msg = Int32()
                     msg.data = 1  # command = 1 설정
                     self.hand_control_pub.publish(msg)  # 퍼블리시
@@ -387,7 +387,7 @@ class a_star(Node):
                     print('equipment_detection 0 전송 완료')
                     
             if dist < 0.1:
-                if self.equipment_path_idx == 1:
+                if self.equipment_path_idx == 3:
                     if self.turtlebot_status_msg.can_use_hand == False:
                         # 기자재 옮김 완료
                         payload = {
@@ -404,6 +404,8 @@ class a_star(Node):
                         self.is_equipment_command = False
                     else:
                         msg = Int32()
+                        # if msg.data == 3: msg.data = 1
+                        # else: msg.data = 3
                         msg.data = 3  # command = 3 설정
                         self.hand_control_pub.publish(msg)  # 퍼블리시
                         self.get_logger().info('Published hand control command: 3')
