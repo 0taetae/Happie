@@ -27,29 +27,29 @@
 
 #### 관리자 시스템 화면
 
-![패트롤_웹__online-video-cutter.com_](/uploads/c0bf0d45fcc2d7b0333ae300e96a13e5/패트롤_웹__online-video-cutter.com_.gif){width=850}
+![패트롤_웹__online-video-cutter.com_](/uploads/c0bf0d45fcc2d7b0333ae300e96a13e5/패트롤_웹__online-video-cutter.com_.gif){width=600}
 
 #### 시뮬레이터 화면
 
-![전체순회_5배속](/uploads/b69863cfe1fcff0adb42e84550ae73f8/전체순회_5배속.gif){width=400}
+![전체순회_5배속](/uploads/b69863cfe1fcff0adb42e84550ae73f8/전체순회_5배속.gif){width=600}
 
 ### 2-2. 기자재 관리 : 링거폴대 및 휠체어
 
 명령에 따라 하피는 복도의 링거폴대 또는 휠체어를 감지하고 해당 기자재를 목적지까지 옮긴다.
 
-![_최종_기자재_5배속_컷편집_이동만](/uploads/4ee20fd28bca08f3fbfc25d773e4f27a/_최종_기자재_5배속_컷편집_이동만.gif){width=400}
+![_최종_기자재_5배속_컷편집_이동만](/uploads/4ee20fd28bca08f3fbfc25d773e4f27a/_최종_기자재_5배속_컷편집_이동만.gif){width=600}
 
 ### 2-3. 낙상사고 감지 및 대응
 
 원내를 상시 순회하는 하피가 쓰러진 사람을 발견하면 멈춘다. 현장의 위치와 사고 이미지를 촬영하여 관리자에게 전송하고 경고음을 출력한다. 특히, 병원 직원 수가 적은 야간에 초점을 두며, 어두운 환경에서도 명확하게 포착함을 알 수 있다.
 
-![_최종_낙상야간2_5배속__1_](/uploads/cd2b987b7c917bd31ac4b40fe9db41da/_최종_낙상야간2_5배속__1_.gif){width=400}
+![_최종_낙상야간2_5배속__1_](/uploads/cd2b987b7c917bd31ac4b40fe9db41da/_최종_낙상야간2_5배속__1_.gif){width=600}
 
 ### 2-4. 대화형 음성인식 챗봇
 
 음성 또는 자주 하는 질문을 선택하여 하피에게 물을 수 있다. 텍스트 및 음성의 응답을 제공 받는다. 병원 또는 원내 시설 관련, 이외 다양한 일상 대화를 나눈다. 특정 장소로 하피에게 직접 주행 안내를 받을 수 있다.
 
-![llm__online-video-cutter.com_](/uploads/a7c7e35d95b743780e711d3d6967b1ef/llm__online-video-cutter.com_.gif){width=400}
+![llm__online-video-cutter.com_](/uploads/a7c7e35d95b743780e711d3d6967b1ef/llm__online-video-cutter.com_.gif){width=600}
 
 # Chapter3. 기술
 
