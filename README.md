@@ -5,7 +5,7 @@
 |||
 |:---:|:---|
 |서비스 제품명|**하피(happie)**|
-|프로젝트명|AI와 ROS2를 활용한 병원 도우미 서비스스|
+|프로젝트명|AI와 ROS2를 활용한 병원 도우미 서비스|
 |도메인|모빌리티 > 스마트홈|
 |기간|2025.03.04.(화) ~ 2025.04.11.(금) **6주**|
 
@@ -43,13 +43,13 @@
 
 원내를 상시 순회하는 하피가 쓰러진 사람을 발견하면 멈춘다. 현장의 위치와 사고 이미지를 촬영하여 관리자에게 전송하고 경고음을 출력한다. 특히, 병원 직원 수가 적은 야간에 초점을 두며, 어두운 환경에서도 명확하게 포착함을 알 수 있다.
 
-![_최종_낙상야간2_5배속__1_](/uploads/cd2b987b7c917bd31ac4b40fe9db41da/_최종_낙상야간2_5배속__1_.gif){width=600}
+![Image](https://github.com/user-attachments/assets/a494ffaf-e86d-454c-a42b-878b6efc123f){width=600}
 
 ### 2-4. 대화형 음성인식 챗봇
 
 음성 또는 자주 하는 질문을 선택하여 하피에게 물을 수 있다. 텍스트 및 음성의 응답을 제공 받는다. 병원 또는 원내 시설 관련, 이외 다양한 일상 대화를 나눈다. 특정 장소로 하피에게 직접 주행 안내를 받을 수 있다.
 
-![llm__online-video-cutter.com_](/uploads/a7c7e35d95b743780e711d3d6967b1ef/llm__online-video-cutter.com_.gif){width=600}
+![Image](https://github.com/user-attachments/assets/c9e03e2f-85d7-42db-af4b-f412e1dcc63b){width=600}
 
 # Chapter3. 기술
 
@@ -64,15 +64,15 @@
 
 A* 알고리즘이란 시작 지점에서 목표 지점까지의 최적 경로를 찾는 알고리즘이다. 하피는 벽에 가까울수록 비용이 증가하며, 지고 내 안전 마진 5 이내의 비용 가중치를 부여해 최적 경로를 산출한다.
 
-![a_star_result](/uploads/8edefab5f3421551812e29de8ba4a100/a_star_result.png){width=400}
+![Image](https://github.com/user-attachments/assets/c4eafcd4-68a7-4cc5-8dc1-7ac10f23a10c){width=400}
 
 ### YOLOv5를 활용한 물체 인식 및 감지
 
 시뮬레이터와 버전 문제와 클래스 단위의 분류가 가능한 특징을 활용하고자 YOLOv5를 사용하여 데이터셋을 학습한다. 정확도를 높이기 위해 데이터의 다양성과 수량을 증가한다. 이러한 데이터 학습은 기자재 관리와 낙상 감지 기능에 활용된다.
 
-![_](/uploads/7bbdb75f4995bf709322c1a94ef37db6/_.png){width=800}
+![Image](https://github.com/user-attachments/assets/fc036b1c-5073-45a9-a58f-a67c1dd3adf4){width=800}
 
-![2](/uploads/b1bc6aefc7b818f9787885313fd334ec/2.png){width=800}
+![Image](https://github.com/user-attachments/assets/c8b0e056-105c-4a1b-a076-56db89ce9998){width=800}
 
 ### RAG 기반 LangChain 및 LLM 활용
 
@@ -84,7 +84,7 @@ RAG(Retrieval-Augmented Generation)란 외부 지식을 검색하고, 그 결과
 4. ChatGPT 3.5 turbo 활용 프롬프트 템프릿 기반 응답 생성 및 정제 (대화 유도, 오류 대응)
 5. 응답 산출
 
-![image](/uploads/137fcb518a6f8acbe327c328bb1cb0bc/image.png){width=497 height=219}
+![Image](https://github.com/user-attachments/assets/829c4aff-77ba-40e1-becc-c5f01060f247){width=497 height=219}
 
 ### 기술 스택
 
@@ -180,27 +180,30 @@ RAG(Retrieval-Augmented Generation)란 외부 지식을 검색하고, 그 결과
 
 #### Figma
 
-![image](/uploads/74d67ec564976be9e4c8c73a090d638c/image.png){width=552 height=608}
+![Image](https://github.com/user-attachments/assets/690b4280-5404-4c04-a13b-66a35668a32f){width=552 height=608}
 
 #### 시뮬레이션
 
-![스크린샷_2025-03-20_134020](/uploads/02727e6896fd7ee71d305d16ff33b97b/스크린샷_2025-03-20_134020.png){width=800}
+![Image](https://github.com/user-attachments/assets/8efbe77a-2bd2-4912-8768-60293b92866f){width=800}
 
 ### 4-3. DB 설계
 
-![image](/uploads/3d95604a84002090cd9beea420710f26/image.png){width=748 height=497}
+![Image](https://github.com/user-attachments/assets/4d40567e-1242-429d-80ac-ebc0b3ec31f3){width=748 height=497}
 
 ### 4-4. 아키텍처 구조
 
-![최종_구조도](/uploads/691d1df4fb784a89f963ad0ee9f8c180/최종_구조도.png)
+![Image](https://github.com/user-attachments/assets/b8d4142a-ed4f-47da-966f-a043fe0df616)
 
 ### 4-5. API 및 MQTT 통신 설계
 
 #### API 통신 설계
-![image](/uploads/608b35f314f7d4a7ba509d8063dc3168/image.png)
+
+![Image](https://github.com/user-attachments/assets/aa3c8dcd-116c-423c-b69b-18a38647aa40)
+
 #### MQTT 통신 설계
-![image](/uploads/5e039ea7604ab92c3e36379b5355747f/image.png)
+
+![Image](https://github.com/user-attachments/assets/843f9c21-46f1-45f4-b823-d208f0b9aa2b)
 
 # Chatper5. 팀 구성
 
-![image](/uploads/3387e093c5adbfd0d0eee3c5cd772269/image.png){width=794 height=464}
+![Image](https://github.com/user-attachments/assets/d22a2536-0a5f-46ef-b046-ce97030bccdd){width=794 height=464}
